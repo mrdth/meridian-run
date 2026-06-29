@@ -1,0 +1,60 @@
+# Meridian Run — Architecture Decision Log
+
+Record of every architectural decision, change, and version transition for this document.
+- **Inherited decisions** — settled in `project-context.md`, the GDD, the brief, or brainstorming; do **not** re-litigate. Pointed to source rather than re-dumped.
+- **Architecture-session decisions** — made while authoring this document.
+- **Open Questions** — unresolved; must resolve (or explicitly defer) before Finalize.
+
+---
+
+## Inherited decisions (settled — do not re-litigate)
+
+> Sources: `_bmad-output/project-context.md` (65 rules), `gdds/gdd-meridian-run-2026-06-29/gdd.md`, `briefs/brief-meridian-run-2026-06-29/.decision-log.md`, `brainstorming-session-2026-06-28.md`.
+
+**Technology stack (fixed in `project-context.md`)**
+- Engine: **Godot 4.6** (`config_version=5`), GDScript, pinned to the 4.6.x line (4.7 migration planned post-Linux-packages). No 4.7-only APIs; forward-compatible only.
+- Dimensionality: **2D** (`Node2D` / `CanvasItem` / `Vector2` world).
+- Renderer: **Compatibility** (`gl_compatibility`) — chosen for pure 2D.
+- Physics: built-in **2D** physics server — `CharacterBody2D` / `RigidBody2D` / `Area2D`. (The `3d/physics_engine="Jolt"` default is 3D-only and irrelevant here.)
+- **Do NOT port the JS prototype** — re-derive every behavior in Godot idioms (no plain-object entities, no splice-during-iteration, no manual draw loops).
+
+**Engine-discipline rules (load-bearing for architecture)**
+- Cache node refs in `@onready`; never `$`/`get_node()` per frame.
+- Gameplay movement in `_physics_process` (fixed 60 Hz); `move_and_slide()` takes no args and applies delta internally — never multiply velocity by delta.
+- Pool & reuse projectiles/particles/enemies (no `queue_free()`+`instantiate()` on hot paths).
+- Seeded `RandomNumberGenerator` for determinism (no global `randi()`/`randf()`).
+- Input via **Input Map actions** only — never hardcoded keys; every action has keyboard + gamepad bindings.
+- Persistent data → `user://` only; never `res://` (read-only post-export) or absolute paths.
+- GUT is the committed test framework; separate pure logic from Node/scene code for unit testing.
+
+**Project structure (Option A — co-located by domain, fixed in `project-context.md`)**
+- Each system keeps its scenes + scripts + art under its own folder (`player/`, `world/`, `enemies/`, `ui/`); shared/cross-domain assets in `assets/`; autoloads in `systems/`; `.tres` data in `resources/`.
+
+**Design constraints that shape architecture (from GDD)**
+- Genre: 2D **fixed-screen** 1-axis roguelite shooter (Galaga-lineage). Player locked to bottom lane, vertical fire-columns only. No auto-scroll / side-scroll / runner input.
+- **≥60 FPS floor** (16.67 ms worst-case frame budget); deterministic seeded runs; single-player only (no networking).
+- Target platforms: **Windows + Linux desktop**; develop on Linux, verify both before release.
+- Performance spec explicitly defers pooling/batching/scene-structure/node-choice to *this* architecture document.
+- Scope: solo intermediate dev, portfolio/skill-build. v0.1 = systems-validation slice (Epics 1–3); v1.0 = shipped game (Epics 1–5); post-1.0 = growth (Epic 6).
+
+---
+
+## Architecture-session decisions
+
+- **2026-06-29** — Architecture workspace created at `planning-artifacts/architecture/architecture-meridian-run-2026-06-29/` (follows the dated, typed-subfolder convention used by the GDD and brief). Doc + this log initialized; `stepsCompleted: [1]`. Engine selection is settled — this workflow owns engine *systems design*, project structure detail, implementation patterns, and cross-cutting concerns. *(Pending Project-Context step.)*
+- **2026-06-29 — Project Context analyzed & committed (Step 2).** Loaded all inputs (`project-context.md`, GDD, epics, brief). 12 core systems mapped with complexity ratings. **Framing decision:** the project is *high systems complexity on a low-complexity engine* (fixed-screen 2D, no networking, no heavy sim) — risk concentrates in the build engine, the gamble state-web, deterministic seeded generation, and hot-path pooling. This justifies a data-driven, pure-logic-separated architecture where content (ships/power-ups/modifiers/formations) lives as `.tres` resources and all tuning is data not code. No networking = locked simplification. `stepsCompleted: [1, 2]`.
+- **2026-06-29 — Engine selection confirmed & version verified (Step 3).** Godot 4.6.x / 2D / GDScript / Compatibility — inherited & locked; not re-litigated. **Web-verified versions:** 4.6.3-stable (2026-05-20) is the current 4.6.x line; **Godot 4.7 is Release Candidate only (not stable)** — validates the `project-context.md` policy to pin 4.6.x and migrate to 4.7 only once stable + Linux packages ship. Documented engine-provided decisions (rendering/physics/audio/input/scene/resources/export) vs. the 14 remaining decisions this doc owns. No starter template (project already scaffolded; build on `project-context.md` conventions). **MCP tooling selected (Mrdth):** GoPeak (`HaD0Yun/Gopeak-godot-mcp`) + Context7 (`upstash/context7`) for the Development Environment section. `stepsCompleted: [1, 2, 3]`.
+- **2026-06-29 — Architectural decisions made (Step 4, 12 decisions D1–D12).** Catalog pattern matches: procedural_generation, rpg_systems (build engine), high_framerate (pooling), accessibility (remappable input); networking/complex-AI = N/A. **D1** thin autoloads + game/wave FSMs + Resource-backed `RunState` (rejected pure-ECS & god-objects). **D2** build engine = `StatBlock` + `Modifier`/`Behavior` `.tres` + **recompute-from-modifiers pipeline** (ADR-1) — the architectural heart, pure-logic testable. **D3** `SeedManager` → named salted RNG sub-streams + pure `RunGenerator` (ADR-2). **D4** composition over inheritance; strict collision layers. **D5** `user://` versioned **meta only**; **no resume-mid-run (Mrdth: runs short, endless opt-in)** (ADR-3). **D6** FSMs; Captor = 5-state FSM. **D7** generic `ObjectPool` with `activate()`/`reset()`. **D8** `EventBus` (global) + direct signals (local), boundary rule. **D9** `.tres` content + `ContentRegistry` (additive growth; cross-pollination = registration). **D10–D12** Godot Control/CanvasLayer UI; native+pooled audio; preload-core asset loading. State-ownership table + 4 ADRs recorded. `stepsCompleted: [1, 2, 3, 4]`.
+- **2026-06-29 — Cross-cutting concerns defined (Step 5).** Five-constitution patterns set: **C1 error handling** — GDScript has no try/catch → preconditions + `push_error`/`push_warning` + fail-safe defaults + `assert` (dev-only) + critical→EventBus safe-fail; never hard-crash. **C2 logging** — `Log` autoload (no `print()` in shipped code per project-context), `[LEVEL][system]` format, editor Output **+ rotating `user://logs/` file (Mrdth: yes)**, WARN+ release / DEBUG dev, cheap hot-path guards. **C3 config** — three tiers: `const`/`Constants` (immutable) + `.tres` tuning Resources (balance, the playtest lever) + `ConfigFile`→`user://` `Settings` autoload (player prefs). **C4 events** — refines D8: typed signals, past-tense/imperative naming, sync + `call_deferred`, no event-replay. **C5 debug** — `Debug` autoload gated by `OS.is_debug_build()`; **hotkeys + toggle overlay (Mrdth: no full console)**; overlay + visual toggles + cheat commands (spawn captor/force wave/set seed/invincible) for Epic-3 testing. `stepsCompleted: [1, 2, 3, 4, 5]`.
+- **2026-06-29 — Project structure detailed (Step 6).** Pattern inherited from `project-context.md` (Option A, co-located by domain) — completed into a no-placeholder `res://` tree with every Step 4–5 system mapped to a home. New domains beyond the project-context sketch: `components/` (reusable cross-domain component nodes), `run/` (roguelite spine: run-state/procgen), `build/` (build-engine heart). **Autoload registry finalized (11, ordered):** Constants → Log → EventBus → Settings → SeedManager → ContentRegistry → Pool → SaveManager → AudioManager → GameManager → Debug (leaf services first). Naming conventions confirmed (project-context set) + resource type-prefix + event past-tense additions. **Boundary rule (Mrdth-confirmed):** `resources/` = `.tres` instances only; Resource **schema scripts live with their owning domain** → content addition stays code-free. `stepsCompleted: [1, 2, 3, 4, 5, 6]`.
+- **2026-06-29 — Implementation patterns designed (Step 7).** 3 novel gameplay patterns + standard conventions. **NP1 docked-ship dual nature** (Mrdth-confirmed) — split permanent track (`RunState.BuildState.rescued_track`) from transient fighter (`DockedShip` node); invariant: consume never clears track; resolution absorb/sacrifice/keep/failed-rescue. **NP2 cross-pollination injection** — `ContentRegistry.build_shared_pool()` rebuilds from unlock flags; additive, no per-ship code. **NP3 threat-relative sacrifice ceiling** — pure `BuildRecompute.threat_ceiling()` clamps burst to current-wave threat; unit-testable. Standard patterns: communication triad (EventBus/signal/injection, prefer injection for testable logic); entity creation = Factory+Pool with `activate()` reset, no hot-path `queue_free()`; state = shared `components/state_machine` FSM (no bespoke FSMs); data access via `ContentRegistry`/`Settings`/`.tres` (no scattered `load()`). Consistency-rules table with enforcement. `stepsCompleted: [1, 2, 3, 4, 5, 6, 7]`.
+- **2026-06-29 — Validation run & 4 issues resolved (Step 8).** Honest re-read vs checklist + GDD/epics: decision-compatibility ✅, pattern-completeness ✅, epic-mapping ✅. **Issues found & fixed:** (1) stale "Steps Completed: 1 of 9" body counter → corrected to 8/9; (2) **juice/feedback had no architectural home** — added `juice/` domain with arena-scoped `JuiceCoordinator` (not autoload; auto-disabled in menus), EventBus-driven (`screen_shake_requested`/`hit_flash_requested`), particles via Pool; (3) added Executive Summary section; (4) added Decision-Summary version note (Godot-native). Validation Summary section appended; 12/12 systems covered, 9 patterns, 12 decisions + 4 ADRs. `stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]`.
+- **2026-06-29 — Architecture COMPLETE (Step 9).** Enhanced Executive Summary (key-decisions + structure/pattern/ready-for). Added **Development Environment** section (prerequisites, GoPeak + Context7 MCP table + setup, `godot` commands, first steps). Finalized frontmatter: `status: complete`, `stepsCompleted: [1–9]`, added `engine: Godot 4.6.x` + `platform: Windows + Linux`. Body status → 9/9 Complete. No `gds-workflow-status.yaml` present (standalone mode — workflow-status update skipped). `on_complete` resolved empty. **Architecture ready for epic implementation.** `stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9]`.
+
+---
+
+## Open Questions
+
+> Must resolve (or explicitly defer to a named phase) before Finalize.
+
+_(Seeded during the workflow — none yet at initialization.)_

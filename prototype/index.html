@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Capture / Sacrifice — Prototype</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #0b0b14;
+    color: #d8d8e8;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  #wrap {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    border: 1px solid #2a2a44;
+    box-shadow: 0 0 40px rgba(78, 193, 255, 0.08);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #06060e;
+  }
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    font-size: 13px;
+    text-shadow: 0 0 6px #000;
+  }
+  .hud-block {
+    background: rgba(8, 8, 18, 0.55);
+    padding: 4px 8px;
+    border-radius: 3px;
+    border: 1px solid #1d1d33;
+  }
+  #hp { color: #ff6b6b; letter-spacing: 2px; }
+  #slot {
+    color: #ffd36b;
+    min-width: 110px;
+    text-align: center;
+    transition: background 0.1s;
+  }
+  #slot.full { background: rgba(255, 211, 107, 0.18); }
+  #slot.empty-flash { animation: dimflash 0.25s; }
+  #slot.cooldown-flash { animation: redflash 0.25s; }
+  #slot.slot-full-flash { animation: goldflash 0.3s; }
+  @keyframes redflash {
+    0% { background: rgba(255, 80, 80, 0.45); }
+    100% { background: rgba(8, 8, 18, 0.55); }
+  }
+  @keyframes goldflash {
+    0% { background: rgba(255, 211, 107, 0.55); transform: scale(1.05); }
+    100% { background: rgba(8, 8, 18, 0.55); transform: scale(1); }
+  }
+  #score { color: #9affc2; }
+  #wave { color: #b6c2ff; }
+  @keyframes dimflash {
+    0% { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 6, 14, 0.86);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  #overlay.hidden { display: none; }
+  #overlay h1 {
+    font-size: 22px;
+    color: #ff6b6b;
+    letter-spacing: 2px;
+  }
+  #overlay .final {
+    font-size: 14px;
+    color: #d8d8e8;
+    line-height: 1.6;
+  }
+  #overlay .hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #6a6a8a;
+    letter-spacing: 1px;
+  }
+  #controls {
+    margin-top: 14px;
+    font-size: 11px;
+    color: #6a6a8a;
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  kbd {
+    background: #1a1a2e;
+    border: 1px solid #2a2a44;
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: #b6c2ff;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="800" height="600"></canvas>
+    <div id="hud">
+      <div class="hud-block" id="hp">HP ●●●</div>
+      <div class="hud-block" id="slot">SLOT: EMPTY</div>
+      <div class="hud-block" id="wave">WAVE 1</div>
+      <div class="hud-block" id="score">SCORE 0</div>
+    </div>
+    <div id="overlay">
+      <h1>GAME OVER</h1>
+      <div class="final" id="final">—</div>
+      <div class="hint">PRESS <kbd>R</kbd> TO RESTART</div>
+    </div>
+  </div>
+  <div id="controls">
+    <kbd>←</kbd> <kbd>→</kbd> move &nbsp;·&nbsp;
+    <kbd>SPACE</kbd> fire &nbsp;·&nbsp;
+    <kbd>X</kbd> sacrifice docked ship for buff &nbsp;·&nbsp;
+    <kbd>R</kbd> restart
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
