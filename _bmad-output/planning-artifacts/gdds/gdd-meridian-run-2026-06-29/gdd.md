@@ -6,9 +6,9 @@ secondary_game_type: shooter (arcade, fixed-screen)
 genre_complexity: high
 platforms: [Windows, Linux (desktop)]
 created: 2026-06-29
-updated: 2026-06-29
+updated: 2026-06-30
 status: draft
-version: 1.0-draft
+version: 1.1-draft
 sources:
   brief: _bmad-output/planning-artifacts/briefs/brief-meridian-run-2026-06-29/
   brainstorming: _bmad-output/brainstorming-session-2026-06-28.md
@@ -22,7 +22,7 @@ sources:
 **Game Type:** Roguelite Shooter (fixed-screen, 1-axis, Galaga-lineage chassis)
 **Target Platforms:** Windows + Linux (desktop)
 
-> **Bracketed refs** (`[Ref-11]`, `[Risk-12]`, `[Var-33]`, `[Var-34]`, `[Build-9]`, `[Build-15]`) cite settled decisions in the brainstorming session / brief — see `decision-log.md`.
+> **Bracketed refs** (`[Ref-11]`, `[Risk-12]`, `[Var-33]`, `[Var-34]`, `[Build-9]`, `[Build-15]`, `[Wave-1]`) cite settled decisions in the brainstorming session / brief / GDD-session — see `decision-log.md`.
 
 ---
 
@@ -161,6 +161,9 @@ You make **one active choice — Sacrifice now, or Hold:**
 ### Run Structure
 
 - **20 waves / 4 tiers / 5 waves per tier** (Brotato model). Every 5th wave is a tier cap.
+- **Wave termination = timed (Brotato-clock), not kill-count** [Wave-1]. A wave ends when its **fixed, data-tuned duration** (`wave_tuning.tres`) expires — **not** when the screen is cleared. The fixed clock is the only model that (a) bounds run length, (b) preserves godhood *duration* (P1 — the clock is the ruler power is measured against; kill-count *shrinks* late waves and thus the peak window), (c) guarantees the captor FSM its full gamble runway + a predictable *Keep*-outcome horizon (P2), (d) keeps the [Risk-12] docked-hitbox cost honest for the whole wave (P3 — kill-count lets strong builds dodge the cost via short exposure), and (e) lets the **Gauntlet** modifier ("dense fire, *few* foes") function as a real dodge test. *(The prototype's clear-condition was gated on a per-wave boss no longer in the design — boss is wave-20 only — so it does not carry over.)*
+- **Run-length budget = a feel guideline, not a cap.** A full 20-wave run (excl. endless) is expected to land **~25–45 minutes** — naturally bounded by timed waves + the between-wave reward/shop interludes. The 20–30 min gut-feel is **not** a hard cap; ~45 min is acceptable. Wave duration is the primary dial, tuned in playtest (logged as a Difficulty-curve knob). *(Endless is bounded only by player skill.)*
+- **Spawning within a wave = pulsed formations, not a streaming swarm** [Wave-1]. `RunGenerator` emits a **spawn schedule** — an ordered list of **formation pulses** (composition + entry timing + dive pattern + captor-presence) distributed across the duration via the `enemy_spawn` sub-stream. Each pulse enters → forms → dives (Galaga-lineage choreography); as one disperses, the next enters. The `4+N, cap 12` formula is the **concurrency/spawn budget, not a kill quota** — keeping the 1-axis fire-columns *readable* (P3) while sustaining pressure for the whole duration. Galaga's choreographed soul inside Brotato's bounded clock.
 - Waves 5/10/15 = **modifier waves** (randomly one of approved types); wave 20 = **final boss** (fixed, the victory gate).
 - **Endless:** build frozen at the wave-20 state, no further power-ups, **escalating enemy threat** — the Ascender phase. *"How OP can I become"* (waves 1–20); *"how far can I push it"* (endless). **Escalation baseline:** ~+10% enemy HP & fire-density per wave past 20 *(baseline, playtest-tuned)*.
 - Run ends at ships = 0.
@@ -168,7 +171,7 @@ You make **one active choice — Sacrifice now, or Hold:**
 ### Procedural Generation
 
 Deterministic **seeded** generation — same seed → same wave layouts, spawns, and modifier selections (player timing still varies; not a frame-exact replay). `project-context.md` already mandates seeded `RandomNumberGenerator`, so the discipline is free.
-- **Procedural (seed-governed):** wave composition (enemy types / counts / formations, [Var-33]); modifier-wave selection at waves 5/10/15 ([Var-34]).
+- **Procedural (seed-governed):** wave composition **and spawn schedule** (enemy types / counts / formations / pulse-timings, [Var-33][Wave-1]); modifier-wave selection at waves 5/10/15 ([Var-34]).
 - **Authored (fixed):** wave-20 final boss fight; captor AI behavior; individual enemy stats.
 - **v1.0:** determinism under-the-hood only (reproducible runs, debuggable, feature-ready). **Post-1.0:** daily-challenge + shareable seed codes + leaderboards.
 
@@ -268,7 +271,7 @@ Target the **player-power : enemy-threat ratio** (absurdity is relative, not abs
 - **Build phase (waves 1–20): compounding** — player power rises faster than enemy threat; synergies multiply (multiplicative-over-current), dual-ladder + cross-pollination stack. Target **~8–12× wave-1 DPS at the final boss**.
 - **Peak ~waves 17–20** — godhood peaks **at the final boss** so the climax lands at maximum power, not after a coast.
 - **Endless: inverted** — frozen build vs escalating enemy threat (~+10%/wave); the Test (P3) begins.
-- **Tuning knobs (v1.0 playtest):** power-up acquisition rate/wave · synergy multiplicativity · enemy HP/density scaling per tier · tier-cap power spikes.
+- **Tuning knobs (v1.0 playtest):** power-up acquisition rate/wave · synergy multiplicativity · enemy HP/density scaling per tier · tier-cap power spikes · **wave duration (the run-length / pacing dial, [Wave-1])**.
 - **Sacrifice-burst ceiling = threat-relative:** scales against current-wave enemy HP/threat, so always a useful tide-turner and never an insta-win regardless of track investment. Reinforced by: buff-not-nuke (no screen-clear), −1 ship cost, opportunity-cost anti-spam, one-sacrifice-per-wave.
 
 ### Economy and Resources
@@ -388,7 +391,7 @@ Synthwave / arcade-electronic — fits the neon-vector look, *Galaga*'s electron
 - **[ASSUMPTION]** Crown-jewel rescue-N ≈ 500 — tuned to Tier-3-comparable effort.
 - **[Dependency]** GUT test framework (committed decision; installs at project scaffolding / Epic 1).
 - **[Dependency]** Content-breadth brainstorm (post-systems) for the full fleet roster, specialty pool, modifier roster, formation types, and feat list.
-- **[Bracketed refs]** cite brainstorming/brief decision IDs: `[Ref-11]` dive-timing rescue + formation-turn penalty · `[Risk-12]` dual-fighter larger hitbox · `[Var-33]`/`[Var-34]` procedural wave/modifier variance · `[Build-9]` sacrifice model (permanent track + consumable ship) · `[Build-15]` hybrid docked ship (intrinsic absorber) · `[Risk-13]` captured-firepower reserve lever.
+- **[Bracketed refs]** cite brainstorming/brief decision IDs: `[Ref-11]` dive-timing rescue + formation-turn penalty · `[Risk-12]` dual-fighter larger hitbox · `[Var-33]`/`[Var-34]` procedural wave/modifier variance · `[Build-9]` sacrifice model (permanent track + consumable ship) · `[Build-15]` hybrid docked ship (intrinsic absorber) · `[Risk-13]` captured-firepower reserve lever · `[Wave-1]` timed-duration wave structure (pulsed formations; kill-count rejected) — **GDD-session decision**.
 
 ---
 
