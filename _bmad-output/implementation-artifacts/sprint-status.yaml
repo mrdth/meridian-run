@@ -1,0 +1,75 @@
+# generated: 2026-06-30
+# last_updated: 2026-06-30
+# project: meridian-run
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# PROJECT-SPECIFIC NOTE (2026-06-30):
+# - epics.md is HIGH-LEVEL ONLY — no `### Story X.Y:` entries are defined yet.
+#   This file therefore contains only epic + retrospective rows. Story rows will be
+#   appended automatically when epics are broken into stories (run gds-create-epics-and-stories,
+#   then re-run gds-sprint-planning).
+# - Milestone mapping: v0.1 (systems-validation slice) = Epics 1–3 ·
+#   v1.0 (shipped game) = Epics 1–5 · post-1.0 = Epic 6 (uncommitted).
+
+generated: 2026-06-30
+last_updated: 2026-06-30
+project: meridian-run
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+  # === Epic 1 — Combat Chassis & Feel  (v0.1) ===
+  epic-1: backlog
+  epic-1-retrospective: optional
+
+  # === Epic 2 — The Gamble  (v0.1) ===
+  epic-2: backlog
+  epic-2-retrospective: optional
+
+  # === Epic 3 — Build Engine  (v0.1 hypothesis test — go/no-go gate) ===
+  epic-3: backlog
+  epic-3-retrospective: optional
+
+  # === Epic 4 — Run Structure & Meta  (v1.0) ===
+  epic-4: backlog
+  epic-4-retrospective: optional
+
+  # === Epic 5 — v1.0 Polish & Content  (v1.0 ship) ===
+  epic-5: backlog
+  epic-5-retrospective: optional
+
+  # === Epic 6 — Post-1.0 Growth  (uncommitted, additive) ===
+  epic-6: backlog
+  epic-6-retrospective: optional
