@@ -11,7 +11,6 @@ story_count: 57
 inputDocuments:
   - _bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/gdd.md
   - _bmad-output/planning-artifacts/architecture/architecture-meridian-run-2026-06-29/architecture.md
-  - _bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/epics.md
 # UX spines (source of truth for all UI surfaces — completed 2026-07-01; was null at breakdown)
 uxSpines:
   design: '_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/DESIGN.md'

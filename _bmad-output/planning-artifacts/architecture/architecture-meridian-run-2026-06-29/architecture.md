@@ -12,7 +12,7 @@ platform: 'Windows + Linux (desktop)'
 
 # Source Documents
 gdd: '_bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/gdd.md'
-epics: '_bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/epics.md'
+epics: '_bmad-output/planning-artifacts/epics.md'
 brief: '_bmad-output/planning-artifacts/briefs/brief-meridian-run-2026-06-29/brief.md'
 narrative: null
 ux_design: '_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/DESIGN.md'
