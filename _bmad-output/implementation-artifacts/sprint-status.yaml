@@ -1,5 +1,5 @@
 # generated: 2026-06-30
-# last_updated: 2026-06-30
+# last_updated: 2026-07-01
 # project: meridian-run
 # project_key: NOKEY
 # tracking_system: file-system
@@ -34,42 +34,114 @@
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# PROJECT-SPECIFIC NOTE (2026-06-30):
-# - epics.md is HIGH-LEVEL ONLY — no `### Story X.Y:` entries are defined yet.
-#   This file therefore contains only epic + retrospective rows. Story rows will be
-#   appended automatically when epics are broken into stories (run gds-create-epics-and-stories,
-#   then re-run gds-sprint-planning).
-# - Milestone mapping: v0.1 (systems-validation slice) = Epics 1–3 ·
-#   v1.0 (shipped game) = Epics 1–5 · post-1.0 = Epic 6 (uncommitted).
+# PROJECT-SPECIFIC NOTE (2026-07-01):
+# - epics.md is now FULL STORY-LEVEL (9 epics, 57 stories, E1–E9). This file tracks all of them.
+# - Re-generated from the in-place UX-enriched breakdown (epics.md rev 2026-07-01). The prior
+#   status file predated the E1–E6 → E1–E9 expansion and carried no story rows.
+# - No story files exist yet in implementation-artifacts/ → every story is `backlog`; every
+#   epic is `backlog`. Run gds-create-story to promote a story to `ready-for-dev`, then this
+#   workflow will auto-detect it on re-run (statuses are never downgraded).
+# - Milestone mapping (current): v0.1 (systems-validation slice + hypothesis gate) = E1–E3 ·
+#   v0.5 (true alpha) = E4 · v1.0 (shipped game) = E5–E8 · post-1.0 = E9 (uncommitted, additive).
+#   Two honest gates: E3 (does the build engine compound?) → E4 (does 20-wave pacing peak?).
 
 generated: 2026-06-30
-last_updated: 2026-06-30
+last_updated: 2026-07-01
 project: meridian-run
 project_key: NOKEY
 tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
-  # === Epic 1 — Combat Chassis & Feel  (v0.1) ===
+  # === Epic 1 — Combat Chassis & Feel  (v0.1 — kinesthetics gate) ===
   epic-1: backlog
+  1-1-project-scaffolding-and-core-systems: backlog
+  1-2-player-movement-1-axis-chassis: backlog
+  1-3-vertical-fire-system: backlog
+  1-4-enemy-types-and-formation-dive-ai: backlog
+  1-5-life-and-health-economy: backlog
+  1-6-hit-feedback-and-juice: backlog
+  1-7-basic-hud: backlog
+  1-8-authored-wave-assembly-and-feel-gate: backlog
   epic-1-retrospective: optional
 
   # === Epic 2 — The Gamble  (v0.1) ===
   epic-2: backlog
+  2-1-captor-enemy-and-5-state-fsm: backlog
+  2-2-capture-mechanic-clean-only-once-wave: backlog
+  2-3-rescue-and-failed-rescue: backlog
+  2-4-docked-ship-dual-nature-and-clean-docked-tradeoff: backlog
+  2-5-docked-ship-resolution-four-outcomes: backlog
+  2-6-sacrifice-burst-threat-relative: backlog
+  2-7-safe-play-vs-rescue-bonus-economy: backlog
+  2-8-captor-wave-integration-and-gamble-gate: backlog
   epic-2-retrospective: optional
 
-  # === Epic 3 — Build Engine  (v0.1 hypothesis test — go/no-go gate) ===
+  # === Epic 3 — Build Engine  (v0.1 — GO/NO-GO hypothesis gate) ===
   epic-3: backlog
+  3-1-statblock-and-build-recompute-engine: backlog
+  3-2-power-up-definitions-and-standard-pool: backlog
+  3-3-dual-build-ladder: backlog
+  3-4-wave-clear-reward-take-or-sell: backlog
+  3-5-between-wave-shop-rearm: backlog
+  3-6-cross-pollination-plumbing: backlog
+  3-7-earned-generators: backlog
+  3-8-compressed-run-and-godhood-hypothesis-gate: backlog
+  3-9-palette-arc-theming-driver: backlog
   epic-3-retrospective: optional
 
-  # === Epic 4 — Run Structure & Meta  (v1.0) ===
+  # === Epic 4 — Campaign Spine & Seeded Procgen  (v0.5 — true alpha) ===
   epic-4: backlog
+  4-1-seedmanager-and-named-sub-streams: backlog
+  4-2-pure-rungenerator: backlog
+  4-3-20-wave-4-tier-campaign-structure: backlog
+  4-4-wave-controller-procedural-spawning: backlog
+  4-5-functional-final-boss: backlog
+  4-6-run-state-and-core-meta-save: backlog
+  4-7-game-mode-fsm-and-scene-flow: backlog
+  4-8-v0-5-alpha-assembly-and-pacing-gate: backlog
   epic-4-retrospective: optional
 
-  # === Epic 5 — v1.0 Polish & Content  (v1.0 ship) ===
+  # === Epic 5 — Run Variety  (v1.0 track) ===
   epic-5: backlog
+  5-1-modifier-wave-framework-and-selection: backlog
+  5-2-swarm-gauntlet-and-bounty-modifiers: backlog
+  5-3-tier-cap-mini-bosses: backlog
+  5-4-run-variety-integration-and-gate: backlog
   epic-5-retrospective: optional
 
-  # === Epic 6 — Post-1.0 Growth  (uncommitted, additive) ===
+  # === Epic 6 — Run Depth  (v1.0 track) ===
   epic-6: backlog
+  6-1-endless-mode-frozen-build-escalating-threat: backlog
+  6-2-multi-tier-loops: backlog
+  6-3-run-depth-integration-and-test-pillar-gate: backlog
   epic-6-retrospective: optional
+
+  # === Epic 7 — Meta Progression  (v1.0 track) ===
+  epic-7: backlog
+  7-1-feat-system-three-types: backlog
+  7-2-variety-over-power-meta-split: backlog
+  7-3-crown-jewel-ship-unlock: backlog
+  7-4-robust-meta-persistence: backlog
+  7-5-unlock-and-feat-toast-notifications: backlog
+  epic-7-retrospective: optional
+
+  # === Epic 8 — v1.0 Polish & Ship  (v1.0 — portfolio deliverable) ===
+  epic-8: backlog
+  8-1-specialty-power-up-pool: backlog
+  8-2-fleet-expansion-and-balance-pass: backlog
+  8-3-final-boss-polish-and-20-wave-balance: backlog
+  8-4-full-hud-menus-pause-game-over-settings-and-accessibility-floor: backlog
+  8-5-art-audio-final-pass-and-juice-on-godhood-peak: backlog
+  8-6-windows-and-linux-exports-and-performance-pass: backlog
+  8-7-v1-0-ship-gate: backlog
+  epic-8-retrospective: optional
+
+  # === Epic 9 — Post-1.0 Growth  (uncommitted, additive) ===
+  epic-9: backlog
+  9-1-full-fleet-depth: backlog
+  9-2-cross-pollination-full-depth: backlog
+  9-3-daily-challenge-shareable-seeds-and-leaderboards: backlog
+  9-4-new-modifier-waves-and-captor-variety: backlog
+  9-5-expanded-feats-and-content-breadth-deliverables: backlog
+  epic-9-retrospective: optional
