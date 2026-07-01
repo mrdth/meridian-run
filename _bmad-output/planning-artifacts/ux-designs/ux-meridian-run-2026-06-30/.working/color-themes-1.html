@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Run — Color Theme Variations</title>
+<style>
+  /* =====================================================================
+     MERIDIAN RUN · NEON-VECTOR PALETTE STUDY
+     5 variations. Inline CSS only. No JS. Renders fully offline.
+     System font stack throughout.
+     ===================================================================== */
+
+  :root {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                 Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono",
+                 "Roboto Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: #050608;
+    background-image:
+      radial-gradient(1200px 600px at 15% -10%, #0c1018 0%, transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, #120a18 0%, transparent 55%);
+    color: #9fb0c8;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    padding: 40px 28px 80px;
+  }
+
+  /* ---------- Document header ---------- */
+  .doc-head {
+    max-width: 1400px;
+    margin: 0 auto 28px;
+    padding: 0 4px;
+  }
+  .doc-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #5f7088;
+    margin: 0 0 8px;
+  }
+  .doc-title {
+    margin: 0 0 6px;
+    color: #e6f1ff;
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .doc-sub {
+    margin: 0;
+    max-width: 78ch;
+    color: #7d8da3;
+    font-size: 14px;
+  }
+  .doc-sub b { color: #c3d2e8; font-weight: 600; }
+
+  /* ---------- Glyph legend (colorblind-safety rationale) ---------- */
+  .legend {
+    max-width: 1400px;
+    margin: 22px auto 30px;
+    padding: 14px 16px;
+    border: 1px solid #1c2435;
+    border-radius: 12px;
+    background: #0a0e16;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 26px;
+    align-items: center;
+  }
+  .legend-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #6b7d96;
+    margin-right: 6px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #b6c4d8;
+  }
+  .legend-item .glyph { display: block; }
+  .legend-item b { color: #e6f1ff; font-weight: 600; }
+  .legend-note {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: #6b7d96;
+    margin: 0;
+    padding-top: 10px;
+    border-top: 1px dashed #1c2435;
+  }
+  .legend-note code {
+    font-family: var(--font-mono);
+    color: #9fb0c8;
+    background: #11161f;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ---------- Grid of variations ---------- */
+  .grid {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+    gap: 22px;
+  }
+
+  /* ---------- Panel chrome ---------- */
+  .panel {
+    border: 1px solid #1c2435;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface, #060912);
+    color: var(--text, #e6f1ff);
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.02);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-head {
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 70%),
+      var(--surface);
+    position: relative;
+  }
+  .panel-name {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 680;
+    letter-spacing: -0.005em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-name .swatch-hero {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    background: var(--primary);
+    box-shadow: 0 0 14px 1px var(--primary);
+  }
+  .panel-register {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .hero-badge {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+
+  .panel-body {
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ---------- Token chips ---------- */
+  .tokens-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 9px;
+  }
+  .tokens {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+    gap: 6px;
+  }
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--surface-alt) 70%, transparent);
+  }
+  .chip .sw {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .chip .nm {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chip .hx {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text);
+    opacity: 0.78;
+  }
+
+  /* ---------- UI snippet shell ---------- */
+  .snippet-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 4px 0 -4px;
+  }
+  .snippet {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-alt);
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .snippet::before {
+    /* faint vector grid hinting at the play field */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+  .snippet > * { position: relative; }
+
+  /* ---------- HUD snippet ---------- */
+  .hud-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .ship {
+    color: var(--primary);
+    filter: drop-shadow(0 0 6px var(--glow));
+  }
+  .hud-run {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .hud-run b { color: var(--text); font-weight: 600; }
+
+  .hud-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .stat .ic { color: var(--health); display: inline-flex; }
+  .stat .ic.cur { color: var(--currency); }
+  .pips {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .pip {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    background: var(--health);
+    box-shadow: 0 0 6px var(--health);
+  }
+  .pip.empty {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid color-mix(in srgb, var(--health) 45%, transparent);
+  }
+  .val { color: var(--text); font-weight: 600; }
+
+  .score-block {
+    text-align: right;
+    margin: 4px 0 14px;
+  }
+  .score-num {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--score);
+    line-height: 1;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--score) 70%, transparent);
+  }
+  .score-timer {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .score-timer b { color: var(--primary); font-weight: 600; }
+
+  /* ---------- Modifier chips (colorblind-safe: glyph + hue) ---------- */
+  .mod-strip {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .mod-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .mod {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px 4px 7px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    border: 1px solid color-mix(in srgb, var(--mc) 50%, transparent);
+    color: var(--mc);
+    background: color-mix(in srgb, var(--mc) 12%, transparent);
+  }
+  .mod .glyph { display: inline-flex; color: var(--mc); }
+  .mod.active {
+    background: color-mix(in srgb, var(--mc) 22%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--mc) 45%, transparent);
+  }
+
+  /* ---------- Power-up card snippet ---------- */
+  .card-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .card-rank {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--currency);
+    border: 1px solid color-mix(in srgb, var(--currency) 40%, transparent);
+    background: color-mix(in srgb, var(--currency) 10%, transparent);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .card-desc {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    max-width: 42ch;
+  }
+  .card-fx {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-fx li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text);
+  }
+  .card-fx li .arr { color: var(--primary); font-weight: 700; }
+  .card-fx li.warn .arr { color: var(--hazard); }
+  .card-fx li .gx { color: var(--primary); display: inline-flex; }
+  .card-fx li.warn .gx { color: var(--hazard); }
+  .card-foot {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-top: 11px;
+    border-top: 1px dashed var(--border);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+
+  /* =====================================================================
+     VARIATION 1 — "Vector Standard"  (Cold arcade cyan)
+     Register: Clinical focus. The Test, purified. Geometry Wars clarity,
+               Tempest 2000 poise. Default identity — rescuer reads clean.
+     -- primary hero: #00E5FF
+     ===================================================================== */
+  .v1 {
+    --surface:#060912; --surface-alt:#0C1424; --text:#E6F1FF; --muted:#6B7B9A;
+    --border:#1E2A44; --primary:#00E5FF; --primary-hover:#5AF7FF;
+    --health:#4ADE80; --hazard:#FF3D5A; --score:#FFE066; --currency:#C084FC;
+    --modifier-swarm:#FF3D5A; --modifier-gauntlet:#00E5FF; --modifier-bounty:#FFE066;
+    --glow:#5AF7FF;
+  }
+
+  /* =====================================================================
+     VARIATION 2 — "Cinder Siege"  (Warm ember siege)
+     Register: Rescue under firelight. The Gamble's stakes run hot — torchlit
+               holdout, ash in the air. Rescuer as ember-keeper, never aggressor.
+     -- primary hero: #FF7A1A
+     ===================================================================== */
+  .v2 {
+    --surface:#0D0805; --surface-alt:#1A0F08; --text:#FFF4E6; --muted:#8A6B5A;
+    --border:#3A2418; --primary:#FF7A1A; --primary-hover:#FFB347;
+    --health:#FFD166; --hazard:#E63946; --score:#FFE066; --currency:#F4A261;
+    --modifier-swarm:#E63946; --modifier-gauntlet:#FF9E3D; --modifier-bounty:#FFD166;
+    --glow:#FF9E3D;
+  }
+
+  /* =====================================================================
+     VARIATION 3 — "Phosphor Terminal"  (Toxic green wireframe)
+     Register: Hostile vector mainframe. CRT phosphor, wireframe dread — the
+               field itself feels alive and unfriendly. Endurance-mode register.
+     -- primary hero: #39FF14
+     ===================================================================== */
+  .v3 {
+    --surface:#050A06; --surface-alt:#0A1408; --text:#C8FFD0; --muted:#5A8A6B;
+    --border:#1A3A24; --primary:#39FF14; --primary-hover:#7FFF5A;
+    --health:#B8FF5A; --hazard:#FF2D9B; --score:#F2FF7A; --currency:#00E5C7;
+    --modifier-swarm:#FF2D9B; --modifier-gauntlet:#F2FF7A; --modifier-bounty:#00E5C7;
+    --glow:#7FFF5A;
+  }
+
+  /* =====================================================================
+     VARIATION 4 — "Polybius Dusk"  (Magenta synthwave dusk)
+     Register: Godhood peak. Maximalist Llamasoft juice, Resogun sunset —
+               the screen as a neon altar. The fantasy at its loudest.
+     -- primary hero: #FF2BD6
+     ===================================================================== */
+  .v4 {
+    --surface:#0F0820; --surface-alt:#1A1030; --text:#FDE6FF; --muted:#8A6B9A;
+    --border:#2E1A4A; --primary:#FF2BD6; --primary-hover:#FF6BE8;
+    --health:#00F0C0; --hazard:#FF3D5A; --score:#FFE066; --currency:#4FC3FF;
+    --modifier-swarm:#FF3D5A; --modifier-gauntlet:#4FC3FF; --modifier-bounty:#FFE066;
+    --glow:#FF6BE8;
+  }
+
+  /* =====================================================================
+     VARIATION 5 — "Clinical Trial"  (Sterile white-vector, LIGHT)
+     Register: Surgical. The Test as a lab assay — ink on paper, zero juice.
+               Maximum readability, minimal affect. The control condition.
+     -- primary hero: #0047E6
+     NOTE: only variation on a light surface; no glow shadows (flat by design).
+     ===================================================================== */
+  .v5 {
+    --surface:#E8ECF2; --surface-alt:#FFFFFF; --text:#0A0E14; --muted:#5A6573;
+    --border:#C8D0DC; --primary:#0047E6; --primary-hover:#3D7BFF;
+    --health:#00A86B; --hazard:#D90429; --score:#0A0E14; --currency:#6A4C93;
+    --modifier-swarm:#D90429; --modifier-gauntlet:#0047E6; --modifier-bounty:#6A4C93;
+    --glow:#3D7BFF;
+  }
+  /* Light panel: tone down the field grid, drop glows */
+  .v5 .snippet::before { opacity: 0.10; }
+  .v5 .pip { box-shadow: none; }
+  .v5 .score-num { text-shadow: none; }
+  .v5 .ship { filter: none; }
+  .v5 .panel-name .swatch-hero { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); }
+
+  /* small footer note */
+  .foot {
+    max-width: 1400px;
+    margin: 30px auto 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #4d5a70;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+  <header class="doc-head">
+    <p class="doc-eyebrow">UX · Color Theme Study · 5 Variations</p>
+    <h1 class="doc-title">Meridian Run — Neon-vector palette options</h1>
+    <p class="doc-sub">
+      Five distinct emotional registers for a fixed-screen roguelite shooter
+      (<b>Galaga</b>-lineage 1-axis chassis, vertical fire-columns). Each panel
+      lists lift-ready tokens with concrete hex values and one realistic UI
+      snippet. Identity cue: the player reads as <b>rescuer</b>, never aggressor —
+      capture/tractor columns tint as <code>hazard</code>, never as weapons.
+    </p>
+  </header>
+
+  <!-- Colorblind-safety legend: glyphs carry the signal, hue reinforces -->
+  <div class="legend">
+    <span class="legend-title">Wave-modifier glyphs</span>
+
+    <span class="legend-item">
+      <svg class="glyph" viewBox="0 0 16 16" width="15" height="15" fill="#FF3D5A" aria-hidden="true">
+        <circle cx="3" cy="4" r="1.7"/><circle cx="8" cy="3" r="1.7"/><circle cx="12.5" cy="5" r="1.7"/>
+        <circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="10.5" r="1.7"/><circle cx="13" cy="12" r="1.7"/>
+        <circle cx="6.5" cy="13" r="1.7"/>
+      </svg>
+      <span><b>SWARM</b> — scattered cluster</span>
+    </span>
+
+    <span class="legend-item">
+      <svg class="glyph" viewBox="0 0 16 16" width="15" height="15" fill="#00E5FF" aria-hidden="true">
+        <rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/>
+      </svg>
+      <span><b>GAUNTLET</b> — vertical columns</span>
+    </span>
+
+    <span class="legend-item">
+      <svg class="glyph" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="#FFE066" stroke-width="1.7" aria-hidden="true">
+        <path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/>
+        <circle cx="8" cy="8" r="2.1" fill="#FFE066" stroke="none"/>
+      </svg>
+      <span><b>BOUNTY</b> — single diamond</span>
+    </span>
+
+    <p class="legend-note">
+      <b>Accessibility (indie-serious):</b> color is never the sole signal. The three
+      wave-modifier types are differentiated first by <b>shape/glyph</b> (cluster ·
+      columns · diamond), then reinforced by hue — so they remain distinguishable
+      in grayscale and under deuteranopia, protanopia, and tritanopia. The same
+      glyph set is reused in every variation; only the hue mapping changes. No
+      palette relies on a red/green-only encoding for any binary choice.
+    </p>
+  </div>
+
+  <main class="grid">
+
+    <!-- ============================================================
+         V1 — VECTOR STANDARD (cold arcade cyan) — HUD snippet
+         ============================================================ -->
+    <section class="panel v1">
+      <header class="panel-head">
+        <span class="hero-badge">#00E5FF</span>
+        <h2 class="panel-name"><span class="swatch-hero"></span>Vector Standard</h2>
+        <p class="panel-register">Cold arcade cyan — clinical focus. The Test, purified. Geometry Wars clarity, Tempest poise. The safe default identity.</p>
+      </header>
+
+      <div class="panel-body">
+        <div>
+          <p class="tokens-label">Semantic tokens · 15</p>
+          <div class="tokens">
+            <span class="chip"><i class="sw" style="background:#060912"></i><span class="nm">surface</span><span class="hx">#060912</span></span>
+            <span class="chip"><i class="sw" style="background:#0C1424"></i><span class="nm">surface-alt</span><span class="hx">#0C1424</span></span>
+            <span class="chip"><i class="sw" style="background:#E6F1FF"></i><span class="nm">text</span><span class="hx">#E6F1FF</span></span>
+            <span class="chip"><i class="sw" style="background:#6B7B9A"></i><span class="nm">muted</span><span class="hx">#6B7B9A</span></span>
+            <span class="chip"><i class="sw" style="background:#1E2A44"></i><span class="nm">border</span><span class="hx">#1E2A44</span></span>
+            <span class="chip"><i class="sw" style="background:#00E5FF"></i><span class="nm">primary</span><span class="hx">#00E5FF</span></span>
+            <span class="chip"><i class="sw" style="background:#5AF7FF"></i><span class="nm">primary-hover</span><span class="hx">#5AF7FF</span></span>
+            <span class="chip"><i class="sw" style="background:#4ADE80"></i><span class="nm">health</span><span class="hx">#4ADE80</span></span>
+            <span class="chip"><i class="sw" style="background:#FF3D5A"></i><span class="nm">hazard</span><span class="hx">#FF3D5A</span></span>
+            <span class="chip"><i class="sw" style="background:#FFE066"></i><span class="nm">score</span><span class="hx">#FFE066</span></span>
+            <span class="chip"><i class="sw" style="background:#C084FC"></i><span class="nm">currency</span><span class="hx">#C084FC</span></span>
+            <span class="chip"><i class="sw" style="background:#FF3D5A"></i><span class="nm">mod-swarm</span><span class="hx">#FF3D5A</span></span>
+            <span class="chip"><i class="sw" style="background:#00E5FF"></i><span class="nm">mod-gauntlet</span><span class="hx">#00E5FF</span></span>
+            <span class="chip"><i class="sw" style="background:#FFE066"></i><span class="nm">mod-bounty</span><span class="hx">#FFE066</span></span>
+            <span class="chip"><i class="sw" style="background:#5AF7FF"></i><span class="nm">glow</span><span class="hx">#5AF7FF</span></span>
+          </div>
+        </div>
+
+        <div>
+          <p class="snippet-label">In-game · HUD corner</p>
+          <div class="snippet">
+            <div class="hud-top">
+              <svg class="ship" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z"/></svg>
+              <span class="hud-run"><b>RUN 03</b> · DECK 02 · MERIDIAN</span>
+            </div>
+
+            <div class="hud-row">
+              <span class="stat">
+                <span class="ic"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 14s-5-3.2-5-7.2C3 4.6 4.6 3 6.4 3c.9 0 1.6.4 1.6.4S8.7 3 9.6 3C11.4 3 13 4.6 13 6.8c0 4-5 7.2-5 7.2z"/></svg></span>
+                <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip empty"></i></span>
+                <span class="val">86</span>
+              </span>
+              <span class="stat">
+                <span class="ic cur"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 14.5 L8 11.3 L3.5 14.5 L5 9.5 L1 6 L6 6 Z"/></svg></span>
+                <span class="val">24</span>
+              </span>
+            </div>
+
+            <div class="score-block">
+              <div class="score-num">128,400</div>
+              <div class="score-timer">wave clears in <b>47s</b></div>
+            </div>
+
+            <div class="mod-strip">
+              <span class="mod-label">next wave</span>
+              <span class="mod active" style="--mc:#FF3D5A">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.7"/><circle cx="8" cy="3" r="1.7"/><circle cx="12.5" cy="5" r="1.7"/><circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="10.5" r="1.7"/><circle cx="13" cy="12" r="1.7"/><circle cx="6.5" cy="13" r="1.7"/></svg>
+                Swarm
+              </span>
+              <span class="mod" style="--mc:#00E5FF">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg>
+                Gauntlet
+              </span>
+              <span class="mod" style="--mc:#FFE066">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>
+                Bounty
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================
+         V2 — CINDER SIEGE (warm ember) — power-up card
+         ============================================================ -->
+    <section class="panel v2">
+      <header class="panel-head">
+        <span class="hero-badge">#FF7A1A</span>
+        <h2 class="panel-name"><span class="swatch-hero"></span>Cinder Siege</h2>
+        <p class="panel-register">Warm ember siege — rescue under firelight. The Gamble's stakes run hot; ash in the air. Rescuer as ember-keeper.</p>
+      </header>
+
+      <div class="panel-body">
+        <div>
+          <p class="tokens-label">Semantic tokens · 15</p>
+          <div class="tokens">
+            <span class="chip"><i class="sw" style="background:#0D0805"></i><span class="nm">surface</span><span class="hx">#0D0805</span></span>
+            <span class="chip"><i class="sw" style="background:#1A0F08"></i><span class="nm">surface-alt</span><span class="hx">#1A0F08</span></span>
+            <span class="chip"><i class="sw" style="background:#FFF4E6"></i><span class="nm">text</span><span class="hx">#FFF4E6</span></span>
+            <span class="chip"><i class="sw" style="background:#8A6B5A"></i><span class="nm">muted</span><span class="hx">#8A6B5A</span></span>
+            <span class="chip"><i class="sw" style="background:#3A2418"></i><span class="nm">border</span><span class="hx">#3A2418</span></span>
+            <span class="chip"><i class="sw" style="background:#FF7A1A"></i><span class="nm">primary</span><span class="hx">#FF7A1A</span></span>
+            <span class="chip"><i class="sw" style="background:#FFB347"></i><span class="nm">primary-hover</span><span class="hx">#FFB347</span></span>
+            <span class="chip"><i class="sw" style="background:#FFD166"></i><span class="nm">health</span><span class="hx">#FFD166</span></span>
+            <span class="chip"><i class="sw" style="background:#E63946"></i><span class="nm">hazard</span><span class="hx">#E63946</span></span>
+            <span class="chip"><i class="sw" style="background:#FFE066"></i><span class="nm">score</span><span class="hx">#FFE066</span></span>
+            <span class="chip"><i class="sw" style="background:#F4A261"></i><span class="nm">currency</span><span class="hx">#F4A261</span></span>
+            <span class="chip"><i class="sw" style="background:#E63946"></i><span class="nm">mod-swarm</span><span class="hx">#E63946</span></span>
+            <span class="chip"><i class="sw" style="background:#FF9E3D"></i><span class="nm">mod-gauntlet</span><span class="hx">#FF9E3D</span></span>
+            <span class="chip"><i class="sw" style="background:#FFD166"></i><span class="nm">mod-bounty</span><span class="hx">#FFD166</span></span>
+            <span class="chip"><i class="sw" style="background:#FF9E3D"></i><span class="nm">glow</span><span class="hx">#FF9E3D</span></span>
+          </div>
+        </div>
+
+        <div>
+          <p class="snippet-label">In-game · Power-up select</p>
+          <div class="snippet">
+            <p class="card-tag">Offering · Capture track</p>
+            <h3 class="card-title">
+              <svg class="ship" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z"/></svg>
+              Tractor Lattice
+              <span class="card-rank">◆ Rare</span>
+            </h3>
+            <p class="card-desc">Capture column forks into a second strand. Pulled foes fold into resonance — never harmed, always drawn in.</p>
+
+            <ul class="card-fx">
+              <li><span class="arr">▲</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 14.5 L8 11.3 L3.5 14.5 L5 9.5 L1 6 L6 6 Z"/></svg></span>+18% capture radius</li>
+              <li><span class="arr">▲</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg></span>+1 tractor strand</li>
+              <li class="warn"><span class="arr">⚠</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L15 14 L1 14 Z"/></svg></span>hitbox grows with capture reach</li>
+            </ul>
+
+            <div class="card-foot">
+              <span>counters</span>
+              <span class="mod" style="--mc:#E63946">
+                <svg class="glyph" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.7"/><circle cx="8" cy="3" r="1.7"/><circle cx="12.5" cy="5" r="1.7"/><circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="10.5" r="1.7"/><circle cx="13" cy="12" r="1.7"/><circle cx="6.5" cy="13" r="1.7"/></svg>
+                Swarm
+              </span>
+              <span class="mod" style="--mc:#FFD166">
+                <svg class="glyph" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>
+                Bounty
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================
+         V3 — PHOSPHOR TERMINAL (toxic green) — HUD snippet
+         ============================================================ -->
+    <section class="panel v3">
+      <header class="panel-head">
+        <span class="hero-badge">#39FF14</span>
+        <h2 class="panel-name"><span class="swatch-hero"></span>Phosphor Terminal</h2>
+        <p class="panel-register">Toxic green wireframe — hostile vector mainframe. CRT phosphor, wireframe dread. The field itself reads as alive, unfriendly. Endurance register.</p>
+      </header>
+
+      <div class="panel-body">
+        <div>
+          <p class="tokens-label">Semantic tokens · 15</p>
+          <div class="tokens">
+            <span class="chip"><i class="sw" style="background:#050A06"></i><span class="nm">surface</span><span class="hx">#050A06</span></span>
+            <span class="chip"><i class="sw" style="background:#0A1408"></i><span class="nm">surface-alt</span><span class="hx">#0A1408</span></span>
+            <span class="chip"><i class="sw" style="background:#C8FFD0"></i><span class="nm">text</span><span class="hx">#C8FFD0</span></span>
+            <span class="chip"><i class="sw" style="background:#5A8A6B"></i><span class="nm">muted</span><span class="hx">#5A8A6B</span></span>
+            <span class="chip"><i class="sw" style="background:#1A3A24"></i><span class="nm">border</span><span class="hx">#1A3A24</span></span>
+            <span class="chip"><i class="sw" style="background:#39FF14"></i><span class="nm">primary</span><span class="hx">#39FF14</span></span>
+            <span class="chip"><i class="sw" style="background:#7FFF5A"></i><span class="nm">primary-hover</span><span class="hx">#7FFF5A</span></span>
+            <span class="chip"><i class="sw" style="background:#B8FF5A"></i><span class="nm">health</span><span class="hx">#B8FF5A</span></span>
+            <span class="chip"><i class="sw" style="background:#FF2D9B"></i><span class="nm">hazard</span><span class="hx">#FF2D9B</span></span>
+            <span class="chip"><i class="sw" style="background:#F2FF7A"></i><span class="nm">score</span><span class="hx">#F2FF7A</span></span>
+            <span class="chip"><i class="sw" style="background:#00E5C7"></i><span class="nm">currency</span><span class="hx">#00E5C7</span></span>
+            <span class="chip"><i class="sw" style="background:#FF2D9B"></i><span class="nm">mod-swarm</span><span class="hx">#FF2D9B</span></span>
+            <span class="chip"><i class="sw" style="background:#F2FF7A"></i><span class="nm">mod-gauntlet</span><span class="hx">#F2FF7A</span></span>
+            <span class="chip"><i class="sw" style="background:#00E5C7"></i><span class="nm">mod-bounty</span><span class="hx">#00E5C7</span></span>
+            <span class="chip"><i class="sw" style="background:#7FFF5A"></i><span class="nm">glow</span><span class="hx">#7FFF5A</span></span>
+          </div>
+        </div>
+
+        <div>
+          <p class="snippet-label">In-game · HUD corner</p>
+          <div class="snippet">
+            <div class="hud-top">
+              <svg class="ship" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z"/></svg>
+              <span class="hud-run"><b>RUN 07</b> · DECK 02 · BREACH</span>
+            </div>
+
+            <div class="hud-row">
+              <span class="stat">
+                <span class="ic"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 14s-5-3.2-5-7.2C3 4.6 4.6 3 6.4 3c.9 0 1.6.4 1.6.4S8.7 3 9.6 3C11.4 3 13 4.6 13 6.8c0 4-5 7.2-5 7.2z"/></svg></span>
+                <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip empty"></i><i class="pip empty"></i></span>
+                <span class="val">62</span>
+              </span>
+              <span class="stat">
+                <span class="ic cur"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 14.5 L8 11.3 L3.5 14.5 L5 9.5 L1 6 L6 6 Z"/></svg></span>
+                <span class="val">31</span>
+              </span>
+            </div>
+
+            <div class="score-block">
+              <div class="score-num">214,850</div>
+              <div class="score-timer">wave clears in <b>47s</b></div>
+            </div>
+
+            <div class="mod-strip">
+              <span class="mod-label">next wave</span>
+              <span class="mod" style="--mc:#FF2D9B">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.7"/><circle cx="8" cy="3" r="1.7"/><circle cx="12.5" cy="5" r="1.7"/><circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="10.5" r="1.7"/><circle cx="13" cy="12" r="1.7"/><circle cx="6.5" cy="13" r="1.7"/></svg>
+                Swarm
+              </span>
+              <span class="mod active" style="--mc:#F2FF7A">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg>
+                Gauntlet
+              </span>
+              <span class="mod" style="--mc:#00E5C7">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>
+                Bounty
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================
+         V4 — POLYBIUS DUSK (magenta synthwave) — power-up card
+         ============================================================ -->
+    <section class="panel v4">
+      <header class="panel-head">
+        <span class="hero-badge">#FF2BD6</span>
+        <h2 class="panel-name"><span class="swatch-hero"></span>Polybius Dusk</h2>
+        <p class="panel-register">Magenta synthwave dusk — godhood peak. Maximalist Llamasoft juice, Resogun sunset. The screen as a neon altar; the fantasy at its loudest.</p>
+      </header>
+
+      <div class="panel-body">
+        <div>
+          <p class="tokens-label">Semantic tokens · 15</p>
+          <div class="tokens">
+            <span class="chip"><i class="sw" style="background:#0F0820"></i><span class="nm">surface</span><span class="hx">#0F0820</span></span>
+            <span class="chip"><i class="sw" style="background:#1A1030"></i><span class="nm">surface-alt</span><span class="hx">#1A1030</span></span>
+            <span class="chip"><i class="sw" style="background:#FDE6FF"></i><span class="nm">text</span><span class="hx">#FDE6FF</span></span>
+            <span class="chip"><i class="sw" style="background:#8A6B9A"></i><span class="nm">muted</span><span class="hx">#8A6B9A</span></span>
+            <span class="chip"><i class="sw" style="background:#2E1A4A"></i><span class="nm">border</span><span class="hx">#2E1A4A</span></span>
+            <span class="chip"><i class="sw" style="background:#FF2BD6"></i><span class="nm">primary</span><span class="hx">#FF2BD6</span></span>
+            <span class="chip"><i class="sw" style="background:#FF6BE8"></i><span class="nm">primary-hover</span><span class="hx">#FF6BE8</span></span>
+            <span class="chip"><i class="sw" style="background:#00F0C0"></i><span class="nm">health</span><span class="hx">#00F0C0</span></span>
+            <span class="chip"><i class="sw" style="background:#FF3D5A"></i><span class="nm">hazard</span><span class="hx">#FF3D5A</span></span>
+            <span class="chip"><i class="sw" style="background:#FFE066"></i><span class="nm">score</span><span class="hx">#FFE066</span></span>
+            <span class="chip"><i class="sw" style="background:#4FC3FF"></i><span class="nm">currency</span><span class="hx">#4FC3FF</span></span>
+            <span class="chip"><i class="sw" style="background:#FF3D5A"></i><span class="nm">mod-swarm</span><span class="hx">#FF3D5A</span></span>
+            <span class="chip"><i class="sw" style="background:#4FC3FF"></i><span class="nm">mod-gauntlet</span><span class="hx">#4FC3FF</span></span>
+            <span class="chip"><i class="sw" style="background:#FFE066"></i><span class="nm">mod-bounty</span><span class="hx">#FFE066</span></span>
+            <span class="chip"><i class="sw" style="background:#FF6BE8"></i><span class="nm">glow</span><span class="hx">#FF6BE8</span></span>
+          </div>
+        </div>
+
+        <div>
+          <p class="snippet-label">In-game · Power-up select</p>
+          <div class="snippet">
+            <p class="card-tag">Offering · Godhood track</p>
+            <h3 class="card-title">
+              <svg class="ship" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z"/></svg>
+              Meridian Surge
+              <span class="card-rank">◆ Legendary</span>
+            </h3>
+            <p class="card-desc">Godhood peak — fire-columns widen in lockstep with your hitbox. The Gamble, made flesh: more reach, more exposure.</p>
+
+            <ul class="card-fx">
+              <li><span class="arr">▲</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg></span>+2 fire-columns</li>
+              <li><span class="arr">▲</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 14.5 L8 11.3 L3.5 14.5 L5 9.5 L1 6 L6 6 Z"/></svg></span>+40% score multiplier</li>
+              <li class="warn"><span class="arr">⚠</span><span class="gx"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L15 14 L1 14 Z"/></svg></span>hitbox +35% — glass-cannon</li>
+            </ul>
+
+            <div class="card-foot">
+              <span>triggers</span>
+              <span class="mod" style="--mc:#4FC3FF">
+                <svg class="glyph" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg>
+                Gauntlet
+              </span>
+              <span class="mod" style="--mc:#FFE066">
+                <svg class="glyph" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>
+                Bounty
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================================
+         V5 — CLINICAL TRIAL (sterile white-vector, LIGHT) — HUD snippet
+         ============================================================ -->
+    <section class="panel v5">
+      <header class="panel-head">
+        <span class="hero-badge">#0047E6</span>
+        <h2 class="panel-name"><span class="swatch-hero"></span>Clinical Trial</h2>
+        <p class="panel-register">Sterile white-vector — surgical. The Test as a lab assay. Ink on paper, zero juice, maximum readability. The control condition; the only light mode here.</p>
+      </header>
+
+      <div class="panel-body">
+        <div>
+          <p class="tokens-label">Semantic tokens · 15</p>
+          <div class="tokens">
+            <span class="chip"><i class="sw" style="background:#E8ECF2"></i><span class="nm">surface</span><span class="hx">#E8ECF2</span></span>
+            <span class="chip"><i class="sw" style="background:#FFFFFF"></i><span class="nm">surface-alt</span><span class="hx">#FFFFFF</span></span>
+            <span class="chip"><i class="sw" style="background:#0A0E14"></i><span class="nm">text</span><span class="hx">#0A0E14</span></span>
+            <span class="chip"><i class="sw" style="background:#5A6573"></i><span class="nm">muted</span><span class="hx">#5A6573</span></span>
+            <span class="chip"><i class="sw" style="background:#C8D0DC"></i><span class="nm">border</span><span class="hx">#C8D0DC</span></span>
+            <span class="chip"><i class="sw" style="background:#0047E6"></i><span class="nm">primary</span><span class="hx">#0047E6</span></span>
+            <span class="chip"><i class="sw" style="background:#3D7BFF"></i><span class="nm">primary-hover</span><span class="hx">#3D7BFF</span></span>
+            <span class="chip"><i class="sw" style="background:#00A86B"></i><span class="nm">health</span><span class="hx">#00A86B</span></span>
+            <span class="chip"><i class="sw" style="background:#D90429"></i><span class="nm">hazard</span><span class="hx">#D90429</span></span>
+            <span class="chip"><i class="sw" style="background:#0A0E14"></i><span class="nm">score</span><span class="hx">#0A0E14</span></span>
+            <span class="chip"><i class="sw" style="background:#6A4C93"></i><span class="nm">currency</span><span class="hx">#6A4C93</span></span>
+            <span class="chip"><i class="sw" style="background:#D90429"></i><span class="nm">mod-swarm</span><span class="hx">#D90429</span></span>
+            <span class="chip"><i class="sw" style="background:#0047E6"></i><span class="nm">mod-gauntlet</span><span class="hx">#0047E6</span></span>
+            <span class="chip"><i class="sw" style="background:#6A4C93"></i><span class="nm">mod-bounty</span><span class="hx">#6A4C93</span></span>
+            <span class="chip"><i class="sw" style="background:#3D7BFF"></i><span class="nm">glow</span><span class="hx">#3D7BFF</span></span>
+          </div>
+        </div>
+
+        <div>
+          <p class="snippet-label">In-game · HUD corner</p>
+          <div class="snippet">
+            <div class="hud-top">
+              <svg class="ship" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z"/></svg>
+              <span class="hud-run"><b>RUN 03</b> · DECK 02 · MERIDIAN</span>
+            </div>
+
+            <div class="hud-row">
+              <span class="stat">
+                <span class="ic"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 14s-5-3.2-5-7.2C3 4.6 4.6 3 6.4 3c.9 0 1.6.4 1.6.4S8.7 3 9.6 3C11.4 3 13 4.6 13 6.8c0 4-5 7.2-5 7.2z"/></svg></span>
+                <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip empty"></i></span>
+                <span class="val">86</span>
+              </span>
+              <span class="stat">
+                <span class="ic cur"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 1 L10 6 L15 6 L11 9.5 L12.5 14.5 L8 11.3 L3.5 14.5 L5 9.5 L1 6 L6 6 Z"/></svg></span>
+                <span class="val">24</span>
+              </span>
+            </div>
+
+            <div class="score-block">
+              <div class="score-num">128,400</div>
+              <div class="score-timer">wave clears in <b>47s</b></div>
+            </div>
+
+            <div class="mod-strip">
+              <span class="mod-label">next wave</span>
+              <span class="mod" style="--mc:#D90429">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.7"/><circle cx="8" cy="3" r="1.7"/><circle cx="12.5" cy="5" r="1.7"/><circle cx="4" cy="9" r="1.7"/><circle cx="9" cy="10.5" r="1.7"/><circle cx="13" cy="12" r="1.7"/><circle cx="6.5" cy="13" r="1.7"/></svg>
+                Swarm
+              </span>
+              <span class="mod" style="--mc:#0047E6">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="3" height="12"/><rect x="6.5" y="2" width="3" height="12"/><rect x="11" y="2" width="3" height="12"/></svg>
+                Gauntlet
+              </span>
+              <span class="mod active" style="--mc:#6A4C93">
+                <svg class="glyph" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 1.5 L14.5 8 L8 14.5 L1.5 8 Z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>
+                Bounty
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <p class="foot">
+    Meridian Run · UX palette study · inline CSS, no JS, offline-safe · system font stack ·
+    color is never the sole signal (shape/glyph first).
+  </p>
+
+</body>
+</html>

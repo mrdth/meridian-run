@@ -1,0 +1,1007 @@
+<!doctype html>
+<!--
+  ===========================================================================
+  MERIDIAN RUN · TYPE SPECIMEN 1
+  ---------------------------------------------------------------------------
+  PURPOSE
+    Eval aid so the developer can pick the exact fonts for Meridian Run.
+    Direction is locked (T2): condensed-techno DISPLAY · clean grotesk BODY ·
+    monospace NUMERICS. This specimen informs the `typography` tokens in
+    DESIGN.md:  fontFamily · fontSize · fontWeight · lineHeight · letterSpacing.
+    The final pick is the developer's — this file presents candidates, it does
+    not decide.
+
+  FONTS
+    Real Google Font faces are loaded via <link> below. An internet connection
+    is required to see the actual type at full fidelity. Every font stack below
+    carries robust fallbacks (Chakra Petch → Rajdhani → Saira Condensed → system
+    sans; Inter → Rubik → system sans; JetBrains Mono → Share Tech Mono → system
+    mono) so the specimen degrades gracefully offline — layout and comparisons
+    remain legible, only the distinct face character is lost.
+
+  ROLE CANDIDATES
+    DISPLAY  : Chakra Petch · Rajdhani · Saira Condensed   (weight 700)
+    BODY     : Inter · Rubik                                 (weights 400 / 600)
+    NUMERICS : JetBrains Mono · Share Tech Mono              (weights 400 / 700)
+
+  PALETTE TREATMENTS (display samples rendered under both ends of the arc)
+    Vector Standard  — calm   cyan hero   #00E5FF on #060912   (V3 base)
+    Polybius Dusk    — climax magenta hero #FF2BD6 on #0F0820  (V3 peak)
+  ===========================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Run — Type Specimen 1</title>
+
+<!-- Real faces. Needs internet. Fallbacks in every stack carry it offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Saira+Condensed:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Rubik:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+  /* =======================================================================
+     MERIDIAN RUN · TYPE SPECIMEN
+     Inline CSS only. No JS. Dark neon-vector presentation consistent with
+     color-themes-1.html / key-hud.html.
+     ======================================================================= */
+
+  :root {
+    /* Page neutrals (not role-specific) */
+    --bg:        #050608;
+    --ink:       #E6F1FF;
+    --ink-soft:  #9FB0C8;
+    --ink-mute:  #6B7B9A;
+    --rule:      #1C2435;
+    --rule-soft: #141B2B;
+
+    /* Document sans = system mono for chrome labels so it never competes
+       with the candidate faces being evaluated. */
+    --chrome-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --chrome-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    /* Treatment: Vector Standard (calm) — cyan hero */
+    --vec-on:    #00E5FF;
+    --vec-glow:  #5AF7FF;
+    --vec-surf:  #060912;
+    --vec-surf2: #0C1424;
+    --vec-text:  #E6F1FF;
+    --vec-mute:  #6B7B9A;
+    --vec-edge:  #1E2A44;
+
+    /* Treatment: Polybius Dusk (climax) — magenta hero */
+    --pol-on:    #FF2BD6;
+    --pol-glow:  #FF6BE8;
+    --pol-surf:  #0F0820;
+    --pol-surf2: #1A1030;
+    --pol-text:  #FDE6FF;
+    --pol-mute:  #8A6B9A;
+    --pol-edge:  #2E1A4A;
+
+    /* Shared accent reads (stable across the arc, per color-themes-1) */
+    --score:   #FFE066;
+    --health:  #4ADE80;
+    --hazard:  #FF3D5A;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--chrome-sans);
+    background: var(--bg);
+    background-image:
+      radial-gradient(1200px 600px at 15% -10%, #0c1018 0%, transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, #120a18 0%, transparent 55%);
+    color: var(--ink-soft);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    padding: 40px 28px 96px;
+  }
+
+  /* ============ Face candidates (with graceful fallback stacks) ============ */
+  .face-chakra   { font-family: "Chakra Petch", "Rajdhani", "Saira Condensed",
+                            ui-sans-serif, system-ui, sans-serif; }
+  .face-rajdhani { font-family: "Rajdhani", "Chakra Petch", "Saira Condensed",
+                            ui-sans-serif, system-ui, sans-serif; }
+  .face-saira    { font-family: "Saira Condensed", "Chakra Petch", "Rajdhani",
+                            ui-sans-serif, system-ui, sans-serif; }
+  .face-inter    { font-family: "Inter", "Rubik", ui-sans-serif, system-ui,
+                            -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .face-rubik    { font-family: "Rubik", "Inter", ui-sans-serif, system-ui,
+                            -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .face-jb       { font-family: "JetBrains Mono", "Share Tech Mono", ui-monospace,
+                            "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; }
+  .face-share    { font-family: "Share Tech Mono", "JetBrains Mono", ui-monospace,
+                            "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; }
+
+  /* ============ Document header ============ */
+  .wrap { max-width: 1400px; margin: 0 auto; }
+
+  .doc-eyebrow {
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0 0 8px;
+  }
+  .doc-title {
+    margin: 0 0 6px;
+    color: var(--ink);
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .doc-sub {
+    margin: 0;
+    max-width: 86ch;
+    color: var(--ink-mute);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .doc-sub b { color: #c3d2e8; font-weight: 600; }
+  .doc-sub code {
+    font-family: var(--chrome-mono);
+    color: #c3d2e8;
+    background: #11161f;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+
+  /* ============ Pairing callout ============ */
+  .callout {
+    margin: 22px 0 8px;
+    padding: 16px 18px;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--vec-on);
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--vec-on) 7%, transparent), transparent 60%),
+      #0a0e16;
+  }
+  .callout-title {
+    margin: 0 0 8px;
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .callout-body {
+    margin: 0;
+    font-size: 13.5px;
+    color: #b6c4d8;
+    line-height: 1.6;
+  }
+  .callout-body .pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 14px 0 0;
+    font-family: var(--chrome-mono);
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .callout-body .pair .dot {
+    width: 8px; height: 8px; border-radius: 2px;
+    background: var(--vec-on);
+    box-shadow: 0 0 8px var(--vec-glow);
+  }
+  .callout-body .pair.b .dot { background: var(--pol-on); box-shadow: 0 0 8px var(--pol-glow); }
+  .callout-body .rec {
+    display: block;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    color: #c3d2e8;
+  }
+  .callout-body .rec b { color: var(--vec-on); font-weight: 600; }
+
+  /* ============ Section chrome ============ */
+  section { margin: 40px 0 0; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin: 0 0 4px;
+    flex-wrap: wrap;
+  }
+  .sec-num {
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--ink-mute);
+  }
+  .sec-title {
+    margin: 0;
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+  }
+  .sec-sub {
+    margin: 0 0 18px;
+    color: var(--ink-mute);
+    font-size: 13px;
+    max-width: 92ch;
+    line-height: 1.55;
+  }
+  .sec-sub code, .legend code {
+    font-family: var(--chrome-mono);
+    color: #b6c4d8;
+    background: #11161f;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  /* ============ Comparison grid (candidates × samples) ============ */
+  .cmp {
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--cmp-surf, var(--vec-surf));
+    box-shadow: 0 18px 40px -28px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.02);
+  }
+  .cmp-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--cmp-edge, var(--vec-edge));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--cmp-on, var(--vec-on)) 8%, transparent), transparent 70%),
+      var(--cmp-surf, var(--vec-surf));
+  }
+  .cmp-banner .name {
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cmp-text, var(--vec-text));
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .cmp-banner .name .swatch {
+    width: 10px; height: 10px; border-radius: 2px;
+    background: var(--cmp-on, var(--vec-on));
+    box-shadow: 0 0 10px var(--cmp-glow, var(--vec-glow));
+  }
+  .cmp-banner .meta {
+    font-family: var(--chrome-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: var(--cmp-mute, var(--vec-mute));
+  }
+
+  .cmp-row {
+    display: grid;
+    grid-template-columns: 150px repeat(3, 1fr);
+    align-items: center;
+    border-top: 1px solid var(--cmp-edge, var(--vec-edge));
+  }
+  .cmp-row:first-of-type { border-top: 0; }
+  .cmp-row .lbl {
+    padding: 14px 10px 14px 16px;
+    font-family: var(--chrome-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cmp-mute, var(--vec-mute));
+    line-height: 1.4;
+    border-right: 1px dashed var(--cmp-edge, var(--vec-edge));
+  }
+  .cmp-row .lbl b {
+    display: block;
+    color: var(--cmp-text, var(--vec-text));
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .cmp-row .cell {
+    padding: 18px 16px;
+    border-right: 1px solid var(--cmp-edge, var(--vec-edge));
+    min-width: 0;
+    overflow: hidden;
+  }
+  .cmp-row .cell:last-child { border-right: 0; }
+  .face-tag {
+    display: block;
+    font-family: var(--chrome-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--cmp-mute, var(--vec-mute));
+    margin-bottom: 8px;
+  }
+
+  /* ============ Display samples ============ */
+  .disp {
+    color: var(--cmp-on, var(--vec-on));
+    text-shadow:
+      0 0 6px color-mix(in srgb, var(--cmp-on, var(--vec-on)) 85%, transparent),
+      0 0 16px color-mix(in srgb, var(--cmp-glow, var(--vec-glow)) 55%, transparent),
+      0 0 34px color-mix(in srgb, var(--cmp-glow, var(--vec-glow)) 30%, transparent);
+    line-height: 1.05;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+  .disp-50 { font-size: 50px; font-weight: 700; letter-spacing: 0.045em; }
+  .disp-32 { font-size: 32px; font-weight: 700; letter-spacing: 0.085em; }
+  .disp-24 { font-size: 24px; font-weight: 700; letter-spacing: 0.12em; }
+  .disp-22 { font-size: 22px; font-weight: 700; letter-spacing: 0.13em; }
+
+  /* Polybius Dusk treatment overrides (applied on .cmp.polybius) */
+  .cmp.polybius { --cmp-on: var(--pol-on); --cmp-glow: var(--pol-glow);
+                  --cmp-surf: var(--pol-surf); --cmp-surf2: var(--pol-surf2);
+                  --cmp-text: var(--pol-text); --cmp-mute: var(--pol-mute);
+                  --cmp-edge: var(--pol-edge); }
+
+  /* ============ Type scale ============ */
+  .scale-panel {
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--vec-surf);
+  }
+  .scale-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 110px;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--vec-edge);
+  }
+  .scale-row:first-child { border-top: 0; }
+  .scale-row .step {
+    font-family: var(--chrome-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vec-mute);
+    line-height: 1.4;
+  }
+  .scale-row .step b {
+    display: block;
+    color: var(--vec-text);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .scale-row .demo {
+    color: var(--vec-on);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1.05;
+    text-shadow:
+      0 0 6px color-mix(in srgb, var(--vec-on) 75%, transparent),
+      0 0 16px color-mix(in srgb, var(--vec-glow) 40%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .scale-row .ratio {
+    font-family: var(--chrome-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--vec-mute);
+    text-align: right;
+  }
+
+  /* ============ Body samples ============ */
+  .body-panel {
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #07090F;
+  }
+  .body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .body-col {
+    padding: 22px 22px 26px;
+    border-right: 1px solid var(--rule);
+  }
+  .body-col:last-child { border-right: 0; }
+  .body-col h4 {
+    margin: 0 0 16px;
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .blk-label {
+    font-family: var(--chrome-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #4f5f78;
+    margin: 18px 0 8px;
+  }
+  .blk-label:first-of-type { margin-top: 0; }
+
+  /* Menu list */
+  .menu { list-style: none; margin: 0; padding: 0; }
+  .menu li {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    color: #8FA0BA;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .menu li .key {
+    margin-left: auto;
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: #566883;
+    border: 1px solid #243049;
+    border-radius: 5px;
+    padding: 2px 7px;
+    background: #0c1018;
+  }
+  .menu li.sel {
+    color: var(--vec-on);
+    background: color-mix(in srgb, var(--vec-on) 8%, transparent);
+    border-color: color-mix(in srgb, var(--vec-on) 40%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--vec-glow) 22%, transparent);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--vec-on) 60%, transparent);
+  }
+  .menu li.sel .key { color: var(--vec-on); border-color: color-mix(in srgb, var(--vec-on) 50%, transparent); }
+
+  /* Tooltip */
+  .tip {
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #c3d2e8;
+    background: #0C1424;
+    border: 1px solid #1E2A44;
+    border-left: 3px solid var(--vec-on);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--vec-glow) 14%, transparent);
+  }
+
+  /* Codex paragraph */
+  .codex {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.62;
+    color: #9fb0c8;
+    max-width: 52ch;
+  }
+  .codex b { color: #c3d2e8; font-weight: 600; }
+
+  /* ============ Numerics ============ */
+  .num-panel {
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #07090F;
+  }
+  .num-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .num-col {
+    padding: 22px 22px 26px;
+    border-right: 1px solid var(--rule);
+  }
+  .num-col:last-child { border-right: 0; }
+  .num-col h4 {
+    margin: 0 0 18px;
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+
+  .num-row { display: flex; align-items: baseline; gap: 14px; margin: 0 0 14px; }
+  .num-tag {
+    font-family: var(--chrome-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #4f5f78;
+    min-width: 64px;
+  }
+
+  .score {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--score);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--score) 60%, transparent);
+    line-height: 1;
+  }
+  .timer {
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: #c3d2e8;
+  }
+  .timer.low {
+    color: var(--hazard);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--hazard) 60%, transparent);
+  }
+  .damage {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--health);
+    text-shadow:
+      0 0 8px color-mix(in srgb, var(--health) 70%, transparent),
+      0 0 22px color-mix(in srgb, var(--health) 35%, transparent);
+    line-height: 1;
+  }
+
+  /* Fixed-width demonstration: stacked column of changing-width numbers */
+  .fixed-demo {
+    margin: 18px 0 0;
+    border: 1px solid #1E2A44;
+    border-radius: 10px;
+    background: #060912;
+    padding: 16px 18px;
+    position: relative;
+  }
+  .fixed-demo .colhead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+    font-family: var(--chrome-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .fixed-demo .colhead .ok { color: var(--health); }
+  .stack {
+    font-feature-settings: "tnum" 1;            /* tabular numerals if available */
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--score);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--score) 35%, transparent);
+    line-height: 1.35;
+    text-align: right;
+    padding-right: 4px;
+  }
+  /* faint column guides to show digit columns holding */
+  .stack-wrap { position: relative; }
+  .stack-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0 4px 0 0;
+    background-image:
+      linear-gradient(90deg, transparent calc(100% - 1px), color-mix(in srgb, var(--ink-mute) 18%, transparent) 0);
+    background-size: 0.62em 100%;     /* roughly one digit column per repeat */
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .stack-note {
+    margin: 10px 0 0;
+    font-family: var(--chrome-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--ink-mute);
+    line-height: 1.5;
+  }
+  /* Proportional contrast (Inter) — shows the jitter monospace eliminates */
+  .fixed-demo.contrast .stack {
+    font-family: "Inter", "Rubik", ui-sans-serif, system-ui, sans-serif;
+    color: var(--hazard);
+    text-shadow: none;
+    font-feature-settings: "tnum" 0;
+    font-weight: 600;
+  }
+  .fixed-demo.contrast { border-color: color-mix(in srgb, var(--hazard) 35%, transparent); }
+  .fixed-demo.contrast .colhead .bad { color: var(--hazard); }
+
+  /* ============ Legend / weights strip ============ */
+  .legend {
+    margin: 18px 0 0;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: #0a0e16;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    align-items: center;
+    font-family: var(--chrome-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+  .legend .ltitle {
+    color: var(--ink-mute);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .legend .litem b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ============ Footer ============ */
+  .foot {
+    margin: 48px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--chrome-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+    line-height: 1.6;
+  }
+  .foot b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ============ Responsive: collapse side-by-side on narrow viewports ============ */
+  @media (max-width: 880px) {
+    .cmp-row { grid-template-columns: 110px repeat(3, 1fr); }
+    .disp-50 { font-size: 38px; }
+    .disp-32 { font-size: 26px; }
+    .disp-24, .disp-22 { font-size: 20px; }
+    .body-grid, .num-grid { grid-template-columns: 1fr; }
+    .body-col, .num-col { border-right: 0; border-bottom: 1px solid var(--rule); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- =========================== HEADER =========================== -->
+  <p class="doc-eyebrow">TYPE SPECIMEN · TYPOGRAPHY EVAL · 2026-06-30</p>
+  <h1 class="doc-title">Meridian Run — Type Specimen 1</h1>
+  <p class="doc-sub">
+    Direction locked <b>(T2): condensed-techno</b>. Three roles, candidate faces shown
+    side-by-side with identical sample text so they compare directly. Display samples are
+    rendered under both ends of the calm&rarr;climax arc (<b>Vector Standard</b> cyan,
+    <b>Polybius Dusk</b> magenta) with neon glow. Informs the <code>typography</code> tokens
+    in DESIGN.md — <code>fontFamily</code> / <code>fontSize</code> / <code>fontWeight</code> /
+    <code>lineHeight</code> / <code>letterSpacing</code>. <b>Final pick is the developer's.</b>
+  </p>
+
+  <!-- =========================== PAIRING CALLOUT =========================== -->
+  <div class="callout">
+    <p class="callout-title">Pairing options — presented, not decided</p>
+    <div class="callout-body">
+      <span class="pair"><span class="dot"></span>Chakra Petch &nbsp;+&nbsp; Inter &nbsp;+&nbsp; JetBrains Mono</span>
+      <span class="pair b"><span class="dot"></span>Rajdhani &nbsp;+&nbsp; Rubik &nbsp;+&nbsp; Share Tech Mono</span>
+      <span class="rec">
+        <b>Coach lean:</b> Chakra Petch + Inter + JetBrains Mono — Chakra Petch's squared
+        apertures give the most "neon-sign / tactical-HUD" read of the three (Geometry-Wars
+        vector, not sport-stripe), Inter carries menu/tooltips with the lowest visual noise at
+        small sizes, and JetBrains Mono has the cleanest stable digit grid for score / <code>XXs</code>
+        jitter-free counting. The Rajdhani + Share Tech Mono pairing is the warmer, more
+        synthwave-arcade alternative if the identity skews Llamasoft over Resogun.
+      </span>
+    </div>
+  </div>
+
+  <!-- =========================== TYPE SCALE =========================== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">00</span>
+      <h2 class="sec-title">Type Scale — perfect fourth (1.333) from a 16px base</h2>
+    </div>
+    <p class="sec-sub">
+      Demonstrated on the display face (Chakra Petch, the coach lean). Five steps:
+      <code>16 / 21 / 28 / 38 / 50 px</code>. Token mapping candidate:
+      <code>fontSize-xs=16 · fontSize-sm=21 · fontSize-md=28 · fontSize-lg=38 · fontSize-xl=50</code>.
+    </p>
+    <div class="scale-panel">
+      <div class="scale-row">
+        <div class="step"><b>50 px</b>fontSize-xl · display</div>
+        <div class="face-chakra demo disp-50" style="font-size:50px;">MERIDIAN</div>
+        <div class="ratio">&times;3.125 base</div>
+      </div>
+      <div class="scale-row">
+        <div class="step"><b>38 px</b>fontSize-lg · banner</div>
+        <div class="face-chakra demo" style="font-size:38px;">HOLD THE LINE</div>
+        <div class="ratio">&times;2.370 base</div>
+      </div>
+      <div class="scale-row">
+        <div class="step"><b>28 px</b>fontSize-md · sub-display</div>
+        <div class="face-chakra demo" style="font-size:28px;">BROADSIDE</div>
+        <div class="ratio">&times;1.750 base</div>
+      </div>
+      <div class="scale-row">
+        <div class="step"><b>21 px</b>fontSize-sm · menu item</div>
+        <div class="face-chakra demo" style="font-size:21px;">RESUME RUN</div>
+        <div class="ratio">&times;1.333 base</div>
+      </div>
+      <div class="scale-row">
+        <div class="step"><b>16 px</b>fontSize-xs · body / tooltip</div>
+        <div class="face-chakra demo" style="font-size:16px;">COURT CAPTURE</div>
+        <div class="ratio">&times;1.000 base</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== DISPLAY — VECTOR STANDARD =========================== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2 class="sec-title">Display — Vector Standard (calm · cyan hero)</h2>
+    </div>
+    <p class="sec-sub">
+      Three condensed-techno candidates, identical samples, weight <code>700</code>.
+      Cyan hero on dark — the calm/base end of the palette arc (V3). Same row = same sample
+      across all three faces.
+    </p>
+    <div class="cmp">
+      <div class="cmp-banner">
+        <span class="name"><span class="swatch"></span>VECTOR STANDARD</span>
+        <span class="meta">--primary #00E5FF · glow #5AF7FF · on #060912</span>
+      </div>
+
+      <div class="cmp-row">
+        <div class="lbl"><b>Row A · 50px</b>Title — game logo</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-50">MERIDIAN RUN</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-50">MERIDIAN RUN</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-50">MERIDIAN RUN</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row B · 32px</b>Wave banner</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row C · 24px</b>Sacrifice prompt</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-24">BURN THE WINGMAN?</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-24">BURN THE WINGMAN?</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-24">BURN THE WINGMAN?</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row D · 22px</b>Power-up name</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-22">TRIPLE BROADSIDE</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-22">TRIPLE BROADSIDE</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-22">TRIPLE BROADSIDE</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== DISPLAY — POLYBIUS DUSK =========================== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2 class="sec-title">Display — Polybius Dusk (climax · magenta hero)</h2>
+    </div>
+    <p class="sec-sub">
+      Same three candidates, same samples — now under the climax end of the arc (V3 peak):
+      magenta hero on dusk. Reading type at both ends of the calm&rarr;climax arc is the test —
+      a face that shines at calm but smears at climax is the wrong pick.
+    </p>
+    <div class="cmp polybius">
+      <div class="cmp-banner">
+        <span class="name"><span class="swatch"></span>POLYBIUS DUSK</span>
+        <span class="meta">--primary #FF2BD6 · glow #FF6BE8 · on #0F0820</span>
+      </div>
+
+      <div class="cmp-row">
+        <div class="lbl"><b>Row A · 50px</b>Title — game logo</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-50">MERIDIAN RUN</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-50">MERIDIAN RUN</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-50">MERIDIAN RUN</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row B · 32px</b>Wave banner</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-32">WAVE 17 — HOLD THE LINE</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row C · 24px</b>Sacrifice prompt</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-24">BURN THE WINGMAN?</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-24">BURN THE WINGMAN?</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-24">BURN THE WINGMAN?</div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="lbl"><b>Row D · 22px</b>Power-up name</div>
+        <div class="cell"><span class="face-tag">Chakra Petch</span><div class="face-chakra disp disp-22">TRIPLE BROADSIDE</div></div>
+        <div class="cell"><span class="face-tag">Rajdhani</span><div class="face-rajdhani disp disp-22">TRIPLE BROADSIDE</div></div>
+        <div class="cell"><span class="face-tag">Saira Condensed</span><div class="face-saira disp disp-22">TRIPLE BROADSIDE</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== BODY =========================== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2 class="sec-title">Body — clean grotesk (menus · tooltips · codex)</h2>
+    </div>
+    <p class="sec-sub">
+      Inter vs Rubik. Two weights demonstrated: <code>600</code> on menu items (selected row
+      glows in hero cyan), <code>400</code> on tooltip + codex paragraph. Read for: density at
+      small sizes, scan-ability of a vertical menu, and whether the body voice sits under the
+      display without competing.
+    </p>
+    <div class="body-panel">
+      <div class="body-grid">
+        <!-- Inter -->
+        <div class="body-col face-inter">
+          <h4>Inter</h4>
+
+          <p class="blk-label">Menu · weight 600</p>
+          <ul class="menu">
+            <li>Resume Run <span class="key">Enter</span></li>
+            <li class="sel">Settings <span class="key">&rarr;</span></li>
+            <li>Quit to Desktop <span class="key">Esc</span></li>
+          </ul>
+
+          <p class="blk-label">Tooltip · weight 400</p>
+          <div class="tip">
+            Court capture to rescue a wingman — or sacrifice it for a power burst.
+          </div>
+
+          <p class="blk-label">Codex · weight 400 · 1.62 line-height</p>
+          <p class="codex">
+            <b>Triple Broadside.</b> Fires three parallel columns for the wave's remainder.
+            Stacks with docked-fighter delta-fire, but widens your hitbox — the dodge tax is
+            real. Sell at the shop if the modifier wave is a sniper-heavy board.
+          </p>
+        </div>
+
+        <!-- Rubik -->
+        <div class="body-col face-rubik">
+          <h4>Rubik</h4>
+
+          <p class="blk-label">Menu · weight 600</p>
+          <ul class="menu">
+            <li>Resume Run <span class="key">Enter</span></li>
+            <li class="sel">Settings <span class="key">&rarr;</span></li>
+            <li>Quit to Desktop <span class="key">Esc</span></li>
+          </ul>
+
+          <p class="blk-label">Tooltip · weight 400</p>
+          <div class="tip">
+            Court capture to rescue a wingman — or sacrifice it for a power burst.
+          </div>
+
+          <p class="blk-label">Codex · weight 400 · 1.62 line-height</p>
+          <p class="codex">
+            <b>Triple Broadside.</b> Fires three parallel columns for the wave's remainder.
+            Stacks with docked-fighter delta-fire, but widens your hitbox — the dodge tax is
+            real. Sell at the shop if the modifier wave is a sniper-heavy board.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== NUMERICS =========================== -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2 class="sec-title">Numerics — monospace (score · timer · damage)</h2>
+    </div>
+    <p class="sec-sub">
+      JetBrains Mono vs Share Tech Mono. Score <code>124,580</code>; timer in <code>XXs</code>
+      format (<code>47s</code> calm, <code>03s</code> low-danger red); big damage popup
+      <code>+2,400</code> at weight 700. The fixed-width demo below stacks three changing-width
+      values (<code>9,999 / 10,000 / 124,580</code>) — digits hold their columns as the number
+      grows, so a counting score never jitters. The red contrast box shows the same stack in a
+      proportional face (Inter) for comparison.
+    </p>
+    <div class="num-panel">
+      <div class="num-grid">
+        <!-- JetBrains Mono -->
+        <div class="num-col face-jb">
+          <h4>JetBrains Mono</h4>
+
+          <div class="num-row">
+            <span class="num-tag">Score</span>
+            <span class="score">124,580</span>
+          </div>
+          <div class="num-row">
+            <span class="num-tag">Timer</span>
+            <span class="timer">47s</span>
+            <span class="timer low">03s</span>
+          </div>
+          <div class="num-row">
+            <span class="num-tag">Damage</span>
+            <span class="damage">+2,400</span>
+          </div>
+
+          <div class="fixed-demo">
+            <div class="colhead"><span>Fixed-width demo</span><span class="ok">digits hold &middot; no jitter</span></div>
+            <div class="stack-wrap">
+              <div class="stack">9,999</div>
+              <div class="stack">10,000</div>
+              <div class="stack">124,580</div>
+            </div>
+            <p class="stack-note">Tabular columns — each digit occupies the same advance width.</p>
+          </div>
+        </div>
+
+        <!-- Share Tech Mono -->
+        <div class="num-col face-share">
+          <h4>Share Tech Mono</h4>
+
+          <div class="num-row">
+            <span class="num-tag">Score</span>
+            <span class="score">124,580</span>
+          </div>
+          <div class="num-row">
+            <span class="num-tag">Timer</span>
+            <span class="timer">47s</span>
+            <span class="timer low">03s</span>
+          </div>
+          <div class="num-row">
+            <span class="num-tag">Damage</span>
+            <span class="damage">+2,400</span>
+          </div>
+
+          <div class="fixed-demo">
+            <div class="colhead"><span>Fixed-width demo</span><span class="ok">digits hold &middot; no jitter</span></div>
+            <div class="stack-wrap">
+              <div class="stack">9,999</div>
+              <div class="stack">10,000</div>
+              <div class="stack">124,580</div>
+            </div>
+            <p class="stack-note">CRT-display lineage — rounder glyph, slightly looser digit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fixed-demo contrast" style="max-width: 340px; margin-top: 18px;">
+      <div class="colhead"><span>Proportional contrast · Inter</span><span class="bad">columns drift &middot; jitter</span></div>
+      <div class="stack-wrap">
+        <div class="stack">9,999</div>
+        <div class="stack">10,000</div>
+        <div class="stack">124,580</div>
+      </div>
+      <p class="stack-note">Same values in a proportional face — note how <code>1</code> and the comma
+        shift width, so a counting score would visibly jump digit-to-digit.</p>
+    </div>
+  </section>
+
+  <!-- =========================== LEGEND / WEIGHTS =========================== -->
+  <div class="legend">
+    <span class="ltitle">Weights</span>
+    <span class="litem"><b>400</b> &mdash; body · tooltip · codex · timer</span>
+    <span class="litem"><b>500</b> &mdash; timer (calm) · score alt</span>
+    <span class="litem"><b>600</b> &mdash; menu items · score</span>
+    <span class="litem"><b>700</b> &mdash; display · damage popups</span>
+    <span class="ltitle" style="margin-left:10px;">Line-height</span>
+    <span class="litem"><b>1.05</b> display · <b>1.50</b> tooltip · <b>1.62</b> codex</span>
+    <span class="ltitle" style="margin-left:10px;">Tracking</span>
+    <span class="litem">display +0.045&ndash;0.13em · body 0&ndash;0.005em · mono +0.02&ndash;0.04em</span>
+  </div>
+
+  <!-- =========================== FOOTER =========================== -->
+  <p class="foot">
+    SPECIMEN 1 / 1 &nbsp;&middot;&nbsp; informs <b>DESIGN.md &rarr; typography tokens</b>
+    (fontFamily · fontSize · fontWeight · lineHeight · letterSpacing) &nbsp;&middot;&nbsp;
+    faces loaded via Google Fonts <code>&lt;link&gt;</code> — <b>internet required for the real
+    faces</b>; fallback stacks carry it offline &nbsp;&middot;&nbsp; <b>final pick is the
+    developer's</b>.
+  </p>
+
+</div>
+</body>
+</html>

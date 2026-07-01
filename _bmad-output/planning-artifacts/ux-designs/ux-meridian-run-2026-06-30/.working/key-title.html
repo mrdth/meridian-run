@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meridian Run — Title Screen (brand anchor)</title>
+
+<!-- ============================================================================
+     FONTS — Google Fonts <link>.
+     [NOTE] This is an EVAL MOCK served locally; the <link> below requires an
+     internet connection to fetch Chakra Petch / Inter / JetBrains Mono. Each
+     font stack below carries ROBUST FALLBACKS (system techno, system sans,
+     system mono) so the mock degrades cleanly offline — the neon-vector look
+     is preserved by the geometric stacks even without the webfonts.
+============================================================================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   MERIDIAN RUN — TITLE SCREEN  ·  the brand anchor / first impression
+   ----------------------------------------------------------------------------
+   This is the one screen the player sees before any play. It sets the
+   neon-vector identity (V1), the calm Vector Standard base of the arc (V3
+   arc START), the Chakra Petch display voice (T2), the Llamasoft-punchy
+   register (M1), and the "Meridian" brand motif (N3).
+
+   DECISION-LOG IDs ILLUSTRATED (see .decision-log.md):
+     V1  visual identity     neon-vector; player reads as rescuer, never aggressor
+     V3  calm→climax arc     Title sits at the ARC START (Vector Standard cyan).
+                             A single restrained Polybius-Dusk magenta accent
+                             foreshadows the climax terminus — earned later,
+                             not spent here.
+     T2  typography          Chakra Petch display · Inter body · JBMono numerics
+     M1  voice               punchy / Llamasoft register (tagline candidates)
+     N3  "Meridian" motif    line-through-poles (the 1-axis lane geometry) +
+                             peak/ascent → rendered as a glowing vertical
+                             meridian axis flanking the wordmark, with a
+                             peak/node where it crosses the title baseline.
+     O1  first-run onboarding DEFAULT state shown. First run fires a one-time
+                             fading control hint after NEW RUN is confirmed
+                             (rendered below as a comment + faint ghost).
+   ----------------------------------------------------------------------------
+   BRAND-ANCHOR RULES honored here:
+     · Calm base only. Magenta is a single whisper (the peak node + one pip),
+       not a wash. The climax arc is EARNED in-play, never on the menu (V3).
+     · Juice is AUTO-DISABLED in menus (F8) — no shake / hit-flash / particles.
+       Atmosphere comes from static glow + faint grid, never motion noise.
+     · Gamepad-navigable menu (F5): NEW RUN is default-focused with the neon
+       focus ring; list wraps top↔bottom.
+     · 16:9 desktop window frame, title-safe margins respected (F4/P1).
+============================================================================= */
+
+:root{
+  /* ---- Vector Standard (calm / base) — V3 arc start ---- */
+  --surface:#060912;
+  --surface-alt:#0C1424;
+  --surface-up:#101a30;
+  --text:#E6F1FF;
+  --muted:#7E8DAA;          /* lifted from #6B7B9A to clear WCAG-AA 4.5:1 */
+  --muted-2:#5C6B88;        /* truly incidental micro-labels */
+  --border:#1E2A44;
+  --primary:#00E5FF;        /* hero neon, allied rescuer read */
+  --primary-hover:#5AF7FF;
+  --health:#4ADE80;
+  --hazard:#FF3D5A;
+  --score:#FFE066;
+  --currency:#C084FC;
+  --glow:#5AF7FF;
+
+  /* ---- Polybius Dusk (climax) — V3 arc peak, used as a WHISPER here ---- */
+  --climax:#FF2BD6;
+  --climax-hover:#FF6BE8;
+  --climax-deep:#3A072E;
+
+  /* ---- AA-safe text tiers ---- */
+  --read:#C9D6EE;
+
+  /* ---- fonts (robust fallback per stack) ---- */
+  --display:"Chakra Petch","SF Pro Display","Eurostile","Bank Gothic","Arial Narrow",Impact,sans-serif;
+  --sans:   "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;
+  --mono:   "JetBrains Mono",ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:#04060D;
+  color:var(--text);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  padding:32px 24px 56px;
+  min-height:100vh;
+  background-image:
+    radial-gradient(1100px 640px at 50% -8%, color-mix(in srgb,var(--primary) 9%,transparent), transparent 60%);
+}
+
+/* ============================================================================
+   PAGE SCAFFOLDING (mock-only chrome, NOT part of the game frame)
+============================================================================= */
+.page{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.page__head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  padding:0 4px;border-bottom:1px solid var(--border);padding-bottom:14px}
+.page__head h1{font-family:var(--display);font-weight:700;letter-spacing:.08em;
+  margin:0;text-transform:uppercase;font-size:18px;color:var(--text);
+  text-shadow:0 0 14px color-mix(in srgb,var(--primary) 45%,transparent)}
+.page__head .sub{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted)}
+.page__head .ids{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  color:var(--muted-2);margin-left:auto;text-transform:uppercase}
+
+/* ============================================================================
+   WINDOW FRAME — realistic desktop window, 16:9 stage inside (matches build-screens)
+============================================================================= */
+.window{
+  background:var(--surface);
+  border:1px solid #131c30;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 30px 70px -28px rgba(0,0,0,.85),
+             0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.titlebar{
+  display:flex;align-items:center;gap:12px;
+  height:30px;padding:0 12px;
+  background:linear-gradient(180deg,#0a1120,#070c18);
+  border-bottom:1px solid #121b2e;
+}
+.tb-dots{display:flex;gap:6px}
+.tb-dots i{width:11px;height:11px;border-radius:50%;display:block;opacity:.55}
+.tb-dots i:nth-child(1){background:#ff5f57}
+.tb-dots i:nth-child(2){background:#febc2e}
+.tb-dots i:nth-child(3){background:#28c840}
+.tb-title{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);
+  text-transform:uppercase;flex:1;text-align:center}
+.tb-mark{font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.16em;
+  color:var(--primary);text-shadow:0 0 8px color-mix(in srgb,var(--primary) 55%,transparent)}
+.tb-ctrl{display:flex;gap:14px;color:var(--muted-2);font-size:12px}
+
+/* the 16:9 stage */
+.stage{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  background:#05080F;
+}
+
+/* ============================================================================
+   ARENA BACKDROP — calm neon-vector, atmospheric (NOT busy), no live play
+   F8: juice disabled in menus. Atmosphere = static glow + faint grid only.
+============================================================================= */
+.arena{position:absolute;inset:0;
+  background:
+    radial-gradient(820px 480px at 50% 18%, color-mix(in srgb,var(--primary) 10%,transparent), transparent 62%),
+    radial-gradient(640px 640px at 50% 122%, color-mix(in srgb,var(--primary) 7%,transparent), transparent 56%),
+    var(--surface);}
+/* faint vector grid — the arena floor, very low opacity */
+.arena::before{content:"";position:absolute;inset:0;
+  background-image:
+    linear-gradient(color-mix(in srgb,var(--primary) 5%,transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb,var(--primary) 5%,transparent) 1px, transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 52%, #000 26%, transparent 80%);
+          mask-image:radial-gradient(ellipse at 50% 52%, #000 26%, transparent 80%);
+}
+
+/* distant fire-columns — very low opacity, vertical neon streaks receding
+   into the void. Threat family (hazard) but barely whispered — they are
+   ATMOSPHERE, not active threats. The rescuer reads as heading INTO them. */
+.firefield{position:absolute;inset:0;pointer-events:none;opacity:.55}
+.firefield i{position:absolute;bottom:0;width:2px;border-radius:2px;
+  background:linear-gradient(180deg, transparent, color-mix(in srgb,var(--hazard) 60%,transparent) 70%, color-mix(in srgb,var(--hazard) 85%,transparent));
+  filter:blur(.4px);
+  box-shadow:0 0 12px color-mix(in srgb,var(--hazard) 45%,transparent)}
+.firefield i.cyan{
+  background:linear-gradient(180deg, transparent, color-mix(in srgb,var(--primary) 55%,transparent) 70%, color-mix(in srgb,var(--primary) 80%,transparent));
+  box-shadow:0 0 12px color-mix(in srgb,var(--primary) 40%,transparent)}
+.firefield i.f1{left:11%;height:38%;opacity:.5}
+.firefield i.f2{left:19%;height:52%;opacity:.42}
+.firefield i.f3{left:78%;height:44%;opacity:.5}
+.firefield i.f4{left:88%;height:58%;opacity:.4}
+.firefield i.f5{left:30%;height:30%;opacity:.32}
+.firefield i.f6{left:68%;height:34%;opacity:.32}
+.firefield i.cyan{left:50%;height:64%;opacity:.3;transform:translateX(-50%);width:3px}
+
+/* the meridian axis — N3 line-through-poles motif. A single glowing vertical
+   line bisecting the screen (the 1-axis lane geometry), with a bright peak/
+   node where it crosses the title baseline (peak/ascent half of the duality).
+   Calm cyan base. The peak node carries the one restrained magenta accent
+   (V3 foreshadow — the climax arc terminus, earned later). */
+.meridian{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);
+  width:2px;pointer-events:none;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb,var(--primary) 22%,transparent) 12%,
+    color-mix(in srgb,var(--primary) 55%,transparent) 42%,
+    color-mix(in srgb,var(--primary) 70%,transparent) 50%,
+    color-mix(in srgb,var(--primary) 40%,transparent) 80%,
+    transparent 100%);
+  box-shadow:
+    0 0 14px color-mix(in srgb,var(--primary) 45%,transparent),
+    0 0 40px -6px color-mix(in srgb,var(--primary) 35%,transparent);}
+/* meridian "poles" ticks — line-through-poles (the axis crosses both poles) */
+.meridian::before,.meridian::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+  width:14px;height:1px;background:color-mix(in srgb,var(--primary) 70%,transparent);
+  box-shadow:0 0 8px color-mix(in srgb,var(--primary) 60%,transparent)}
+.meridian::before{top:9%}
+.meridian::after{bottom:9%}
+
+/* the peak node — where the meridian crests the title. THIS is the single
+   Polybius-Dusk magenta accent on the screen (V3 foreshadow, restrained). */
+.meridian-peak{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:10px;height:10px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, var(--climax-hover) 0%, var(--climax) 45%, transparent 72%);
+  box-shadow:
+    0 0 18px color-mix(in srgb,var(--climax) 70%,transparent),
+    0 0 40px color-mix(in srgb,var(--climax) 45%,transparent);}
+/* ascent chevron under the peak — peak/ascent half of N3, points UP the axis */
+.meridian-ascent{position:absolute;left:50%;top:calc(50% - 26px);transform:translateX(-50%);
+  width:0;height:0;pointer-events:none;opacity:.7;
+  border-left:6px solid transparent;border-right:6px solid transparent;
+  border-bottom:9px solid color-mix(in srgb,var(--climax) 75%,transparent);
+  filter:drop-shadow(0 0 6px color-mix(in srgb,var(--climax) 60%,transparent))}
+
+/* ============================================================================
+   TITLE COMPOSITION — centered stack
+============================================================================= */
+.title-wrap{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:0 5%; /* title-safe (F4) */}
+.title-stack{display:flex;flex-direction:column;align-items:center;gap:14px;
+  margin-top:-2%;position:relative;z-index:3}
+
+/* eyebrow — small-caps context line above the wordmark */
+.eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.32em;color:var(--muted);text-transform:uppercase}
+.eyebrow .bar{width:34px;height:1px;background:color-mix(in srgb,var(--primary) 55%,transparent);
+  box-shadow:0 0 6px color-mix(in srgb,var(--primary) 50%,transparent)}
+.eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--primary);
+  box-shadow:0 0 8px var(--primary)}
+
+/* WORDMARK — display-xl, neon glow. The meridian axis passes BEHIND it,
+   bisecting RUN | MERIDIAN would split the word; instead we let the axis
+   flank through the gap between the two words, so the line reads as the
+   "meridian" itself dividing the title — the brand IS the motif (N3). */
+.wordmark{
+  position:relative;
+  display:flex;align-items:center;gap:clamp(20px,3.4vw,52px);
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(44px,8.4vw,86px);line-height:1;letter-spacing:.045em;
+  text-transform:uppercase;color:var(--text);
+  text-shadow:
+    0 0 18px color-mix(in srgb,var(--primary) 55%,transparent),
+    0 0 42px color-mix(in srgb,var(--primary) 32%,transparent),
+    0 0 80px -10px color-mix(in srgb,var(--primary) 40%,transparent);
+}
+.wordmark .w{display:inline-block;position:relative}
+/* tiny baseline tick under each word — vector signage detail */
+.wordmark .w::after{content:"";position:absolute;left:12%;right:12%;bottom:-9px;height:1px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--primary) 50%,transparent),transparent)}
+
+/* the meridian gap-glyph between the two words — a short bright vertical
+   segment that visually continues the background axis through the wordmark,
+   crowned by a faint magenta tip (the peak, N3 + V3 whisper). */
+.gap-meridian{position:relative;width:3px;align-self:stretch;
+  margin:6px 0;border-radius:2px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb,var(--primary) 80%,transparent) 30%,
+    color-mix(in srgb,var(--primary) 95%,transparent) 50%,
+    color-mix(in srgb,var(--primary) 80%,transparent) 70%,
+    transparent 100%);
+  box-shadow:0 0 12px color-mix(in srgb,var(--primary) 70%,transparent),
+             0 0 28px color-mix(in srgb,var(--primary) 40%,transparent)}
+.gap-meridian::before{content:"";position:absolute;left:50%;top:-3px;transform:translateX(-50%);
+  width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle, var(--climax-hover), var(--climax) 50%, transparent 75%);
+  box-shadow:0 0 12px color-mix(in srgb,var(--climax) 75%,transparent)}
+
+/* TAGLINE (M1 punchy) — primary pick + 2 alternates shown small.
+   Primary mirrors pillar P2 (the Gamble). */
+.tagline{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.tagline__primary{font-family:var(--display);font-weight:600;text-transform:uppercase;
+  font-size:clamp(14px,1.5vw,18px);letter-spacing:.28em;color:var(--primary);
+  text-shadow:0 0 14px color-mix(in srgb,var(--primary) 50%,transparent)}
+.tagline__alts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--muted-2);
+  text-transform:uppercase}
+.tagline__alts .lab{color:var(--muted-2);opacity:.8}
+.tagline__alts .alt{display:inline-flex;align-items:center;gap:7px}
+.tagline__alts .alt::before{content:"";width:8px;height:1px;background:var(--muted-2);opacity:.6}
+
+/* ============================================================================
+   MENU — gamepad-navigable vertical list (F5). NEW RUN default-focused.
+============================================================================= */
+.menu{margin-top:clamp(26px,3.4vw,42px);display:flex;flex-direction:column;gap:6px;
+  align-items:center;position:relative;z-index:3}
+.menu__inner{display:flex;flex-direction:column;gap:5px;min-width:248px}
+
+.menu-item{
+  position:relative;
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:11px 18px;border-radius:8px;min-height:42px;
+  font-family:var(--display);font-weight:600;font-size:clamp(15px,1.4vw,19px);
+  letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);
+  border:1px solid transparent;background:transparent;
+  transition:color .14s ease,background .14s ease,border-color .14s ease,box-shadow .14s ease;
+}
+.menu-item .gp{font-family:var(--mono);font-weight:600;font-size:10px;letter-spacing:.06em;
+  color:var(--muted-2);opacity:.7}
+/* FOCUS = gamepad hover (F5). Neon ring + glow + 8% fill (menu-item token). */
+.menu-item--focus{
+  color:var(--primary-hover);
+  background:color-mix(in srgb,var(--primary) 8%,transparent);
+  border-color:color-mix(in srgb,var(--primary) 45%,var(--border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb,var(--primary) 55%,transparent),
+    0 0 22px -4px color-mix(in srgb,var(--primary) 60%,transparent),
+    inset 0 0 18px -8px color-mix(in srgb,var(--primary) 50%,transparent);
+  text-shadow:0 0 12px color-mix(in srgb,var(--primary) 60%,transparent);
+}
+.menu-item--focus .gp{color:var(--primary);opacity:1}
+/* arcade corner brackets on the focused row — matches build-screen card focus */
+.menu-item--focus::before,.menu-item--focus::after{content:"";position:absolute;
+  width:9px;height:9px;border-color:var(--primary-hover);pointer-events:none}
+.menu-item--focus::before{left:5px;top:5px;border-left:1.5px solid;border-top:1.5px solid}
+.menu-item--focus::after{right:5px;bottom:5px;border-right:1.5px solid;border-bottom:1.5px solid}
+
+/* NEW RUN is the PRIMARY action — gets the filled accent dot + brighter weight */
+.menu-item--primary .pri-dot{width:7px;height:7px;border-radius:50%;background:var(--primary);
+  box-shadow:0 0 10px var(--primary);margin-right:2px}
+.menu-item--primary .lab{display:inline-flex;align-items:center;gap:11px}
+
+/* tiny nav hint under the menu */
+.nav-hint{margin-top:14px;display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--muted-2);
+  text-transform:uppercase}
+.nav-hint kbd{font-family:var(--mono);font-size:9.5px;color:var(--read);
+  border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;
+  padding:1px 6px;background:var(--surface-alt);letter-spacing:.04em}
+.nav-hint .sep{opacity:.5}
+
+/* ============================================================================
+   FIRST-RUN ONBOARDING (O1) — DEFAULT state shown.
+   First run fires a ONE-TIME fading control hint AFTER NEW RUN is confirmed.
+   Not rendered as live UI here (it would live on the run screen). Shown as a
+   faint ghost annotation pinned bottom-center so the reviewer can read the
+   intent without mistaking it for shipped title chrome.
+============================================================================= */
+.onboard-ghost{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;padding:7px 14px;border-radius:8px;
+  border:1px dashed color-mix(in srgb,var(--primary) 35%,transparent);
+  background:color-mix(in srgb,var(--surface) 60%,transparent);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--muted-2);
+  text-transform:uppercase;opacity:.62;max-width:80%}
+.onboard-ghost .tag{color:var(--primary);font-weight:700;letter-spacing:.22em;
+  text-shadow:0 0 8px color-mix(in srgb,var(--primary) 45%,transparent)}
+.onboard-ghost .keys{display:inline-flex;gap:8px;align-items:center}
+.onboard-ghost kbd{font-family:var(--mono);font-size:9px;color:var(--read);
+  border:1px solid var(--border);border-radius:3px;padding:1px 5px;background:var(--surface-alt);
+  letter-spacing:.04em}
+.onboard-ghost .fade{color:var(--muted-2);opacity:.75}
+
+/* ============================================================================
+   CORNER READOUTS — build / context strips (mock chrome, sells the frame)
+============================================================================= */
+.stage__corner{position:absolute;display:flex;align-items:center;gap:8px;z-index:4;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--muted);
+  text-transform:uppercase}
+.stage__corner.tl{top:14px;left:18px}
+.stage__corner.tr{top:14px;right:18px}
+.stage__corner.bl{bottom:14px;left:18px;color:var(--muted-2)}
+.stage__corner.br{bottom:14px;right:18px;color:var(--muted-2)}
+.stage__corner .pip{width:6px;height:6px;border-radius:50%;background:var(--health);
+  box-shadow:0 0 7px var(--health)}
+.stage__corner .id{color:var(--primary);text-shadow:0 0 7px color-mix(in srgb,var(--primary) 45%,transparent)}
+
+/* FOOTER — v0.1 · build #### (JetBrains Mono, muted). Lives bottom-center
+   inside the stage. */
+.footer{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.14em;
+  color:var(--muted-2);text-transform:uppercase}
+.footer .v{color:var(--muted)}
+.footer .b{color:var(--muted-2)}
+.footer .dot{opacity:.6;margin:0 6px}
+
+/* ============================================================================
+   ANNOTATIONS RAIL — below the window (mock-only, not in the game)
+============================================================================= */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;
+  margin-top:6px}
+.note{padding:13px 15px;border-radius:9px;background:color-mix(in srgb,var(--surface) 80%,#04060D);
+  border:1px solid var(--border)}
+.note__k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--primary);
+  text-transform:uppercase;margin-bottom:5px;text-shadow:0 0 7px color-mix(in srgb,var(--primary) 40%,transparent)}
+.note__t{font-family:var(--sans);font-size:12.5px;line-height:1.45;color:var(--read)}
+
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- page chrome (mock-only) -->
+  <div class="page__head">
+    <h1>Meridian Run — Title Screen</h1>
+    <span class="sub">brand anchor · first impression</span>
+    <span class="ids">V1 · V3 · T2 · M1 · N3 · O1</span>
+  </div>
+
+  <!-- ====================================================================
+       DESKTOP WINDOW (16:9 stage)
+  ===================================================================== -->
+  <div class="window">
+    <div class="titlebar">
+      <div class="tb-dots"><i></i><i></i><i></i></div>
+      <span class="tb-title">Meridian Run — title</span>
+      <span class="tb-mark">MR</span>
+      <span class="tb-ctrl"><span>—</span><span>▢</span><span>×</span></span>
+    </div>
+
+    <div class="stage">
+
+      <!-- ARENA BACKDROP (calm, atmospheric, no live play) -->
+      <div class="arena"></div>
+
+      <!-- distant fire-columns (atmosphere only, very low opacity) -->
+      <div class="firefield" aria-hidden="true">
+        <i class="f1"></i><i class="f2"></i><i class="f5"></i>
+        <i class="cyan"></i>
+        <i class="f6"></i><i class="f3"></i><i class="f4"></i>
+      </div>
+
+      <!-- corner readouts (mock chrome) -->
+      <div class="stage__corner tl"><span class="pip"></span><span>vector standard</span><span class="id">/ calm</span></div>
+      <div class="stage__corner tr"><span>arc</span><span class="id">00 →</span><span>peak</span></div>
+      <div class="stage__corner bl"><span>juice</span><span class="id">off · menu</span></div>
+      <div class="stage__corner br"><span>16:9 · desktop</span></div>
+
+      <!-- THE MERIDIAN AXIS (N3) — bisects the stage behind the title -->
+      <div class="meridian" aria-hidden="true"></div>
+      <div class="meridian-ascent" aria-hidden="true"></div>
+      <div class="meridian-peak" aria-hidden="true"></div>
+
+      <!-- TITLE COMPOSITION -->
+      <div class="title-wrap">
+        <div class="title-stack">
+
+          <div class="eyebrow">
+            <span class="bar"></span>
+            <span class="dot"></span>
+            <span>a fixed-screen roguelite</span>
+            <span class="dot"></span>
+            <span class="bar"></span>
+          </div>
+
+          <!-- WORDMARK with the meridian gap-glyph between the two words -->
+          <div class="wordmark">
+            <span class="w">Meridian</span>
+            <span class="gap-meridian" aria-hidden="true"></span>
+            <span class="w">Run</span>
+          </div>
+
+          <!-- TAGLINE — primary (P2 mirror) + 2 alternates -->
+          <div class="tagline">
+            <div class="tagline__primary">How far will you push your greed?</div>
+            <div class="tagline__alts">
+              <span class="lab">alt&nbsp;taglines:</span>
+              <span class="alt">Court. Rescue. Burn.</span>
+              <span class="alt">Bet your survival on your own power.</span>
+            </div>
+          </div>
+
+          <!-- MENU — gamepad-navigable; NEW RUN default-focused -->
+          <nav class="menu" aria-label="Main menu">
+            <div class="menu__inner">
+
+              <a class="menu-item menu-item--primary menu-item--focus" href="#">
+                <span class="lab"><span class="pri-dot"></span>New Run</span>
+                <span class="gp">A · ENTER</span>
+              </a>
+
+              <a class="menu-item" href="#">
+                <span>Settings</span>
+                <span class="gp">↕ · ENTER</span>
+              </a>
+
+              <a class="menu-item" href="#">
+                <span>Quit</span>
+                <span class="gp">↕ · ENTER</span>
+              </a>
+
+            </div>
+
+            <div class="nav-hint">
+              <kbd>↑</kbd><kbd>↓</kbd><span>navigate</span>
+              <span class="sep">·</span>
+              <kbd>ENTER</kbd><span>confirm</span>
+              <span class="sep">·</span>
+              <span>wrap&nbsp;↔</span>
+            </div>
+          </nav>
+
+        </div>
+      </div>
+
+      <!--
+        FIRST-RUN ONBOARDING (O1) — DEFAULT STATE shown above (no hint on title).
+        On FIRST run only, confirming NEW RUN transitions to the run screen and
+        fires a ONE-TIME fading control hint:  `A / D — MOVE`  ·  `SPACE — FIRE`
+        It fades after a few seconds OR on first input. No drawn lane-line (OQ11
+        dropped) — the 1-axis constraint is taught by the input itself.
+        The ghost below is an ANNOTATION for the reviewer, not shipped title UI.
+      -->
+      <div class="onboard-ghost" aria-hidden="true">
+        <span class="tag">O1 · first-run only</span>
+        <span class="keys">
+          <span>after New Run →</span>
+          <kbd>A</kbd><kbd>D</kbd><span>move</span>
+          <span class="fade">·</span>
+          <kbd>SPACE</kbd><span>fire</span>
+          <span class="fade">→ fades on first input</span>
+        </span>
+      </div>
+
+      <!-- FOOTER — v0.1 · build #### -->
+      <div class="footer">
+        <span class="v">v0.1</span><span class="dot">·</span><span class="b">build 0421</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       ANNOTATIONS (mock-only — for the reviewer)
+  ===================================================================== -->
+  <div class="notes">
+    <div class="note">
+      <div class="note__k">N3 · Meridian motif</div>
+      <div class="note__t">A glowing vertical <strong>meridian axis</strong> bisects the stage (the 1-axis lane geometry, line-through-poles), crowned by an <strong>ascent chevron + peak node</strong> (peak/ascent half). The axis continues through the wordmark gap between <em>Meridian</em> and <em>Run</em> — the brand literally is the motif.</div>
+    </div>
+    <div class="note">
+      <div class="note__k">V3 · arc START + 1 whisper</div>
+      <div class="note__t">Title sits at the calm Vector Standard cyan base (arc 00). The peak node + its crown tip are the <strong>single</strong> Polybius-Dusk magenta accent — a restrained foreshadow of the climax terminus, earned in-play (never a wash on the menu).</div>
+    </div>
+    <div class="note">
+      <div class="note__k">M1 · punchy voice</div>
+      <div class="note__t">Tagline chosen: <strong>"HOW FAR WILL YOU PUSH YOUR GREED?"</strong> (mirrors pillar P2, the Gamble). Alternates shown small: <em>Court. Rescue. Burn.</em> · <em>Bet your survival on your own power.</em></div>
+    </div>
+    <div class="note">
+      <div class="note__k">O1 · first-run onboarding</div>
+      <div class="note__t">Default state shown — no hint on the title. First run fires a one-time <strong>fading control hint</strong> (Move / Fire) after NEW RUN is confirmed. No forced tutorial, no drawn lane-line.</div>
+    </div>
+    <div class="note">
+      <div class="note__k">F8 · juice off in menus</div>
+      <div class="note__t">No shake / hit-flash / particles. Atmosphere comes from static neon glow + a faint vector grid + barely-whispered distant fire-columns — calm, not busy. No live play on this screen.</div>
+    </div>
+    <div class="note">
+      <div class="note__k">F5 · gamepad-navigable</div>
+      <div class="note__t">Vertical menu, wraps top↔bottom. NEW RUN is default-focused with the neon ring + arcade corner brackets. Kbd + gamepad bindings on every action (F5); rebind UI is a v1.0 story (E8).</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

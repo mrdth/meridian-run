@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: Meridian Run</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  .severity-group-header {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 18px 0 6px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border);
+  }
+  .severity-group-header:first-child { margin-top: 4px; border-top: none; padding-top: 0; }
+  .severity-group-header.critical { color: var(--sev-critical); }
+  .severity-group-header.high { color: var(--sev-high); }
+  .severity-group-header.medium { color: var(--sev-medium); }
+  .severity-group-header.low { color: var(--sev-low); }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-of-type { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+  .resolution {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: rgba(22, 163, 74, 0.06);
+    border-left: 3px solid var(--verdict-strong);
+    border-radius: 4px;
+    font-size: 13.5px;
+  }
+  .resolution .resolution-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--verdict-strong);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Meridian Run — UX Design Validation Report</h1>
+        <div class="subtitle">_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/</div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p>The A1 accessibility floor is well-scoped and mostly holds at the calm (Vector Standard) end — the shape-glyph system for modifiers, rarity, family sigils, and the MAIN/WING chip genuinely carries meaning independent of hue, and <code>muted</code> was correctly lifted to clear AA. It breaks at the climax end, where the spine's signature juice mechanic (the calm&rarr;climax palette arc) collapses hero-neon and hazard-red to near-identical luminance for red-green CVD players — exactly at the Rosa wave-20 moment the whole design is built around — and the faction/projectile distinction that A1 explicitly promises "via shape + outline" is color-only in every render. Two further committed claims don't hold in the actual mocks (the <code>climax-muted</code> token fails AA; all four mocks ship the pre-lift muted value). Fixable at the design layer before code; none require re-architecting the arc.</p>
+      <p>All Critical and High findings are now <strong>resolved</strong> via developer-confirmed <strong>Fix A</strong>: shape + bright outline is the primary player-vs-hazard differentiator (player ship = bright-outlined <code>rescuer-arrowhead</code>; player projectiles = bright-outlined elongated chevrons; enemy fire = small pellets; <code>capture-column</code> = parallel vertical bars), the new <code>{colors.climax-hazard}</code> amber token (<code>#FF9E3D</code>, AAA on <code>climax-surface</code>) nudges climax hazards off the magenta neighborhood, <code>{colors.climax-muted}</code> was lifted from <code>#8A6B9A</code> (4.32:1) to <code>#9979B0</code> (5.31:1, clears AA), and the low-time <code>wave-timer</code> glow halo is now neutral white instead of tracking the climax-magenta <code>--primary</code>. The Medium and Low findings are closed at the spec layer or filed as non-blocking [NOTE FOR UX] against future onboarding/HUD-polish stories.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">Accessibility</div>
+        <div class="dim-verdict" style="color: var(--verdict-thin)">Thin (resolved)</div>
+      </div>
+    </div>
+
+    <section class="reviewer-section">
+      <details open>
+        <summary>
+          <h2>Accessibility review</h2>
+          <span class="verdict-pill verdict-thin">Thin &rarr; Resolved</span>
+          <span class="reviewer-source">review-accessibility.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>Arrived thin / critical at the climax, now resolved.</strong> The accessibility lens independently computed every contrast ratio (WCAG 2.1 relative luminance) rather than trusting the spine's self-reported table, and verified the shape-glyph claims against the four <code>.working/*.html</code> renders. The calm (Vector Standard) end holds — modifier chips, MAIN/WING, rarity pips, family sigils, calm contrast table, focus/fade asymmetry, and the input-accessibility commitments all check out. The climax (Polybius Dusk) end did not: the signature calm&rarr;climax arc collapsed hero and hazard to confusable luminance for CVD players, two committed AA claims failed in the actual mocks, and the low-time timer halo bled magenta into red. All Critical/High findings closed via Fix A; the remaining Medium/Low findings are closed at the spec layer or deferred as non-blocking [NOTE FOR UX] items. Adversarial voice preserved in the finding bodies below.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+
+          <div class="severity-group-header critical">Critical (1) &mdash; Resolved via Fix A</div>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">Critical</span>
+              <h3 class="finding-title">Hero-vs-hazard color collapse at the Polybius Dusk climax — color is the sole signal, contradicting A1's explicit "faction/projectile via shape + outline, not color alone" commitment.</h3>
+            </header>
+            <div class="finding-location">DESIGN.md §Colors → Climax overrides & §Brand &amp; Style; EXPERIENCE.md §Accessibility Floor, §Rosa at the wave-20 climax; .working/key-hud.html §BULLETS, §ENEMIES; .working/color-themes-1.html</div>
+            <div class="finding-note">The calm&rarr;climax arc interpolates <code>{colors.primary}</code> cyan <code>#00E5FF</code> &rarr; magenta <code>#FF2BD6</code> while <code>{colors.hazard}</code> red <code>#FF3D5A</code> is an anchor hue held constant across the arc. At calm the hero/hazard pair is high-contrast and chromatically opposite (ΔL = 0.379). At climax the pair is <code>#FF2BD6</code> vs <code>#FF3D5A</code> — adjacent red/magenta hues with ΔL = <strong>0.025</strong>, effectively the same luminance. For protanopes/deuteranopes (~8% of male players) the player ship, player projectiles, the docked-wingman family, the GAUNTLET modifier, and the capture-column/enemy-fire/damage threat family become confusable precisely when the screen is densest and the stakes highest. The renders confirm there is no shape/outline backup: every <code>.bullet</code> variant in <code>key-hud.html</code> shares an identical 5×9px rounded shape — only <code>background</code> differs — and <code>color-themes-1.html</code> documents the hero ship and hazard both inherit <code>currentColor</code> with no shape stamp differentiating them. The calm&rarr;climax arc is the load-bearing juice fantasy (V3); it cannot also be the place A1 silently fails.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> give the player side a shape stamp the enemy/hazard side lacks and make it survive the repaint; or route the hero interpolation away from the red neighborhood.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved — Fix A (developer-confirmed)</span>
+              <strong>Shape + bright outline is now the PRIMARY player-vs-hazard differentiator</strong> (honors A1 for real), AND the climax hazard is nudged off the magenta neighborhood. <em>Color-safety core (DESIGN.md §Colors, new subsection):</em> player-affiliated elements — player ship, player projectiles, <code>docked-wingman-indicator</code> — ALWAYS carry a distinct silhouette + bright outline that NEVER matches enemy fire-columns / <code>capture-column</code> tractor / damage flashes, in any palette; stated alongside the N6 screen-scoped principle with an explicit note that N6 does <strong>not</strong> license this case (the elements co-occur on the live HUD). <em>Components (DESIGN.md):</em> <code>player-ship</code> = <code>rescuer-arrowhead</code> + bright outline; <code>player-projectile</code> = elongated-chevron + bright <code>{colors.text}</code> core/outline; <code>docked-wingman-indicator</code> = <code>escort-chevron</code> + bright outline (player-family); <code>enemy-fire</code> = small-pellet, no bright outline; <code>capture-column</code> = parallel vertical bars (enemy-threat). Shape-distinguishable in monochrome. <em>EXPERIENCE.md:</em> behavioral rule stated in Accessibility Floor and HUD &amp; Diegetic UI; Rosa climax narrative step 3 updated to cite the parallel-bar silhouette + amber hazard. <em>Climax-hazard nudge:</em> new token <code>{colors.climax-hazard}</code> = <strong><code>#FF9E3D</code> (amber)</strong> in the Polybius Dusk block (calm <code>{colors.hazard}</code> stays red <code>#FF3D5A</code>). Amber is hue- AND luminance-distinct from climax magenta (ΔL 0.18 vs the 0.025 red-vs-magenta collapse), passes AAA on <code>climax-surface</code> (9.5:1), and reads as "danger." Enemy fire + tractor render in <code>{colors.climax-hazard}</code> at the climax.
+            </div>
+          </article>
+
+          <div class="severity-group-header high">High (3) &mdash; Resolved</div>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">High</span>
+              <h3 class="finding-title"><code>climax-muted</code> <code>#8A6B9A</code> fails the WCAG-AA 4.5:1 bar on <code>climax-surface</code> — measured 4.32:1.</h3>
+            </header>
+            <div class="finding-location">DESIGN.md frontmatter climax-muted + §Colors → Climax overrides</div>
+            <div class="finding-note">The spine loudly and correctly documents that calm <code>muted</code> was lifted from <code>#6B7B9A</code> to clear WCAG-AA 4.5:1 on surface (verified at 5.95:1). But the Polybius Dusk terminus <code>climax-muted</code> re-breaks that bar at the climax surface <code>#0F0820</code> (4.32:1 by independent computation). Muted carries modifier-chip labels, empty HP-pip outlines, <code>build-summary-rail</code> empty slots, the codex body, and the <code>lives-display</code> lost-pip stroke — and the build screens (rare-card repaints, the codex) render under the warm climax surface. The arc lifts calm muted and then re-fails it at climax.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> hold <code>muted</code> constant across the arc, or pin a climax terminus that clears 4.5:1 on <code>#0F0820</code> (need luminance roughly ≥ <code>#9979B0</code>).</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved</span>
+              Lifted <code>{colors.climax-muted}</code> from <code>#8A6B9A</code> (4.32:1) to <strong><code>#9979B0</code> (5.31:1)</strong>, clearing WCAG-AA ≥4.5:1 on <code>climax-surface</code> <code>#0F0820</code>. Documented in DESIGN.md frontmatter, Climax overrides table, and Contrast targets table. (<code>#B09BC8</code> was rejected at 7.78:1 — over-bright, erodes the muted/text distinction; <code>#9979B0</code> matches the review's own computed floor and the ~5:1 aim.)
+            </div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">High</span>
+              <h3 class="finding-title">Low-time <code>wave-timer</code> contrast is marginal at the climax, and the "stays sharp" commitment can compound it.</h3>
+            </header>
+            <div class="finding-location">DESIGN.md §wave-timer; EXPERIENCE.md §wave-timer, §HUD &amp; Diegetic UI; .working/key-hud.html §topband, §focus timer</div>
+            <div class="finding-note">At low-time the timer numeric shifts <code>{colors.text}</code> &rarr; <code>{colors.hazard}</code> <code>#FF3D5A</code>. On the climax surface that is <strong>5.64:1</strong> — passes AA for normal text but fails AAA, and is the worst case for the most-attended read at the highest-stakes moment. Two aggravators: (1) the HUD top-band backing is a translucent scrim, not an opaque plate, so effective contrast over a busy Polybius-Dusk particle storm at the wave-20 climax dips below the measured value; (2) the focus-state timer text-shadow stays <code>var(--primary)</code> — at climax that is magenta, so a magenta halo bleeds into a red numeric over a magenta-red arena. The S1 commitment to keep the timer "sharp through focus/fade" does not help when sharp-on-busy is the load case.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> give the low-time timer a guaranteed-dark backing, and recolor the low-time glow halo to track the numeric state (hazard-tinted, not primary-tinted).</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved</span>
+              Both spines' <code>wave-timer</code> spec now state: at low-time the numeric shifts to <code>{colors.hazard}</code> / <code>{colors.climax-hazard}</code> and its <strong>glow halo goes NEUTRAL white</strong> (does NOT track hero <code>{colors.primary}</code>, which is magenta at climax); equivalently the numeric may sit on its own opaque <code>{colors.surface}</code> chip. Mock focus-state timer halo switched from <code>--primary</code> to neutral <code>--text</code> (white).
+            </div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">High</span>
+              <h3 class="finding-title">All four mocks ship the pre-lift muted value <code>#6B7B9A</code> (4.67:1), not the committed <code>#7E8DAA</code> (5.95:1) — the renders do not evidence the AA claim this gate is asked to verify.</h3>
+            </header>
+            <div class="finding-location">.working/key-hud.html; .working/type-specimen-1.html; .working/color-themes-1.html; .working/key-build-screens.html</div>
+            <div class="finding-note">The lift is real and correctly documented in the spine, but <code>key-hud.html</code> declares <code>--muted: #6b7b9a</code>, <code>type-specimen-1.html</code> declares <code>--vec-mute: #6B7B9A</code>, and the other mocks follow. The pre-lift value sits at 4.67:1 — barely over the bar, and the original reason the spine lifted it. Mocks are marked "pending promotion" and "spines win on conflict," so this is an evidence-fidelity defect rather than a spine defect — but the Finalize lens is "verify claims hold in the actual renders," and the headline AA claim does not hold in any of the four. Any downstream implementer copying mock tokens will ship the sub-AA value.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> refresh the four <code>.working/*.html</code> mocks to the committed tokens before the gate closes.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved (key-hud.html only — scoped)</span>
+              <code>.working/key-hud.html</code> synced: <code>--muted</code> <code>#6b7b9a</code> &rarr; <code>#7e8daa</code> (<code>:root</code> + vector theme JS), <code>--climax-muted</code> <code>#8A6B9A</code> &rarr; <code>#9979b0</code> (polybius theme), <code>--climax-hazard</code> <code>#FF9E3D</code> added, climax-hazard amber applied to enemy fire + tractor in the focus/climax state, climax-muted lift applied, and the shape+outline differentiator made visible in the focus state (player ship = bright-outlined arrowhead; player projectiles = bright-outlined elongated chevrons; enemy fire = small amber pellets, no outline; tractor = amber parallel bars), plus neutral low-time timer halo. <strong>The other three mocks (<code>color-themes-1.html</code>, <code>key-build-screens.html</code>, <code>type-specimen-1.html</code>) are left as illustrative</strong> — the spine governs on conflict and the prompt scoped the sync to <code>key-hud.html</code> specifically. <em>[NOTE FOR UX]</em> The remaining three mocks still ship the pre-lift <code>#6B7B9A</code>; refresh opportunistically when next touched. Not blocking — spine tokens are canonical.
+            </div>
+          </article>
+
+          <div class="severity-group-header medium">Medium (3) &mdash; Resolved (two tagged [NOTE FOR UX])</div>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h3 class="finding-title">Reduced-motion's "dampen-don't-remove" clause does not name the calm&rarr;climax palette arc itself — and the arc is the load-bearing juice channel (V3).</h3>
+            </header>
+            <div class="finding-location">EXPERIENCE.md §Game Feel &amp; Juice, §Accessibility Floor; DESIGN.md §Brand &amp; Style</div>
+            <div class="finding-note">The A1 floor lists shake, particles, hit-flash, and rumble (respects reduced-motion), but V3 explicitly makes the palette interpolation "a juice channel" — the arena warming to Polybius Dusk as build power compounds is "the felt fantasy of becoming overpowered." A slow global hue/value drift is usually benign for motion-sensitive players, but the commitment is currently silent on it, and it is the one juice channel that drives the Critical finding's CVD collapse.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> state explicitly whether the arc is exempt (slow drift, not a motion/flash event) or rate-capped under reduced-motion, and confirm reduced-motion players still get a clear hero/hazard distinction.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved [NOTE FOR UX] — non-blocking</span>
+              The arc is a slow global hue/value drift (a juice channel per V3), not a motion/flash event; it is benign for motion-sensitive players and rate-capping a continuous color interpolation would either snap the palette (defeating V3) or apply no meaningful cap. The shape+outline differentiator (Critical fix) holds regardless of motion mode, so the CVD concern the finding ties to the arc is resolved independently. Flagged for a one-line explicit statement in the codex that the arc is exempt from reduced-motion (it is not a flash/translation event), but no spine change required to close the gate.
+            </div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h3 class="finding-title">Score-amber and bounty-amber are the SAME token (<code>#FFE066</code>) with no shape backup — a literal same-color-different-meaning case, and the N6 "screen-scoped" defense does not apply because both live on the in-wave HUD.</h3>
+            </header>
+            <div class="finding-location">DESIGN.md §Colors — score &amp; modifier-bounty; .working/color-themes-1.html</div>
+            <div class="finding-note"><code>color-themes-1.html</code> confirms V1 and V4 set <code>--score</code> and <code>--modifier-bounty</code> both to <code>#FFE066</code>. The bounty chip carries a diamond glyph, but that glyph means "this is a modifier," not "this is distinct from score." Score (numeric, top-right) and the bounty chip (directly beneath it, same zone) are co-located, not screen-scoped. Impact is low in practice — context disambiguates a number from a labeled chip — but it is the cleanest counter-example to the spine's "color is never the sole signal" claim.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> give the bounty chip a distinct glyph semantic, or nudge bounty to a distinct amber.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved [NOTE FOR UX]</span>
+              Resolved at the spec layer — the N6 callout in DESIGN.md now explicitly flags score/<code>modifier-bounty</code> as co-located (both top-right, in-wave HUD) and therefore NOT covered by the screen-scoped defense, and the <code>wave-modifier-readout</code> row already documents that BOUNTY carries the ◆ diamond glyph (shape) while SCORE is a glyph-less numeric — the shape differentiator is the spec's answer. <em>[NOTE FOR UX]</em> A dedicated bounty hue is deferred as over-engineering; the shape+context disambiguation is sufficient and the existing I1/A1 contract already requires it.
+            </div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">Medium</span>
+              <h3 class="finding-title">Onboarding strands the time-critical, non-obvious inputs (hold-to-cancel Sacrifice; no-confirm Sell) on a codex that is reference-only, not a teaching moment.</h3>
+            </header>
+            <div class="finding-location">EXPERIENCE.md §First-run onboarding, §Interaction Primitives — Take/Sell &amp; Sacrifice</div>
+            <div class="finding-note">O1 ships one-time fading control hints for MOVE/FIRE and teaches the rescue loop by doing. But the two interactions where a wrong instinct costs the player — hold <code>sacrifice</code> (release-before-commit to cancel) and the single-press, no-confirm SELL — get no first-use hint. The codex "covers ship stats, modifier meanings, the gamble" and is always-available from Pause, so it is a sufficient reference, but a player who hasn't opened it has no signal that releasing Sacrifice cancels, or that SELL commits instantly. The hold-to-cancel mechanic itself is forgiving (a partial hold does nothing), which bounds the damage.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> add a one-time first-wingman-docks hint for the Sacrifice hold/release semantic; consider a one-time SELL hint on the first power-up-select.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved [NOTE FOR UX] — non-blocking</span>
+              Non-blocking at the design layer (the codex is a sufficient reference; the hold-to-cancel mechanic is itself forgiving — a partial hold does nothing). Deferred to the onboarding-playtest pass: add a one-time first-wingman-docks hint for the Sacrifice hold/release semantic and consider a one-time SELL hint on first power-up-select. Filed against O1/OQ9, not a spine defect.
+            </div>
+          </article>
+
+          <div class="severity-group-header low">Low (2) &mdash; Resolved [NOTE FOR UX]</div>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Low</span>
+              <h3 class="finding-title">Text-size floor is asserted but not numerically pinned, and the HUD modifier chip in <code>key-hud.html</code> renders at 8.5px — below the type scale's own 11px <code>label-caps</code> floor.</h3>
+            </header>
+            <div class="finding-location">DESIGN.md §Typography; EXPERIENCE.md §Input Schemes, §Accessibility Floor; .working/key-hud.html §mod-chip</div>
+            <div class="finding-note">A1 commits "text-size floor + UI-scale slider" and the Deck legibility note pins "min ~24px effective for combat-critical labels," but the type scale runs 11px (<code>label-caps</code>) / 13px (<code>body-sm</code>, <code>numeric-sm</code>) and the spec doesn't declare which tokens are combat-critical (and thus floor-bound) versus decorative. The modifier chip is arguably combat-critical (it announces the wave's modifier) yet ships at 8.5px in the mock, below the type scale's own minimum. UI-scale + <code>canvas_items</code>+<code>expand</code> is the right mechanism.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> state explicitly which tokens are floor-bound at ≥ the 24px-effective Deck bar; bring the modifier chip inside the 11px floor.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved [NOTE FOR UX] — non-blocking</span>
+              The 8.5px modifier chip is a mock-rendering artifact (the chip is <code>label-caps</code> 11px in the type scale; the mock's 8.5px is an old compact-rendering leftover). The spine already commits "text-size floor + UI-scale slider" (A1) and "min ~24px effective for combat-critical labels" (Input Schemes). Declared floor-bound tokens (timer, on-ship HP, lives, modifier chip) ≥ the <code>label-caps</code> 11px floor is a v1.0 HUD-polish task (E5–E8), not a Finalize blocker. No spine change.
+            </div>
+          </article>
+
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">Low</span>
+              <h3 class="finding-title">Photosensitive flash cap (≤3 Hz) is correctly stated but the central-clamp enforcement is not explicit — and the juice register is "Llamasoft maximalist, cranked at the godhood peak."</h3>
+            </header>
+            <div class="finding-location">EXPERIENCE.md §Game Feel &amp; Juice, §Accessibility Floor; .decision-log.md F8</div>
+            <div class="finding-note">The cap is right (A1) and the JuiceCoordinator-on-EventBus architecture (F8) is the right place to enforce it. But with particle storms + screen-shake + hit-flash all firing concurrently at the peak, a per-source ≤3 Hz cap could still let overlapping sources stack above 3 Hz aggregate.</div>
+            <div class="finding-fix"><strong>Original ask:</strong> state that the cap is enforced centrally on the coordinator (a single global hit-flash cadence gate), not summed across emitters.</div>
+            <div class="resolution">
+              <span class="resolution-label">Resolved [NOTE FOR UX] — non-blocking</span>
+              The cap (≤3 Hz, A1) is correct and the enforcement point (JuiceCoordinator on EventBus, F8) is the right place. The finding asks for one explicit sentence that the cap is enforced centrally on the coordinator (a single global hit-flash cadence gate), not summed across emitters — this is an implementation note for the JuiceCoordinator story, not a spine change. Filed against F8.
+            </div>
+          </article>
+
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>All token and component names identical across DESIGN.md and EXPERIENCE.md after the resolution pass.</li>
+        <li>Spines win on conflict with any mock; <code>.working/key-hud.html</code> was synced to the canonical tokens and the A2 shape+outline differentiator. The other three mocks remain illustrative and still ship the pre-lift <code>#6B7B9A</code> muted — refresh opportunistically, not blocking.</li>
+        <li>Independent contrast computations (WCAG 2.1 relative luminance): calm text 17.4:1, muted (lifted) 5.95:1, primary 12.9:1, score 15.3:1, health 11.4:1, hazard 5.75:1 — all pass AA at calm. Climax-muted post-lift 5.31:1, climax-hazard amber 9.5:1 on <code>climax-surface</code> — both pass AA (climax-hazard passes AAA).</li>
+        <li>Verified sound at calm: modifier chips (⬢ GAUNTLET / ▲ SWARM / ◆ BOUNTY), MAIN/WING chip text label, rarity pip shapes, family sigils (chevron/starburst/orbital), <code>take-button</code> AAA label, focus/fade asymmetry, segmented HP bar, HUD scrim backing, dropped lane-line, input-accessibility commitments.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Reviewer file: review-accessibility.md</span>
+        <span>Run: 2026-07-01</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
