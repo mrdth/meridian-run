@@ -1,28 +1,35 @@
 ---
 title: 'Meridian Run — Epic & Story Breakdown'
 project: 'meridian-run'
-date: '2026-06-30'
+date: '2026-07-01'
 author: 'Mrdth'
 stepsCompleted: ['step-01', 'step-02', 'step-03', 'step-04']
 status: 'complete'
 epic_count: 9
-story_count: 55
+story_count: 57
 # Core inputs for this breakdown
 inputDocuments:
   - _bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/gdd.md
   - _bmad-output/planning-artifacts/architecture/architecture-meridian-run-2026-06-29/architecture.md
   - _bmad-output/planning-artifacts/gdds/gdd-meridian-run-2026-06-29/epics.md
-uxDocument: null
-scopeNote: 'v0.1 = Epics 1–3 (systems-validation slice) · v1.0 = Epics 1–5 (shipped game) · post-1.0 = Epic 6 (uncommitted, additive). Content breadth (full fleet, specialty pool, modifier roster, formations, feats) deferred to a post-systems brainstorm and represented as placeholder/out-of-scope stories, not enumerated.'
+# UX spines (source of truth for all UI surfaces — completed 2026-07-01; was null at breakdown)
+uxSpines:
+  design: '_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/DESIGN.md'
+  experience: '_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/EXPERIENCE.md'
+  decisionLog: '_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/.decision-log.md'
+scopeNote: 'v0.1 = Epics 1–3 (systems-validation slice + hypothesis gate) · v0.5 = Epic 4 (true alpha) · v1.0 = Epics 5–8 (shipped game) · post-1.0 = Epic 9 (uncommitted, additive). Content breadth (full fleet, specialty pool, modifier roster, formations, feats) deferred to a post-systems brainstorm and represented as placeholder/out-of-scope stories, not enumerated.'
+revisionNote: '2026-07-01: in-place UX enrichment (UX spines were null at breakdown). UI stories 1.7 / 3.4 / 3.5 / 8.4 enriched with UX specs (cited by decision-log ID, not restated); added Story 3.9 (Palette-Arc Theming Driver, V3) and Story 7.5 (Unlock & Feat Toast Notifications). Build-ladder naming reconciled to MAIN/WING (UX I2 / arch F-1). Non-diegetic stance (UX D1) + CanvasLayer-never-over-lane (UX F3) added as HUD acceptance criteria. No E1–E9 renumber/reorder.'
 ---
 
 # Meridian Run - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for **Meridian Run**, decomposing the requirements from the GDD and Architecture (no UX spec exists yet — UI requirements are carried by the GDD) into implementable stories.
+This document provides the complete epic and story breakdown for **Meridian Run**, decomposing the requirements from the GDD, Architecture, and the now-complete **UX spines** into implementable stories.
 
-**Source of truth:** `gdd.md` (design), `architecture.md` (systems), and the GDD's high-level `epics.md` (6-epic structure E1–E6). This document expands that structure into full, story-level detail with testable acceptance criteria.
+**Source of truth:** `gdd.md` (design), `architecture.md` (systems), the UX spines `DESIGN.md` + `EXPERIENCE.md` (UI — **completed 2026-07-01; was `null` when these epics were first written**), and the GDD's high-level `epics.md` (6-epic structure E1–E6). This document expands that structure into full, story-level detail with testable acceptance criteria.
+
+> **UX citation convention.** UI stories reference UX decisions by their **decision-log ID** (e.g. `S1`, `H4`, `A2`, `V3`, `I2`, `M1`) and spine section — they do **not** restate full component specs. Canonical IDs live in `_bmad-output/planning-artifacts/ux-designs/ux-meridian-run-2026-06-30/.decision-log.md`; visual anatomy in `DESIGN.md`, behavior in `EXPERIENCE.md`. **Spines win on conflict with any mock.** The architecture folds these UX systems in as D13–D16 / NP4–NP5 / ADR-5–6.
 
 ## Requirements Inventory
 
@@ -150,9 +157,16 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 
 ### UX Design Requirements
 
-> **No UX Design document exists yet.** UI/UX requirements are carried within the GDD (neon-vector art direction, HUD contents, data-driven power-up select/shop, menu set, pause). For this breakdown, the GDD-carried UI requirements are captured as functional requirements **FR46** (HUD/select/shop/menus/pause), **FR47** (juice/feedback), and the neon-vector direction (**NFR11**).
+> **UX spines completed 2026-07-01** (`ux-designs/ux-meridian-run-2026-06-30/`: `DESIGN.md` visual, `EXPERIENCE.md` behavioral, `.decision-log.md` canonical). They are now the **source of truth for every UI surface**; UI requirements are no longer carried by the GDD alone. GDD-carried UI baselines remain as **FR46** (HUD/select/shop/menus/pause), **FR47** (juice/feedback), and **NFR11** (neon-vector direction); the UX spines refine all three.
 >
-> **Recommendation:** create a dedicated UX spec (`gds-ux`) before or during Epic 5 polish to nail HUD layout, power-up-select/shop interaction patterns, menu flow, and game-feel juice curves. When it exists, its actionable items (UX-DR1…UX-DRn) will be extracted here with the same rigor as FRs.
+> **Where the UX requirements live in this breakdown** (cited by decision-log ID, not restated):
+> - **Basic HUD** → Story **1.7** (layout H5, on-ship segmented HP H4/H6, timer T1/H3, no in-wave currency H2, shape+outline A2, palette-arc V3, focus/fade S1, CanvasLayer F3, non-diegetic D1).
+> - **Power-Up Select** → Story **3.4** (5-state card, MAIN/WING chip I2, family iconography I1, take/sell F7/M1, synergy tooltip, build-summary-rail).
+> - **Shop / Rearm** → Story **3.5** (4-card currency screen, currency-readout H2, unaffordable=disabled, shared card idiom + build rail).
+> - **Palette-arc theming driver** → Story **3.9** (build_power → calm→climax re-theme, V3; pairs with the build engine).
+> - **Unlock/feat toasts** → Story **7.5** (between-wave toast, OQ9).
+> - **Full HUD / menus / pause / game-over / settings + accessibility floor** → Story **8.4** (A1 floor, title N3, codex O1, game-over M1 + new-unlock state).
+> - **Cross-cutting UX systems** (palette arc D13, accessibility D14, UI map/focus-fade/toasts D15, shape+outline D16) are owned by `architecture.md` (folded in at v1.1); stories reference them, they are not re-specified here.
 
 ### FR Coverage Map
 
@@ -372,19 +386,25 @@ So that combat feels powerful and readable (build-crafter reward clarity).
 
 *(FR47, FR48 basic · AR9)*
 
-### Story 1.7: Basic HUD
+### Story 1.7: Basic HUD (UX-enriched)
 
 As a player,
-I want a clean HUD showing HP, ships, wave, and score,
-So that I can read my run state at a glance.
+I want a clean, non-diegetic HUD showing on-ship HP, lives, the wave timer, score, and the active modifier — laid out so it never crosses my 1-axis play lane,
+So that I can read my run state at a glance and my combat attention stays on the ship and fire-columns.
 
 **Acceptance Criteria:**
 
-- **Given** the HUD on a `CanvasLayer` (separate from world), **Then** it displays HP, ships, wave, and score in neon-vector style.
-- **Given** `EventBus` signals (`health_changed`, `ship_lost`, `wave_changed`, `score_changed`), **When** they fire, **Then** the HUD updates.
-- **Given** the HUD layout, **Then** it never obscures the play lane.
+- **Given** the HUD stance is **non-diegetic** (UX D1) on its own **`CanvasLayer` separate from the world tree** (UX F3), **Then** it floats as an arcade overlay and **never obscures the 1-axis play lane** (top band only — `spacing.hud-band`) — this separation is an explicit acceptance criterion.
+- **Given** the HUD layout (UX H5), **Then** **lives = ship-icon pips top-left** (`lives-display`), **wave-timer top-center** (`XXs` format, UX T1/H3 — 60 s survive-to-end countdown), and **score top-right** with **wave number + modifier chip beneath it** (`score-readout` + `wave-modifier-readout`). **Tier is dropped** from the in-wave HUD (UX H4 — chosen pre-run).
+- **Given** the score readout, **Then** it shows **score only** — **no currency in-wave** (UX H2; `currency` is a shop-stage concept).
+- **Given** player HP, **Then** it renders as a **segmented bar above the player ship** (`hp-bar`, UX H4/H6 — primary read, co-located with focus; same segmented idiom reuses on multi-hit/damaged enemies, absent on 1-hit grunts). Ring/halo reserved for future Shield PU, **not** HP.
+- **Given** the wave-timer, **Then** at low-time the numeric shifts to `colors.hazard` with a **neutral-white glow halo** (climax: `climax-hazard` amber) (UX T1/A2).
+- **Given** the player-vs-hazard read, **Then** the **player family (ship/projectiles/docked-wingman) is silhouette + bright-outline distinct from the hazard family (enemy fire/capture-column)** — shape carries meaning, color reinforces (UX A2; arch D16). Never hue-alone.
+- **Given** the palette arc (UX V3; arch D13), **Then** HUD elements subscribe to `EventBus.arc_t_changed` and recolor calm→climax via `modulate` (no `queue_redraw()`). In E1's authored wave `arc_t` stays ~0 (calm Vector Standard); it warms once the Story 3.9 driver emits.
+- **Given** combat intensity, **Then** the HUD runs the **focus/fade FSM** (UX S1; reusable `components/state_machine`, arch D15) with pure `HudFocusModel` — score + modifier chrome **dim**, while **timer + on-ship HP + lives stay sharp**. *(v0.1 baseline: FSM + model exist and transition; full per-component saturation tuning + climax integration mature at E8 polish.)*
+- **Given** `EventBus` signals (`health_changed`, `ship_lost`, `wave_changed`/`score_changed`, `arc_t_changed`), **When** they fire, **Then** the HUD updates (subscribers cache; no per-frame polling).
 
-*(FR46 basic, FR49)*
+*(FR46 basic, FR49 · UX D1/F3/H2/H3/H4/H5/H6/T1/S1/A2/V3 · arch D13/D15/D16)*
 
 ### Story 1.8: Authored Wave Assembly & Feel Gate
 
@@ -556,7 +576,7 @@ So that every run has a common build vocabulary before unlocks expand it.
 
 **Acceptance Criteria:**
 
-- **Given** the `PowerUpDefinition` schema, **Then** each `.tres` holds its `Modifier` list + optional `Behavior` refs + cost/value + pool tier + `target_ladder` (main|rescued).
+- **Given** the `PowerUpDefinition` schema, **Then** each `.tres` holds its `Modifier` list + optional `Behavior` refs + cost/value + pool tier + `target_ladder` (**MAIN|WING** — UX I2; arch D15/F-1) + `rarity {COMMON,RARE}` + `icon_family {PROJECTILE,ON_HIT,GENERATOR}` (UX I1 — drives the card's chip/pip/sigil; arch D15).
 - **Given** the standard pool, **Then** fire-rate / shields / damage / move-speed / +HP-cap / +ship exist as `.tres`, available to all ships from start.
 - **Given** content, **Then** it's accessed via `ContentRegistry` (add a `.tres` = new power-up, zero code).
 
@@ -570,28 +590,32 @@ So that the gamble's permanent track actually grows and feeds my sacrifice.
 
 **Acceptance Criteria:**
 
-- **Given** `BuildState`, **Then** it holds the main track (persistent, run-long) + the rescued track (permanent, from E2 NP1 — now investable).
-- **Given** a power-up with `target_ladder`, **When** acquired, **Then** it applies to the correct track (main or rescued).
-- **Given** both tracks, **Then** `BuildRecompute` produces the player's effective stats from both.
-- **Given** the rescued track, **Then** investing in it now **scales sacrifice beyond E2's flat baseline** (FR19 functional).
+- **Given** `BuildState`, **Then** it holds the **MAIN track** (primary-weapon ladder, persistent, run-long) + the **WING track** (allied/rescue ladder, permanent, from E2 NP1 — now investable). *(Naming reconciled `main|rescued` → **MAIN|WING** per UX I2 / arch F-1 — no game code yet, rename is free.)*
+- **Given** a power-up with `target_ladder`, **When** acquired, **Then** it applies to the correct track (**MAIN or WING**).
+- **Given** both tracks, **Then** `BuildRecompute` produces the player's effective stats from both — and `BuildRecompute.build_power()` summarizes build strength (feeds the Story 3.9 palette arc, arch D13).
+- **Given** the WING track, **Then** investing in it now **scales sacrifice beyond E2's flat baseline** (FR19 functional).
 
 *(FR23, FR17)*
 
-### Story 3.4: Wave-Clear Reward — Take-or-Sell (3 choose 1)
+### Story 3.4: Wave-Clear Reward — Take-or-Sell (3 choose 1) (UX-enriched)
 
 As a player,
-I want to pick from three offered power-ups after each wave, taking or selling,
-So that every clear is a build decision.
+I want to pick from three offered power-ups after each wave over a paused arena, taking or selling,
+So that every clear is a legible build decision.
 
 **Acceptance Criteria:**
 
-- **Given** wave clear, **Then** the player is offered 3 random power-ups from the pool and chooses 1.
-- **Given** an offered power-up, **Then** the player can **take** it (apply to chosen ladder) or **sell** it (~50% value → currency).
-- **Given** the select UI, **Then** it's a data-driven scene reading `PowerUpDefinition`s.
+- **Given** wave clear, **Then** a `panel-scrim` pauses + dims the arena and **3 `power-up-card`s** surface (data-driven from `PowerUpDefinition`s; UX F7), with the `build-summary-rail` docked at the bottom showing the current MAIN/WING stack (UX H4 — calm moment).
+- **Given** a card, **Then** it renders the 5-state `power-up-card` idiom (UX `power-up-card` / EXPERIENCE State Patterns): `default · focus · selected/rare · disabled`, with gamepad **focus independent of rarity**; a **rare** card repaints wholesale to Polybius Dusk (UX I1).
+- **Given** a card, **Then** it shows a **`main-wing-chip`** (MAIN or WING target — UX I2; **text label required, never color-alone**), family **iconography/sigil** (projectile/on-hit/generator — UX I1), and a shape-coded **`rarity-pip`** (hollow square vs filled diamond — UX I1).
+- **Given** the focused card, **Then** a one-line **`synergy-tooltip`** describes how it stacks with the current build (pointer-events none).
+- **Given** an offered card, **Then** the player can **TAKE** (`confirm`) — applies to its target ladder — or **SELL** (dedicated secondary key) for **~50% value → currency** (UX F7). **Sell is quick, single-press, no confirm** (low-stakes, reversible-ish — explicitly *not* hold-to-commit; UX OQ9 / arch NP5).
+- **Given** the microcopy, **Then** power-up names + labels read in the **punchy Llamasoft register** (UX M1 — e.g. `TRIPLE BROADSIDE`, not "Triple Fire").
+- **Given** the screen, **Then** it is non-diegetic overlay UI on a CanvasLayer (UX D1), gamepad-navigable with mouse-hover = focus (UX F5).
 
-*(FR22, FR46 select UI)*
+*(FR22, FR46 select UI · UX D1/F5/F7/H4/I1/I2/M1/OQ9 · arch D15/NP5)*
 
-### Story 3.5: Between-Wave Shop
+### Story 3.5: Between-Wave Shop / Rearm (UX-enriched)
 
 As a player,
 I want a shop between waves offering random power-ups for currency,
@@ -599,11 +623,13 @@ So that I can spend my earnings to steer my build.
 
 **Acceptance Criteria:**
 
-- **Given** between waves, **Then** the shop offers 4 random power-ups at a currency cost.
-- **Given** currency (earned per wave + rescue/safe bonuses), **Then** the player can buy power-ups from the shared pool; spend updates `RunState`.
-- **Given** the shop UI, **Then** it's data-driven reading `PowerUpDefinition`s.
+- **Given** between waves (after Power-Up-Select), **Then** the shop offers **4 random power-ups at a currency cost** (UX F7), over the same `panel-scrim`-paused arena, reusing the `power-up-card` idiom (denser ~16 px gutter) + `build-summary-rail` (UX H4).
+- **Given** currency, **Then** a **`currency-readout`** shows CHIPS (**shop-stage only — never in the in-wave HUD**, UX H2). Currency = wave score converted at the shop (earned per wave + rescue/safe bonuses).
+- **Given** an unaffordable card, **Then** it renders **`disabled`** (50% opacity / saturation .35; `take-button` flat + dashed) and cannot be bought (UX `power-up-card` disabled state).
+- **Given** a BUY (`confirm`), **Then** the power-up applies to its MAIN/WING ladder and the spend updates `RunState`. The shop has **no sell** (select-only); the player `back`s out to advance.
+- **Given** the shop UI, **Then** it's a data-driven scene reading `PowerUpDefinition`s, non-diegetic overlay on a CanvasLayer (UX D1), gamepad-navigable (UX F5).
 
-*(FR22 shop, FR49, FR46 shop UI)*
+*(FR22 shop, FR49, FR46 shop UI · UX D1/F5/F7/H2 · arch D15)*
 
 ### Story 3.6: Cross-Pollination Plumbing (mechanism)
 
@@ -647,6 +673,26 @@ So that the build fantasy is proven before building the full 20-wave campaign.
 - **Given** the **hypothesis gate**, **Then** (a) the engine demonstrably compounds (measurable, GUT-backed) **AND** (b) a playtester reports a felt power peak — **the GO/NO-GO signal for E4+**. Debug cheats (give power-up, set currency, force wave) support fast iteration.
 
 *(FR25 target, FR27, FR50)*
+
+### Story 3.9: Palette-Arc Theming Driver (V3)
+
+As a player,
+I want the arena to warm from calm cyan toward climax magenta as my build compounds,
+So that "becoming overpowered" is *felt* — the palette itself is the godhood-peak juice channel.
+
+**Acceptance Criteria:**
+
+- **Given** the arena scene, **Then** an arena-scoped **`PaletteArcCoordinator`** (in `juice/`, **not** an autoload — twin to `JuiceCoordinator`) listens to `EventBus.build_changed`/`run_started`, reads build power, and broadcasts a single derived `EventBus.arc_t_changed(t: float)` (UX V3; arch D13/ADR-5/NP4).
+- **Given** pure logic, **Then** `BuildRecompute.build_power(state)` and `PaletteArc.arc_t(power, curve)` are **pure + GUT-tested** (steep late ramp → godhood reads as earned).
+- **Given** color termini, **Then** a `ThemeTokens` resource (`resources/themes/theme_tokens.tres`) holds the calm↔climax pair per token from `DESIGN.md` and exposes `lerp_token(token, t)`.
+- **Given** a build change, **Then** `arc_t` is **smoothed toward target** (tween — warming is felt, not snapped); consumers subscribe once, cache `t`, apply via `modulate`/`self_modulate` (**no `queue_redraw()`, no per-frame polling**).
+- **Given** the v0.1 minimal consumer set, **Then** arena background (`surface→climax-surface`), HUD primary recolor (Story 1.7), and `JuiceCoordinator` intensity crank respond to `arc_t`.
+- **Given** menus, **Then** **no coordinator ⇒ no warming** (menus stay calm Vector Standard; arch D13/ADR-5).
+- **Given** the godhood peak, **Then** the warming is part of the Story 3.8 felt-peak signal (the arena warming to Polybius Dusk as the build compounds).
+
+*(UX V3/G1 · arch D13/D14/ADR-5/NP4 · DESIGN.md Colors → Climax overrides)*
+
+> **Sequencing note (flagged):** this driver's input — `build_power` — does not exist until the build engine (this epic), so it lands in **E3** (v0.1), not E1. The theme-token spine + pure `arc_t` logic may scaffold earlier if desired, but the working driver pairs with the build engine here. Per-token interpolation across all 24 components matures through HUD polish (E8); the spine + minimal consumers are v0.1.
 
 ---
 
@@ -959,6 +1005,21 @@ So that nothing I earned is lost to a bad save.
 
 *(FR42 meta persist, FR38 full meta · AR11)*
 
+### Story 7.5: Unlock & Feat Toast Notifications (UX OQ9)
+
+As a player,
+I want new unlocks and feats surfaced as a clean between-wave toast — never mid-wave,
+So that progression rewards land without breaking combat focus.
+
+**Acceptance Criteria:**
+
+- **Given** a feat unlock or ship-unlock discovery, **Then** a `toast_manager` (in the HUD CanvasLayer) listens for `EventBus.feat_unlocked`/`unlock_discovered`, **queues** notifications, and shows them **only in calm moments** (between waves / game-over summary) — **never mid-wave** (UX OQ9/S1; arch D15).
+- **Given** the `toast` primitive (UX `toast` component), **Then** it renders title (`display-sm`) + body (`body-sm`), auto-dismisses, and respects reduced-motion (arch D14).
+- **Given** a queued toast during combat, **Then** it waits until the next calm moment (no focus/fade violation).
+- **Given** the game-over `new-unlock` state, **Then** the same `toast` idiom renders inline on the run-summary (reused — arch D15; wired in Story 8.4).
+
+*(UX OQ9/S1 · arch D15)*
+
 ---
 
 ## Epic 8: v1.0 Polish & Ship
@@ -1007,20 +1068,24 @@ So that the victory feels earned and the run never coasts or trivializes.
 
 *(FR35 boss polish)*
 
-### Story 8.4: Full HUD, Menus, Pause & Settings
+### Story 8.4: Full HUD, Menus, Pause, Game-Over, Settings & Accessibility Floor (UX-enriched)
 
 As a player,
-I want complete menus, pause, and settings,
-So that the game feels like a finished product I can control and configure.
+I want a complete title screen, full HUD polish, pause with codex, a game-over/run-summary, and a real settings + accessibility panel,
+So that the game feels like a finished product I can control and configure to my needs.
 
 **Acceptance Criteria:**
 
-- **Given** the HUD, **Then** it's fully polished (neon-vector, readable).
-- **Given** menus, **Then** main menu / pause menu / game-over are complete and navigable (kb + gamepad).
-- **Given** pause, **Then** a full pause menu works (resume / quit / settings).
-- **Given** settings, **Then** a settings UI persists prefs (volume, input remap) to `user://`; the save schema is finalized/versioned; best-stats persist.
+- **Given** the HUD, **Then** it's fully polished — full focus/fade tuning (UX S1), full per-token palette-arc interpolation across all HUD components (UX V3, arch D13), and combat-critical labels legible at desktop + Steam-Deck distance (UX A1).
+- **Given** first launch, **Then** a **title screen** surfaces (New Run · Settings · Quit) carrying the **meridian brand motif** (UX N3 — line-through-poles 1-axis geometry + peak/ascent; see `mockups/key-title.html`); first-run onboarding hints fire on New Run (UX O1).
+- **Given** pause (`pause`, one button from anywhere), **Then** a full **pause overlay** over `panel-scrim` offers **Resume · Codex · Settings · Quit Run**, with **Resume** default-focused (UX EXPERIENCE IA / State Patterns). The **Codex** (UX `codex`, O1) is always-available help covering ship stats / modifier meanings / the gamble.
+- **Given** Quit Run, **Then** it is **hold-to-confirm** with a player-facing **no-resume warning surfaced before the hold** (UX F6/OQ9; arch NP5 — quitting abandons the run).
+- **Given** all ships lost, **Then** the **Game-Over / Run-Summary** screen reads `THE MERIDIAN GOES DARK` (UX M1), shows run stats + best + a build recap, and a **`new-unlock` state** surfaces a `toast`-style inline banner for any newly unlocked feat/ship (UX EXPERIENCE State Patterns; arch D15; toast primitive from Story 7.5). Single focused CTA back to Title / New Run.
+- **Given** settings, **Then** a settings UI persists prefs to `user://` (UX EXPERIENCE; arch D14): **volume** (master/music/sfx), **input remap** (per-action, both schemes, conflict detection, reset-to-default), **gamepad deadzone slider**, **UI-scale slider**, **reduced-motion toggle**. Save schema finalized/versioned; best-stats persist.
+- **Given** the **accessibility floor (UX A1)**, **Then** the panel ships: **reduced-motion = dampen-don't-remove** (~70% scale on shake/particles/hit-flash, feedback preserved, default-on capable), **WCAG-AA contrast** at both arc ends, **full input remap + deadzone**, **UI-scale**, **photosensitive ≤3 Hz flash cap** (enforced unconditionally), and **hold-to-toggle Sacrifice / hold-to-confirm Quit Run**. *(The floor's juice/input consumers — `_motion_scale`, `HitFlash` cap, `HoldToCommit` — land early at v0.1 E1–E3; this story ships the **player-facing settings panel + remap UI** = v1.0 per F5 — not pulled forward.)*
+- **Given** menus/settings, **Then** they are non-diegetic overlay UI on CanvasLayers (UX D1), gamepad-navigable with mouse-hover = focus (UX F5); modals never stack (UX F9).
 
-*(FR46 full HUD/menus/pause, FR42 settings/versioning)*
+*(FR46 full HUD/menus/pause, FR42 settings/versioning · UX A1/D1/F5/F6/F9/M1/N3/O1/S1/V3 · arch D14/D15/NP5)*
 
 ### Story 8.5: Art/Audio Final Pass & Juice on Godhood Peak
 

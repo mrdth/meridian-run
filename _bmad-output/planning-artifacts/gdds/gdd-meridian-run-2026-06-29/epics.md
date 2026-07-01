@@ -5,6 +5,8 @@
 > **Milestone mapping:** v0.1 (systems-validation slice) = **Epics 1–3** · v1.0 (shipped game) = **Epics 1–5** · post-1.0 = **Epic 6** (uncommitted).
 >
 > Each epic: **Goal / In / Out / Depends on / Playable deliverable.**
+>
+> **UX update (2026-07-01):** the UX spines are now complete (`ux-designs/ux-meridian-run-2026-06-30/` — `DESIGN.md` / `EXPERIENCE.md` / `.decision-log.md`), superseding the GDD-carried UI requirements. This file stays the high-level E1–E6 vision; the **UX-enriched, story-level implementation backlog lives in `planning-artifacts/epics.md`** (E1–E9), where UI stories (1.7 / 3.4 / 3.5 / 8.4 + new 3.9 palette-arc driver + 7.5 toasts) cite UX decision-log IDs rather than restating specs.
 
 ---
 
