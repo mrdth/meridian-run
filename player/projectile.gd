@@ -8,6 +8,7 @@ extends Area2D
 
 var _speed: float = 0.0
 var _damage: int = 0
+var _consumed: bool = false
 
 
 func _ready() -> void:
@@ -29,6 +30,7 @@ func activate(spawn_pos: Vector2, speed: float, damage: int) -> void:
 	# here and never read from an autoload per frame (NFR3 hot path).
 	_speed = speed
 	_damage = damage
+	_consumed = false
 	global_position = spawn_pos
 	visible = true
 	set_physics_process(true)
@@ -49,6 +51,15 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
+	# Consume-on-hit guard (Decision #10 — no piercing): release is deferred (see
+	# below), so `monitoring` stays true until the deferred call actually runs. If
+	# two enemy bodies overlap this Area2D within the same physics step, the engine
+	# can fire body_entered twice before that release lands. _consumed is a plain
+	# script flag (not an engine-locked property), set synchronously here, so the
+	# second call is a no-op — exactly one hit is ever applied per activate().
+	if _consumed:
+		return
+	_consumed = true
 	# Damage stub (Decision #6): apply damage to the body's conventionally-named
 	# HealthComponent child if present, then consume-on-hit (release). The real
 	# HurtboxComponent-mediated wiring lands in 1.4; this node-name lookup is
@@ -62,4 +73,4 @@ func _on_body_entered(body: Node2D) -> void:
 	# above is already applied synchronously; only the detach is deferred to idle.
 	# (Leave-screen release in _physics_process is fine synchronous — it runs before
 	# the physics step, not during a server callback.)
-	Pool.call_deferred("release", self)
+	Pool.release.call_deferred(self)

@@ -11,6 +11,7 @@ extends CharacterBody2D
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _faction: FactionComponent = $FactionComponent
 @onready var _fire_system: FireSystem = $FireSystem
+@onready var _muzzle: Marker2D = $Muzzle
 
 var _min_x: float = 0.0
 var _max_x: float = 0.0
@@ -25,6 +26,10 @@ func _ready() -> void:
 	_max_x = float(Constants.BASE_RESOLUTION.x) - tuning.edge_margin
 	assert(_min_x <= _max_x, "Player: edge_margin leaves no room to move")
 	global_position = Vector2(Constants.BASE_RESOLUTION.x / 2.0, tuning.lane_y)
+	# Muzzle position is tuning-driven, not the scene's hardcoded default (the .tscn
+	# value is just an editor preview) — this is the one-time (not per-frame) spawn
+	# math that makes muzzle_offset_y an actual playtest lever (AR10).
+	_muzzle.position.y = tuning.muzzle_offset_y
 	# Wire FireSystem's world-space projectile container to our parent (the Arena).
 	# Projectiles parent there — NOT under the Player — so they don't inherit the
 	# ship's transform (Decision #8). FireSystem._ready ran before ours (children

@@ -7,6 +7,12 @@ extends GutTest
 const PlayerScene := preload("res://player/player.tscn")
 
 
+func before_each() -> void:
+	# Pool is an autoload; clear it so each test starts from a known-empty pool
+	# instead of leaning on cross-test state (review fix — 1.3 D7 review).
+	Pool.clear()
+
+
 func _make() -> FireSystem:
 	# The Player is parented under a Node2D "arena" (as in world/arena.tscn) because
 	# player._ready assigns get_parent() to FireSystem.projectile_parent (typed Node2D)

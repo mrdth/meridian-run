@@ -57,7 +57,7 @@ development_status:
   epic-1: in-progress
   1-1-project-scaffolding-and-core-systems: done
   1-2-player-movement-1-axis-chassis: done
-  1-3-vertical-fire-system: review
+  1-3-vertical-fire-system: done
   1-4-enemy-types-and-formation-dive-ai: backlog
   1-5-life-and-health-economy: backlog
   1-6-hit-feedback-and-juice: backlog

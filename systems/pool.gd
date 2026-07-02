@@ -45,11 +45,24 @@ func release(node: Node) -> void:
 	_pools[path] = pool
 
 
+func clear() -> void:
+	# Test-support hook only — not called by gameplay code. Pool is an autoload, so
+	# its state otherwise persists across every GUT test in a run; test files call
+	# this in before_each() so each test starts from a known-empty pool instead of
+	# leaning on cross-test LIFO-reuse ordering for correctness (D7 review, 1.3).
+	_pools.clear()
+	_node_paths.clear()
+
+
 func _deactivate(node: Node) -> void:
 	# D7 gap from 1.1: stop processing + hide so pooled nodes cost nothing while idle.
-	# set_process/set_physics_process are Node methods; `visible` is CanvasItem-only,
-	# so duck-type it (a pooled node may not be a CanvasItem in future use cases).
+	# set_process/set_physics_process are Node methods; `visible` is CanvasItem-only
+	# and `monitoring`/`monitorable` are Area2D-only, so duck-type both (a pooled
+	# node may not be a CanvasItem/Area2D in future use cases).
 	node.set_process(false)
 	node.set_physics_process(false)
 	if node is CanvasItem:
 		node.visible = false
+	if node is Area2D:
+		node.monitoring = false
+		node.monitorable = false

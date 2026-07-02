@@ -4,7 +4,7 @@ baseline_commit: 269912ae93a5b0adbb95e9a89e8890a5db5b3c5e
 
 # Story 1.3: Vertical Fire System
 
-Status: review
+Status: done
 
 > **Epic 1 — Combat Chassis & Feel** (v0.1 kinesthetics gate) · third story.
 > Builds on the **done** chassis from Story 1.2 (Player `CharacterBody2D`, `HealthComponent`,
@@ -123,6 +123,20 @@ so that I can damage them through readable 1-axis fire-columns.
   - [x] Run `godot --headless -s addons/gut/gut_cmdln.gd` → **exits green** (existing 1.1/1.2 tests + new 1.3 tests, 0 failures). **Run `godot --headless --import` once first** to register the new `class_name`s (`FireSystem`, `Projectile`) in `global_script_class_cache.cfg` — Godot does not rescan classes on a plain `--headless -s` run (1.2 hit this).
 - [x] **T8 — Manual feel check** (kinesthetics gate prep; not an automated AC)
   - [x] Launch in editor, hold Fire (Space / gamepad A) while moving — confirm a steady vertical fire column at ~6.25 shots/s, bullets travel straight up and despawn at the top, bullets do not move with the ship. Note fire-rate/bullet-speed feel for the 1.8 feel gate (values are data-driven — retune `player_tuning.tres`, no code). *(The subjective gamepad-in-editor pass is Mrdth's; objective sub-criteria are proven headless. Box may stay unchecked like 1.2's T8.)*
+
+### Review Findings
+
+- [x] [Review][Patch] Consume-on-hit race: no guard before the deferred release lets one projectile damage 2+ overlapping bodies in a single physics step [player/projectile.gd:_on_body_entered] — fixed via a synchronous `_consumed` flag guard, reset in `activate()`; regression test added (`test_second_body_entered_before_release_is_ignored`)
+- [x] [Review][Patch] Pool/GUT test isolation: add a test-reset hook to `Pool` (resolved decision — Mrdth, 2026-07-02) so `before_each()` can clear `_pools`/`_node_paths`; Pool is an autoload, so its state otherwise persists across all GUT test files/methods and the new tests lean on an undocumented "LIFO reuse" invariant for correctness rather than clean isolation [systems/pool.gd, tests/systems/test_pool.gd, tests/player/test_fire_system.gd, tests/player/test_projectile.gd] — fixed via `Pool.clear()` + `before_each()` in all three test files
+- [x] [Review][Patch] `muzzle_offset_y` tuning field is dead — the Muzzle marker's position is hardcoded as a scene literal in `player.tscn` and no script ever reads `tuning.muzzle_offset_y`, so retuning it in `player_tuning.tres` silently has zero effect [player/player.tscn, player/player_tuning.gd] — fixed via `player.gd._ready()` setting `_muzzle.position.y = tuning.muzzle_offset_y`
+- [x] [Review][Patch] `Pool._deactivate()` never clears `monitoring`/`monitorable` for `CollisionObject2D`-derived pooled nodes, only `process`/`physics_process`/`visible` [systems/pool.gd:_deactivate] — fixed via an `Area2D` duck-type check
+- [x] [Review][Patch] `Pool.call_deferred("release", self)` uses the legacy stringly-typed deferred-call form instead of Godot 4.6's typed `Pool.release.call_deferred(self)` [player/projectile.gd] — fixed
+
+- [x] [Review][Defer] No cast/type-guard on the `_muzzle` `@onready` assignment (`get_node_or_null` returns `Node`, assigned directly to a `Marker2D`-typed var) [player/fire_system.gd] — deferred, pre-existing pattern (mirrors 1.2), no functional impact today since `Muzzle` is always a `Marker2D` in `player.tscn`
+- [x] [Review][Defer] `Pool.release()` logs the identical warning text for a genuinely-foreign node and an already-idempotently-released node, making the two cases indistinguishable in logs [systems/pool.gd] — deferred, minor debugging-friction nit
+- [x] [Review][Defer] `Pool.release()`'s `is_queued_for_deletion()` early-return doesn't erase the corresponding `_node_paths` entry, a latent dict leak only reachable via a pooling-contract violation (calling `queue_free()` directly on a pooled node instead of `Pool.release()`) [systems/pool.gd] — deferred, non-exploitable today (Godot instance IDs aren't reused within a process)
+- [x] [Review][Defer] `_cooldown` drifts unboundedly negative while Fire is not held (decremented every physics frame regardless of input state) [player/fire_system.gd] — deferred, no functional impact today (any negative value satisfies the `<= 0.0` check), landmine only if future code (e.g. a 1.7 ammo/heat HUD) reads its magnitude
+- [x] [Review][Defer] `test_physics_process_makes_no_per_frame_allocations` verifies the AC4 "zero allocations" claim via raw source-text substring search rather than actual runtime allocation behavior [tests/player/test_fire_system.gd] — deferred, matches the accepted 1.2 structural-test precedent, not a regression
 
 ## Dev Notes
 
@@ -294,6 +308,15 @@ GLM-5.2[1m]
 - `player/player.tscn` — T6: +`Muzzle` `Marker2D` + `FireSystem` child (tuning/projectile_scene assigned).
 - `tests/player/test_player_movement.gd` — T7: regression fix — parent the Player under a `Node2D` "arena" so `player._ready`'s `Node2D`-typed `projectile_parent` wiring type-checks (the story listed this file UNCHANGED; the fix is a necessary consequence of the T6 wiring and is called out here).
 
+**Modified (code review fixes, 2026-07-02)**
+- `player/projectile.gd` — consume-on-hit `_consumed` guard (closes a same-physics-step double-hit race); `Pool.release.call_deferred(self)` typed form.
+- `player/player.gd` — `_muzzle` `@onready` ref + `_muzzle.position.y = tuning.muzzle_offset_y` in `_ready` (was a dead tuning field).
+- `systems/pool.gd` — `_deactivate()` also clears `monitoring`/`monitorable` for `Area2D`-derived pooled nodes; new `clear()` test-support hook (resolved decision — resets `_pools`/`_node_paths` for GUT test isolation).
+- `tests/player/test_projectile.gd` — `before_each()` calls `Pool.clear()`; new `test_second_body_entered_before_release_is_ignored` regression test.
+- `tests/player/test_fire_system.gd` — `before_each()` calls `Pool.clear()`.
+- `tests/systems/test_pool.gd` — `before_each()` calls `Pool.clear()`.
+
 ## Change Log
 
 - 2026-07-02 — Story 1.3 implemented: pooled vertical-fire chassis (Projectile + FireSystem + fire tuning + `Pool` D7 deactivation). 38/38 GUT tests pass headless. Status → review.
+- 2026-07-02 — Code review: 1 decision resolved (Pool/GUT test isolation → add `Pool.clear()` test hook), 4 patches applied (consume-on-hit race guard, dead `muzzle_offset_y` tuning wired up, `Pool._deactivate()` clears `monitoring`/`monitorable`, typed deferred-call form), 5 items deferred (logged to `deferred-work.md`), 7 dismissed as noise. 39/39 GUT tests pass headless (added 1 regression test). Status → done.

@@ -3,12 +3,17 @@ extends GutTest
 # 1.1/1.2; 1.3 is its first real exercise AND adds D7 deactivation in release().
 # Covers the acquire→activate→release→re-acquire round-trip and deactivation (T1).
 #
-# Singleton note: Pool is an autoload, so its state persists across tests. To stay
-# robust we (a) never add_child_autofree a node that gets released to the pool — GUT
+# Singleton note: Pool is an autoload, so its state persists across tests. before_each
+# calls Pool.clear() (review fix) so every test starts from a known-empty pool; we
+# still (a) never add_child_autofree a node that gets released to the pool — GUT
 # would free a node the pool still holds — and (b) assert LIFO reuse (release X, then
-# re-acquire returns X) which is deterministic regardless of prior pool contents.
+# re-acquire returns X) which is deterministic within a single test.
 
 const ProjectileScene := preload("res://player/projectile.tscn")
+
+
+func before_each() -> void:
+	Pool.clear()
 
 
 func test_acquire_returns_valid_projectile() -> void:

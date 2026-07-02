@@ -10,6 +10,12 @@ extends GutTest
 const ProjectileScene := preload("res://player/projectile.tscn")
 
 
+func before_each() -> void:
+	# Pool is an autoload; clear it so each test starts from a known-empty pool
+	# instead of leaning on cross-test state (review fix — 1.3 D7 review).
+	Pool.clear()
+
+
 func test_structure_is_area2d_on_player_projectile_layer() -> void:
 	# AC2 — Area2D on LAYER_PLAYER_PROJECTILE, masked to LAYER_ENEMY, with activate().
 	var p: Projectile = add_child_autofree(ProjectileScene.instantiate()) as Projectile
@@ -77,3 +83,38 @@ func test_hits_enemy_body_applies_damage_and_consumes() -> void:
 
 	assert_eq(hc.current_hp, 90)      # took 10 damage via the HealthComponent stub
 	assert_eq(p.get_parent(), null)   # consume-on-hit → released
+
+
+func test_second_body_entered_before_release_is_ignored() -> void:
+	# Review fix (Decision #10, consume-on-hit / no piercing): release on hit is
+	# deferred (the engine forbids synchronous removal during a physics callback),
+	# so `monitoring` stays true until that deferred call lands. If two enemy bodies
+	# overlap the projectile within the same physics step, body_entered can fire
+	# twice before the release detaches it. Only the FIRST hit should apply damage —
+	# calling _on_body_entered directly twice (bypassing physics) simulates that
+	# same-step double-fire deterministically.
+	var target_a := CharacterBody2D.new()
+	var hc_a := HealthComponent.new()
+	hc_a.max_hp = 100
+	hc_a.name = "HealthComponent"
+	target_a.add_child(hc_a)
+	add_child_autofree(target_a)
+
+	var target_b := CharacterBody2D.new()
+	var hc_b := HealthComponent.new()
+	hc_b.max_hp = 100
+	hc_b.name = "HealthComponent"
+	target_b.add_child(hc_b)
+	add_child_autofree(target_b)
+
+	var p: Projectile = Pool.acquire(ProjectileScene) as Projectile
+	add_child(p)  # plain add_child: p self-releases to the pool on hit
+	p.activate(Vector2(100.0, 300.0), 620.0, 10)
+
+	p._on_body_entered(target_a)
+	p._on_body_entered(target_b)  # simulated same-step second overlap
+
+	assert_eq(hc_a.current_hp, 90)   # first hit applies damage
+	assert_eq(hc_b.current_hp, 100)  # second hit ignored — no piercing
+
+	await get_tree().physics_frame  # let the deferred release land before teardown
