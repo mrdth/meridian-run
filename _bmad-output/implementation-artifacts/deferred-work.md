@@ -14,3 +14,9 @@ Items deferred during code reviews — to be revisited when their owning story l
 - `get_value()` `null` default may surprise typed callers [systems/settings.gd:22] — Variant return is intentional; callers must pass typed defaults; revisit if a pattern of misuse emerges
 - `ship_lost(remaining: int)` parameter name is ambiguous (ships? HP?) [systems/event_bus.gd:7] — rename/clarify when first consumed in Story 1.5
 - `.gutconfig.json` `log_level:1` (failures-only) may hide context in CI [.gutconfig.json:5] — revisit when CI pipeline is established; consider bumping to level 2
+
+## Deferred from: code review of 1-2-player-movement-1-axis-chassis (2026-07-02)
+
+- `player.tscn`/`arena.tscn` still missing/inconsistent `uid=` resource references vs `resources/player_tuning.tres` [player/player.tscn, world/arena.tscn] — echoes the 1.1-deferred `arena.tscn` uid item above (same accepted non-issue: not a functional bug, headless launch confirmed clean); recommend opening both scenes once in the Godot editor and re-saving so Godot regenerates proper `uid=` metadata rather than hand-authoring uids, if the churn ever becomes a nuisance
+- Post-`move_and_slide()` corrective clamp will need re-examination once collision is enabled [player/player.gd:24] — correct and spec-mandated for 1.2 (`collision_mask = 0`), but clamping `global_position.x` directly after `move_and_slide()` may fight the physics engine's own slide resolution once 1.4/1.6 add real collision layers to the player's mask; flag for 1.4's dev pass
+- `HealthComponent.heal()` doesn't clear `_is_dead` when healed above zero [components/health_component.gd:34-38] — respects the spec's own "no revive-from-zero semantics decided here; healing a dead ship is 1.5's call — keep `heal` a pure clamp for now" (Dev Notes T2); unreachable in 1.2 (heal() has no callers yet); 1.5 decides revive semantics when damage/heal sources are wired

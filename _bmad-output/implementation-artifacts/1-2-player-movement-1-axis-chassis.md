@@ -4,7 +4,7 @@ baseline_commit: e6bb571ec32f443d9bd1c82f9a88990c0435fb66
 
 # Story 1.2: Player Movement — 1-Axis Chassis
 
-Status: review
+Status: done
 
 > **Epic 1 — Combat Chassis & Feel** (v0.1 kinesthetics gate) · second story.
 > Builds directly on the **done** scaffold from Story 1.1 (domain tree, 11 autoloads, Input Map,
@@ -103,6 +103,21 @@ so that the 1-axis chassis feels tight and fair.
   - [ ] Launch in editor, move with keyboard (A/D, ←/→) and gamepad (stick, D-pad) — confirm continuous, clamped, ~320 px/s. Note any deadzone/edge feel issues for the 1.8 feel gate. (The v0.1 kinesthetics verdict is Story 1.8; 1.2 just needs to *feel plausible* and be tunable via `player_tuning.tres`.)
     > **Dev status (2026-07-02):** objective sub-criteria verified headless — continuous analog input via `Input.get_axis`, screen-clamp tests at both edges (green), `velocity.x == 426.6` independent of delta, `move_left`/`move_right` deadzone lowered to 0.25 (Decision #3, done under T4), kb+gamepad bindings inherited from 1.1. The **subjective gamepad-in-editor feel pass is the one item the dev agent cannot perform** — deferred to Mrdth during review / before the 1.8 feel gate. Box intentionally left unchecked.
 
+### Review Findings
+
+*(gds-code-review, 2026-07-02 — Blind Hunter + Edge Case Hunter + Acceptance Auditor, triaged)*
+
+- [x] [Review][Decision] `move_speed` (426.6) is ~33% above the AC1-cited "~320 px/s" baseline and wasn't captured as a numbered Decision — **Resolved (2026-07-02):** confirmed intentional by Mrdth; formalized as Decision #5 in Dev Notes.
+
+- [x] [Review][Patch] `FactionComponent.get_collision_layer()` is documented as the single source of truth for the collision-layer bit but is never called [player/player.gd, player/player.tscn:12] — **Fixed:** `player.gd:_ready()` now sets `collision_layer = _faction.get_collision_layer()`; the `.tscn`'s `collision_layer = 1` remains as the declarative scene default (overwritten at runtime with the same value). GUT suite still 23/23 green.
+- [x] [Review][Defer] `HealthComponent.heal()` doesn't clear `_is_dead` [components/health_component.gd:34-38] — deferred, respects the spec's own "no revive-from-zero semantics decided here; healing a dead ship is 1.5's call — keep `heal` a pure clamp for now" (Dev Notes T2). Unreachable in 1.2 (heal() has no callers yet); 1.5 decides revive semantics when damage/heal sources are wired.
+- [x] [Review][Patch] `player.gd` has no guard against a null `tuning` or a degenerate `edge_margin` [player/player.gd:20-22] — **Fixed:** added `assert(tuning != null, ...)` and `assert(_min_x <= _max_x, ...)` in `_ready()` per project-context's "preconditions + assert for dev-only invariants" discipline. GUT suite still 23/23 green.
+
+- [x] [Review][Defer] `player.tscn`/`arena.tscn` are missing/inconsistent `uid=` resource references vs `resources/player_tuning.tres` [player/player.tscn, world/arena.tscn] — deferred, pre-existing pattern risk, not a functional bug. Recommend opening both scenes once in the Godot editor and re-saving so Godot regenerates proper `uid=` metadata; don't hand-author uids.
+- [x] [Review][Defer] Post-`move_and_slide()` corrective clamp will need re-examination once collision is enabled [player/player.gd:24] — spec-mandated and correct for 1.2 (`collision_mask = 0`, nothing to collide with yet), but once 1.4/1.6 add real collision layers to the player's mask, clamping `global_position.x` directly after `move_and_slide()` may fight the physics engine's own slide resolution. Flag for 1.4's dev pass.
+
+*(6 additional findings dismissed as noise/false positives — invalid-syntax claims disproven by a clean headless launch, and several flagged "issues" that exactly match explicit spec/Dev Notes intent: the literal `max_hp` default, the small hitbox-vs-visual size, and the unconditional `health_changed` emission.)*
+
 ## Dev Notes
 
 ### Architecture Compliance (must follow — sources cited)
@@ -189,6 +204,7 @@ res://
 2. **Clamp target = base-resolution play field (not dynamic viewport).** With `stretch/aspect=expand`, wider windows show extra horizontal canvas; clamping to `Constants.BASE_RESOLUTION.x` (1280) keeps the dodge lane **fair and identical** across window aspects (P3 "The Test" wants a consistent lane), and extra `expand` width reads as background margin. Clamp to `_max_x = BASE_RESOLUTION.x − edge_margin`, **not** `get_viewport_rect().size`.
 3. **Lower the gamepad deadzone to ~0.25 for `move_left`/`move_right`.** The InputMap default of 0.5 means 50% stick travel before response — too laggy for arcade feel. Set the per-action `deadzone` to ~0.25 in the Input Map (a `project.godot` data change, not code). The user-facing deadzone **slider** is still E8 (8.4); this is just a better starting value for the feel gate.
 4. **Placeholder visual only.** Use a primitive shape (e.g. cyan upward `Polygon2D`, ~34×34) so movement is visible. The real rescuer-arrowhead art + D16 shape/outline renderer lands in 1.6/8.5.
+5. **`move_speed` retuned 320 → 426.6 during the feel pass (confirmed by Mrdth, code review 2026-07-02).** 320 was explicitly a "starting default, left open" (Dev Notes/T3); AC1's operative clause is "~320 px/s (from `player_tuning.tres`)" — the value is data-driven, not hardcoded to 320. 426.6 (~3.0 s to cross the 1280 px playfield) is the intended first tuning pass, already reflected in `resources/player_tuning.tres` and covered by the existing GUT suite (23/23 green). Expect a further re-tune once 1.3/1.4 land (player speed is balanced against the 620 px/s bullet / ~0.7 s telegraphs per GDD).
 
 ### References
 

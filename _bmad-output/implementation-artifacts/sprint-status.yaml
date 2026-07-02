@@ -56,7 +56,7 @@ development_status:
   # === Epic 1 — Combat Chassis & Feel  (v0.1 — kinesthetics gate) ===
   epic-1: in-progress
   1-1-project-scaffolding-and-core-systems: done
-  1-2-player-movement-1-axis-chassis: review
+  1-2-player-movement-1-axis-chassis: done
   1-3-vertical-fire-system: backlog
   1-4-enemy-types-and-formation-dive-ai: backlog
   1-5-life-and-health-economy: backlog

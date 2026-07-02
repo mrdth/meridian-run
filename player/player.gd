@@ -16,9 +16,13 @@ var _max_x: float = 0.0
 
 
 func _ready() -> void:
+	assert(tuning != null, "Player: tuning not assigned")
+	# FactionComponent is the single source of truth for the collision-layer bit (AR5).
+	collision_layer = _faction.get_collision_layer()
 	# Compute + cache bounds once (hot-path: no per-frame work in _physics_process).
 	_min_x = tuning.edge_margin
 	_max_x = float(Constants.BASE_RESOLUTION.x) - tuning.edge_margin
+	assert(_min_x <= _max_x, "Player: edge_margin leaves no room to move")
 	global_position = Vector2(Constants.BASE_RESOLUTION.x / 2.0, tuning.lane_y)
 
 
