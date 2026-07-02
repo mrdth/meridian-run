@@ -10,6 +10,7 @@ extends CharacterBody2D
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _faction: FactionComponent = $FactionComponent
+@onready var _fire_system: FireSystem = $FireSystem
 
 var _min_x: float = 0.0
 var _max_x: float = 0.0
@@ -24,6 +25,13 @@ func _ready() -> void:
 	_max_x = float(Constants.BASE_RESOLUTION.x) - tuning.edge_margin
 	assert(_min_x <= _max_x, "Player: edge_margin leaves no room to move")
 	global_position = Vector2(Constants.BASE_RESOLUTION.x / 2.0, tuning.lane_y)
+	# Wire FireSystem's world-space projectile container to our parent (the Arena).
+	# Projectiles parent there — NOT under the Player — so they don't inherit the
+	# ship's transform (Decision #8). FireSystem._ready ran before ours (children
+	# first), but projectile_parent is read only on fire, never in FireSystem._ready,
+	# so there is no race. The Player wires its own component (intra-entity, D8-clean).
+	if _fire_system != null and _fire_system.projectile_parent == null:
+		_fire_system.projectile_parent = get_parent()
 
 
 func _physics_process(_delta: float) -> void:

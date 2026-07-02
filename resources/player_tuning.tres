@@ -7,3 +7,7 @@ script = ExtResource("1_tuning")
 move_speed = 426.6
 edge_margin = 24.0
 lane_y = 680.0
+fire_cooldown = 0.16
+bullet_speed = 620.0
+projectile_damage = 10
+muzzle_offset_y = -20.0

@@ -1,7 +1,8 @@
 extends Node
 # Generic object pool (D7). acquire()/release(). Contract for pooled nodes:
 # re-init via activate()/reset(), NEVER _ready() (consumer concern, Story 1.3).
-# Minimal scaffold for 1.1 — exercised + tested when projectiles arrive (1.3).
+# 1.3 adds D7 deactivation in release() (idle pooled nodes stop processing/render);
+# acquire() is unchanged — the consumer's activate() re-enables the node.
 
 var _pools: Dictionary = {}      # resource_path -> Array[Node] of inactive nodes
 var _node_paths: Dictionary = {} # instance_id (int) -> resource_path used at acquire
@@ -24,14 +25,31 @@ func release(node: Node) -> void:
 	if node == null or node.is_queued_for_deletion():
 		return
 	var instance_id: int = node.get_instance_id()
+	# Idempotent: a node already released was erased from _node_paths on its first
+	# release, so it falls through to the "not acquired" branch — no double-append,
+	# no crash. (The _node_paths.has guard covers re-release.)
 	if not _node_paths.has(instance_id):
 		push_warning("[Pool] released a node not acquired from this pool — ignored")
 		return
 	var parent: Node = node.get_parent()
 	if parent != null:
 		parent.remove_child(node)
+	# D7: inactive pooled nodes must not process/render. Generic teardown — Node
+	# methods for processing, CanvasItem.visible duck-typed for rendering. The
+	# consumer's activate() flips these back on (re-init via activate(), never here).
+	_deactivate(node)
 	var path: String = _node_paths[instance_id]
 	_node_paths.erase(instance_id)
 	var pool: Array[Node] = _pools.get(path, [] as Array[Node])
 	pool.append(node)
 	_pools[path] = pool
+
+
+func _deactivate(node: Node) -> void:
+	# D7 gap from 1.1: stop processing + hide so pooled nodes cost nothing while idle.
+	# set_process/set_physics_process are Node methods; `visible` is CanvasItem-only,
+	# so duck-type it (a pooled node may not be a CanvasItem in future use cases).
+	node.set_process(false)
+	node.set_physics_process(false)
+	if node is CanvasItem:
+		node.visible = false

@@ -7,8 +7,13 @@ const PlayerScene := preload("res://player/player.tscn")
 
 
 func _make() -> Player:
+	# Parent under a Node2D "arena" (as in world/arena.tscn). player._ready wires
+	# FireSystem.projectile_parent to get_parent() (typed Node2D), so the parent must
+	# be a Node2D — the GutTest root is a plain Node. (Adjustment for 1.3 fire wiring.)
+	var arena := Node2D.new()
+	add_child_autofree(arena)
 	var p: Player = PlayerScene.instantiate() as Player
-	add_child_autofree(p)
+	arena.add_child(p)
 	return p
 
 

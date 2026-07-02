@@ -1,9 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_tuning.tres" id="2_tuning"]
 [ext_resource type="Script" path="res://components/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://components/faction_component.gd" id="4_faction"]
+[ext_resource type="Script" path="res://player/fire_system.gd" id="5_fire"]
+[ext_resource type="PackedScene" path="res://player/projectile.tscn" id="6_projectile_scene"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.0
@@ -26,3 +28,11 @@ script = ExtResource("3_health")
 
 [node name="FactionComponent" type="Node" parent="."]
 script = ExtResource("4_faction")
+
+[node name="Muzzle" type="Marker2D" parent="."]
+position = Vector2(0, -20)
+
+[node name="FireSystem" type="Node" parent="."]
+script = ExtResource("5_fire")
+tuning = ExtResource("2_tuning")
+projectile_scene = ExtResource("6_projectile_scene")
