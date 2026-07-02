@@ -5,8 +5,8 @@ extends Node
 
 enum Mode { MENU, RUN, GAME_OVER }
 
-var _mode: int = Mode.MENU
+var _mode: Mode = Mode.MENU
 
 
-func get_mode() -> int:
+func get_mode() -> Mode:
 	return _mode

@@ -28,12 +28,12 @@ func warn(system: String, message: String) -> void:
 
 func info(system: String, message: String) -> void:
 	if _min_level >= Level.INFO:
-		print(_format("INFO", system, message))
+		print_rich(_format("INFO", system, message))
 
 
 func debug(system: String, message: String) -> void:
 	if _min_level >= Level.DEBUG:
-		print(_format("DEBUG", system, message))
+		print_rich(_format("DEBUG", system, message))
 
 
 func _format(level: String, system: String, message: String) -> String:

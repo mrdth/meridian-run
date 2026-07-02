@@ -17,6 +17,7 @@ func _ready() -> void:
 		pass # first run — no prefs yet; not an error
 	elif err != OK:
 		Log.warn("settings", "failed to load prefs (code %d) — using defaults" % err)
+		_config.clear() # discard any partial parse state from a corrupted file
 
 
 func get_value(key: String, default: Variant) -> Variant:
@@ -25,7 +26,7 @@ func get_value(key: String, default: Variant) -> Variant:
 
 func set_value(key: String, value: Variant) -> void:
 	_config.set_value(_SECTION, key, value)
-	setting_changed.emit(StringName(key), value)
 	var err := _config.save(SETTINGS_PATH)
 	if err != OK:
 		Log.warn("settings", "failed to save prefs (code %d)" % err)
+	setting_changed.emit(StringName(key), value)

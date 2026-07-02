@@ -1,5 +1,5 @@
 # generated: 2026-06-30
-# last_updated: 2026-07-01
+# last_updated: 2026-07-02
 # project: meridian-run
 # project_key: NOKEY
 # tracking_system: file-system
@@ -46,7 +46,7 @@
 #   Two honest gates: E3 (does the build engine compound?) → E4 (does 20-wave pacing peak?).
 
 generated: 2026-06-30
-last_updated: 2026-07-01
+last_updated: 2026-07-02
 project: meridian-run
 project_key: NOKEY
 tracking_system: file-system
@@ -55,7 +55,7 @@ story_location: "{project-root}/_bmad-output/implementation-artifacts"
 development_status:
   # === Epic 1 — Combat Chassis & Feel  (v0.1 — kinesthetics gate) ===
   epic-1: in-progress
-  1-1-project-scaffolding-and-core-systems: review
+  1-1-project-scaffolding-and-core-systems: done
   1-2-player-movement-1-axis-chassis: backlog
   1-3-vertical-fire-system: backlog
   1-4-enemy-types-and-formation-dive-ai: backlog

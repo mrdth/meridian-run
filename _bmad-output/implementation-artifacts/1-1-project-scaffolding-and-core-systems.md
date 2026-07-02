@@ -4,7 +4,7 @@ baseline_commit: 151907cf93adcef5a084e071310c79845d040c20
 
 # Story 1.1: Project Scaffolding & Core Systems
 
-Status: review
+Status: done
 
 > **Epic 1 — Combat Chassis & Feel** (v0.1 kinesthetics gate) · first story of the project.
 > This story is **greenfield** — there is no game code yet (no `.gd`, no `.tscn`, no `addons/`).
@@ -212,5 +212,38 @@ GLM-5.2 (via Claude Code harness)
 **Removed (throwaway):**
 - `configure_project.gd` — one-shot `ProjectSettings` configurator; deleted after `project.godot` was generated
 
+### Review Findings
+
+*(Code review 2026-07-02 — 3 layers: Blind Hunter · Edge Case Hunter · Acceptance Auditor)*
+
+**Decision needed (resolve before patching):**
+- [x] [Review][Decision] `fire` and `confirm` share joypad button_index 0 (South/A) — **RESOLVED: keep shared binding**. GameManager will gate active action contexts (menu vs. run) in Story 4.7; shared button is acceptable for an arcade-lineage game.
+
+**Patches (unambiguous fixes):**
+- [x] [Review][Patch] Typo `LAYER_EPLAYER_PROJECTILE` breaks entire test suite — **FALSE POSITIVE: committed code was correct; dismissed**
+- [x] [Review][Patch] `_min_level` name is misleading — **DISMISSED by Mrdth: name is intentional and explicit**
+- [x] [Review][Patch] Pool release uses `get_scene_file_path()` for key but acquire uses `resource_path` — **FIXED: pool rewritten with `_node_paths` tracking dict; acquire stores path at acquire time, release looks it up** [systems/pool.gd]
+- [x] [Review][Patch] Pool double-release guard missing — **FIXED: `_node_paths.has(instance_id)` check prevents double-release** [systems/pool.gd]
+- [x] [Review][Patch] Pool release of queued-for-deletion node — **FIXED: `is_queued_for_deletion()` guard added** [systems/pool.gd]
+- [x] [Review][Patch] `Settings.set_value()` emits `setting_changed` before disk save — **FIXED: save now runs before emit** [systems/settings.gd:27]
+- [x] [Review][Patch] Settings corrupted config file leaves `_config` in partial parse state — **FIXED: `_config.clear()` added on non-FILE_NOT_FOUND load error** [systems/settings.gd:19]
+- [x] [Review][Patch] `SeedManager.stream()` returns a new unseeded RNG on every call — **FIXED: `_stub_rng` module-level instance returned on all calls** [systems/seed_manager.gd]
+- [x] [Review][Patch] `Debug` missing `set_process_unhandled_input(false)` in release — **FIXED** [systems/debug.gd:10]
+- [x] [Review][Patch] `log.gd` uses `print()` not `print_rich()` — **FIXED: changed to `print_rich()`** [systems/log.gd:31]
+- [x] [Review][Patch] `pool.gd` uses untyped `Array` — **FIXED: `Array[Node]` throughout** [systems/pool.gd]
+- [x] [Review][Patch] `constants.gd` const values lack explicit `: int` type annotations — **FIXED** [systems/constants.gd]
+- [x] [Review][Patch] `game_manager.gd` `_mode` and `get_mode()` typed as `int` not `Mode` — **FIXED: `var _mode: Mode`, `get_mode() -> Mode`** [systems/game_manager.gd]
+- [x] [Review][Patch] `tests/systems/` mirror directory missing — **FIXED: `tests/systems/` created with `.gdkeep`; `test_scaffold.gd` moved to `tests/systems/`** [tests/systems/]
+- [x] [Review][Patch] `ContentRegistry` stubs call `Log.warn()` on every accessor call — **FIXED: one-time warn in `_ready()`, accessors return null silently** [systems/content_registry.gd]
+
+**Deferred (pre-existing or belongs in future story):**
+- [x] [Review][Defer] `arena.tscn` missing `uid=` line [world/arena.tscn:1] — deferred, Godot auto-assigns UID on first editor open; not a code issue
+- [x] [Review][Defer] `Settings.set_value()` sync disk I/O on every call [systems/settings.gd:27] — deferred, no real callers until E8 Settings panel; debounce/batch fix belongs there
+- [x] [Review][Defer] No `MAX_HP` constant [systems/constants.gd] — deferred, HP ceiling belongs in Story 1.5 life/health economy
+- [x] [Review][Defer] `get_value()` `null` default may surprise typed callers [systems/settings.gd:22] — deferred, caller's responsibility; Variant return is intentional for a config API
+- [x] [Review][Defer] `ship_lost(remaining: int)` parameter name is ambiguous (ships? HP?) [systems/event_bus.gd:7] — deferred, disambiguate when signal is consumed in Story 1.5
+- [x] [Review][Defer] `.gutconfig.json` `log_level:1` (failures-only) may hide context in CI [.gutconfig.json:5] — deferred, revisit when CI pipeline is established
+
 ### Change Log
 - 2026-07-01: Implemented Story 1.1 — project scaffolding. Domain folder tree, 11 thin autoload stubs (canonical order), 7 Input Map actions (kb+gamepad), display 1280×720 + canvas_items/expand, GUT 9.6.0, Arena main scene. All ACs verified: GUT 5/5 (43 asserts) + clean headless launch (exit 0, no errors). Story → review.
+- 2026-07-02: Code review complete. 1 decision, 15 patches, 6 deferred, 5 dismissed. Story → in-progress.
