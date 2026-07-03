@@ -433,3 +433,19 @@ pre-existing `test_pool`/`test_projectile` orphans; not a regression.
   GDD's cap-12, deliver the Galaga feel within it. v1 committed as a checkpoint on branch
   `1-4-formation-rework` before rework. Full findings + the deferred cap-12 revisit (option B)
   are in `1-4-formation-feel-findings.md`.
+- 2026-07-03: **Rework complete (option A), awaiting Mrdth playtest.** Changes: (1) movement
+  switched to **exact curve tracking** — `velocity = (target - pos) / delta` with speed-based
+  parametric advance, so enemies traverse curves crisply at `move_speed` (no pursuit lag);
+  `move_speed` now actually differentiates variants in entry/dive. (2) **Dive → re-enter from
+  top → return to formation loop** added (DiveState off-screen-bottom → EnterState); enemies
+  release to the Pool **only on death**, not on diving off-screen — persistent cycling threats.
+  (3) **Spiraling/swooping `Curve2D` entry** + sweep dive (regenerated, Catmull-Rom-smoothed),
+  replacing v1's straight lines. (4) **Coherent formation groups** — `group_size` drives pulse
+  count (`ceil(budget/group_size)`), each pulse a cluster entering together. (5) Per-enemy
+  ±25% formation-hold variance staggers dives. **Speed tuning deviation:** `move_speed` raised
+  from the GDD FR43 baseline (60/50/80) to 220/180/280 (~3.5×, ratios/ordering preserved) —
+  the baseline was too slow for arcade feel; GDD says "playtest-tuned," revisit at the 1.8 feel
+  gate. `dive_speed_multiplier` 2.0 → 2.5. 90/90 GUT pass (new dive-loop + state-progression
+  tests); headless launch clean. **Status remains in-progress until Mrdth confirms the feel in
+  the editor.** Not yet committed (rework sits uncommitted on `1-4-formation-rework` atop the
+  v1 checkpoint `82f235d`).

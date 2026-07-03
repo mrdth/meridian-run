@@ -1,13 +1,17 @@
 class_name DiveState
 extends State
-# Dives from the slot toward the bottom of the screen along dive_curve (RELATIVE to the
-# slot), bending toward the player's x (captured ONCE at dive-start from the injected
-# player_target — no cross-domain node-path reach). Moves at move_speed * dive_speed_multiplier.
-# Fires during the dive if definition.fires_during_dive. Releases to the Pool when off-screen
-# bottom — a departure, NOT a death (no score). The shared dive_curve is NEVER mutated: the
-# aim offset is applied to the per-enemy sampled point at read time.
+# Dives from the slot toward the bottom of the screen along dive_curve (RELATIVE to the slot),
+# bending toward the player's x (captured ONCE at dive-start from the injected player_target —
+# no cross-domain node-path reach). Speed-based traversal at move_speed * dive_speed_multiplier
+# + exact tracking (fast swoop, no lag). Fires during the dive if definition.fires_during_dive.
+#
+# **Off-screen-bottom → re-enter from the top (EnterState), NOT a release** — the Galaga
+# dive-and-return loop. Enemies release to the Pool ONLY on death (HealthComponent.died). This
+# makes them persistent cycling threats across the whole wave (addresses the "clear fast then
+# wait" concern). The shared dive_curve is NEVER mutated: the aim offset is applied to the
+# per-enemy sampled point at read time.
 
-const _OFFSCREEN_MARGIN: float = 32.0
+const _OFFSCREEN_MARGIN: float = 48.0
 
 var _enemy: Enemy
 var _t: float = 0.0
@@ -31,20 +35,20 @@ func enter(_msg: Dictionary = {}) -> void:
 
 
 func physics_process(delta: float) -> void:
-	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null:
+	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null or delta <= 0.0 or _baked_length <= 0.0:
 		return
 	var form: FormationDefinition = _enemy.formation_def
 	var curve: Curve2D = form.dive_curve
-	_t += delta
-	var u: float = clampf(_t / form.dive_duration_s, 0.0, 1.0)
+	var speed: float = _enemy.definition.move_speed * _enemy.definition.dive_speed_multiplier
+	_t += (speed * delta) / _baked_length
+	var u: float = minf(_t, 1.0)
 	var sampled: Vector2 = curve.sample_baked(u * _baked_length)
-	# Bend toward the player gradually (offset scales with u): leaves the slot cleanly and
-	# aims at the player by the bottom. Per-enemy offset — the shared curve is untouched.
+	# Bend toward the player gradually (offset scales with u): leaves the slot cleanly and aims
+	# at the player by the bottom. Per-enemy offset — the shared curve is untouched.
 	var target: Vector2 = _enemy.slot_world_pos + sampled + Vector2(_aim_offset * u, 0.0)
-	var dive_speed: float = _enemy.definition.move_speed * _enemy.definition.dive_speed_multiplier
-	_enemy.velocity = (target - _enemy.global_position).normalized() * dive_speed
+	_enemy.velocity = (target - _enemy.global_position) / delta
 	_enemy.move_and_slide()
-	# Off-screen bottom → release (departure, not death). _physics_process runs BEFORE the
-	# physics step, so synchronous release is fine (mirrors the player projectile leave-screen).
+	# Off-screen bottom → re-enter from the top (Galaga loop). NOT a release. Death is the only
+	# release (HealthComponent.died → Pool via enemy._on_died).
 	if _enemy.global_position.y > Constants.BASE_RESOLUTION.y + _OFFSCREEN_MARGIN:
-		Pool.release(_enemy)
+		_enemy.to_enter()

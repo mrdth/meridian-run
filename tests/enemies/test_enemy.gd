@@ -59,6 +59,19 @@ func test_faction_is_enemy() -> void:
 	assert_eq(fc.faction, FactionComponent.Faction.ENEMY)
 
 
+func test_visual_scale_driven_by_silhouette_scale() -> void:
+	# silhouette_scale (.tres) drives the Visual scale; collision_radius drives the CircleShape2D
+	# hitbox. Base variants 150% (1.5 / radius 21), Bomber 165% (1.65 / radius 26.4).
+	var g: Enemy = _make(GruntScene)
+	assert_almost_eq((g.get_node("Visual") as Polygon2D).scale.x, 1.5, 0.01)
+	var gshape := (g.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
+	assert_almost_eq(gshape.radius, 21.0, 0.01)  # 14 * 1.5
+	var b: Enemy = _make(BomberScene)
+	assert_almost_eq((b.get_node("Visual") as Polygon2D).scale.x, 1.65, 0.01)
+	var bshape := (b.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
+	assert_almost_eq(bshape.radius, 26.4, 0.01)  # 16 * 1.65
+
+
 func test_take_damage_decrements_and_emits_health_changed() -> void:
 	var e: Enemy = _make(GruntScene)
 	var hc: HealthComponent = e.get_node("HealthComponent")
@@ -126,36 +139,47 @@ func test_player_projectile_damages_enemy() -> void:
 
 
 func test_state_progression_enter_to_formation_to_dive() -> void:
-	# Drive the StateMachine by hand through the full curve. Transitions are duration-driven:
-	# Enter→Formation at entry_duration_s (1.5 s); Formation→Dive at +formation_hold_s (4 s).
+	# Drive the StateMachine by hand. Traversal is now SPEED-based (entry ≈ baked_length /
+	# move_speed ≈ 2.4 s for a grunt; formation hold ≈ 2.5 s ±25% per enemy). Rather than
+	# assert frame-precise timing (fragile under variance), record the states VISITED and
+	# assert the order Enter → Formation → Dive is reached within a generous window.
 	var e: Enemy = _make(GruntScene)
 	var sm: StateMachine = e.get_node("StateMachine")
 	var enter: State = e.get_node("StateMachine/EnterState")
 	var form: State = e.get_node("StateMachine/FormationState")
 	var dive: State = e.get_node("StateMachine/DiveState")
+	var seen_form: bool = false
+	var seen_dive: bool = false
 	assert_eq(sm.current_state, enter)
-	_step(sm, 30)  # 0.5 s
-	assert_eq(sm.current_state, enter)  # still entering (< 1.5 s)
-	_step(sm, 70)  # +1.17 s → 1.67 s > 1.5 s
-	assert_eq(sm.current_state, form)  # reached formation
-	_step(sm, 60)  # +1 s → 2.67 s, still holding (< 5.5 s)
-	assert_eq(sm.current_state, form)
-	_step(sm, 180)  # +3 s → 5.67 s > 1.5 + 4 = 5.5 s
-	assert_eq(sm.current_state, dive)  # diving
+	for _i in 500:  # 8.3 s — enough to reach formation and the first dive
+		sm._physics_process(1.0 / 60.0)
+		if sm.current_state == form:
+			seen_form = true
+		elif sm.current_state == dive:
+			seen_dive = true
+	assert_true(seen_form, "never reached FormationState")
+	assert_true(seen_dive, "never reached DiveState")
 
 
-func test_dive_exits_screen_and_releases_to_pool() -> void:
-	# A diving enemy that passes off-screen-bottom releases to the Pool (a departure, not a
-	# death — no score). Drive past entry + hold into the dive, then far enough to exit.
+func test_dive_loops_re_enters_does_not_release() -> void:
+	# Reworked Galaga loop: a diver that crosses the bottom RE-ENTERS from the top and returns
+	# to formation — it does NOT release. Only death releases (HealthComponent.died → Pool).
+	# Catches the v1 regression where divers exited the bottom and vanished.
 	var e: Enemy = _make(GruntScene)
 	var sm: StateMachine = e.get_node("StateMachine")
-	# Past entry (1.5) + hold (4) = 5.5 s to start diving; +dive travel to exit bottom.
-	for _i in 700:  # ~11.7 s — well past the full cycle
-		if not is_instance_valid(e) or e.get_parent() == null:
-			break  # self-released mid-loop
+	var crossed_bottom: bool = false
+	var re_entered: bool = false
+	for _i in 1500:  # 25 s — entry + hold + dive + re-entry
+		if e.get_parent() == null or not is_instance_valid(e):
+			break  # released — failure (divers should loop, not release)
 		sm._physics_process(1.0 / 60.0)
-	# The enemy self-released when it crossed the bottom.
-	assert_true(e.get_parent() == null or not is_instance_valid(e))
+		if not crossed_bottom and e.global_position.y > Constants.BASE_RESOLUTION.y:
+			crossed_bottom = true
+		elif crossed_bottom and e.global_position.y < 50.0:
+			re_entered = true
+			break
+	assert_true(crossed_bottom, "enemy never dived off the bottom")
+	assert_true(re_entered, "crossed the bottom but didn't re-enter from the top (released instead of looping?)")
 
 
 func _step(sm: StateMachine, frames: int) -> void:

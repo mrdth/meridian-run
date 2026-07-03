@@ -14,7 +14,7 @@ extends Node
 @export var bomber_scene: PackedScene
 @export var formation_id: StringName = &"standard"
 @export var wave_duration_s: float = 8.0
-@export var pulses_per_wave: int = 3
+@export var group_size: int = 4  # enemies per formation group; pulses = ceil(budget/group_size).
 @export var max_enemies: int = 12
 
 # Injected (by arena.gd or a test) player ref for dive aim — NOT a cross-domain ../../Player.
@@ -73,18 +73,25 @@ func get_run_score() -> int:
 
 
 func _build_schedule() -> void:
-	# Distribute _budget enemies into pulses_per_wave pulses evenly spaced over wave_duration.
-	# Variant from the authored composition; slot cycles through the formation grid. Built
-	# once per wave (no per-frame allocations here).
+	# Group enemies into FORMATION GROUPS (Galaga-lineage): pulses = ceil(budget/group_size),
+	# each pulse a coherent group entering together, evenly spaced across the wave ("as one
+	# disperses, the next enters"). Budget distributed evenly (remainder to the first groups).
+	# Variant from the authored composition; slots are contiguous per group (a cluster, not
+	# scattered). Built once per wave (no per-frame allocations here).
 	_schedule.clear()
 	assert(_formation_def != null, "FormationSpawner: no formation_def for '%s'" % formation_id)
-	var per_pulse: int = maxi(int(ceil(float(_budget) / float(pulses_per_wave))), 1)
-	var pulse_spacing: float = wave_duration_s / float(maxi(pulses_per_wave, 1))
-	for i in _budget:
-		var pulse_index: int = i / per_pulse
-		var id: StringName = _COMPOSITION[mini(i, _COMPOSITION.size() - 1)]
-		var slot: int = i % _formation_def.slots.size()
-		_schedule.append({"time_s": pulse_index * pulse_spacing, "id": id, "slot": slot})
+	var slot_count: int = _formation_def.slots.size()
+	var pulses: int = clampi(int(ceil(float(_budget) / float(maxi(group_size, 1)))), 1, _budget)
+	var pulse_spacing: float = wave_duration_s / float(maxi(pulses, 1))
+	var base_per_pulse: int = _budget / pulses
+	var remainder: int = _budget % pulses
+	var idx: int = 0
+	for p in pulses:
+		var count: int = base_per_pulse + (1 if p < remainder else 0)
+		for _k in count:
+			var id: StringName = _COMPOSITION[mini(idx, _COMPOSITION.size() - 1)]
+			_schedule.append({"time_s": p * pulse_spacing, "id": id, "slot": idx % slot_count})
+			idx += 1
 
 
 func _physics_process(delta: float) -> void:

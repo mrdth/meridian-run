@@ -20,6 +20,7 @@ signal died(score_value: int)  # direct local signal (D8) — the spawner connec
 @onready var _fire: EnemyFireSystem = $EnemyFireSystem
 @onready var _muzzle: Marker2D = $Muzzle
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var _visual: Polygon2D = $Visual
 @onready var _enter_state: State = $StateMachine/EnterState
 @onready var _formation_state: State = $StateMachine/FormationState
 @onready var _dive_state: State = $StateMachine/DiveState
@@ -46,6 +47,14 @@ func _ready() -> void:
 		var dup := shape.duplicate() as CircleShape2D
 		dup.radius = definition.collision_radius
 		_collision_shape.shape = dup
+	# Visual size from EnemyDefinition.silhouette_scale (data-driven, separate from the hitbox
+	# so visual size and collision can be tuned independently for fairness).
+	if _visual != null:
+		_visual.scale = Vector2.ONE * definition.silhouette_scale
+	# The Muzzle is a scene-fixed Marker2D (sibling of Visual), so it does NOT follow
+	# silhouette_scale — scale its offset to match, or big enemies fire from inside themselves.
+	if _muzzle != null:
+		_muzzle.position *= definition.silhouette_scale
 	# Connect death ONCE (persists across pool cycles — NEVER reconnect in activate).
 	if not _health.died.is_connected(_on_died):
 		_health.died.connect(_on_died)
@@ -77,6 +86,12 @@ func activate(p_formation_def: FormationDefinition, p_slot_index: int, p_rng: Ra
 
 
 # --- state-transition + fire helpers (called by the AI states via the owner reference) ---
+
+func to_enter() -> void:
+	# Re-enter from the top (the Galaga dive→return loop). EnterState re-positions at the entry
+	# curve start and flies back to the slot.
+	_state_machine.transition_to(_enter_state)
+
 
 func to_formation() -> void:
 	_state_machine.transition_to(_formation_state)

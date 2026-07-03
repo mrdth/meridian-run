@@ -33,3 +33,4 @@ enum ShotKind { STANDARD, HEAVY }  # HEAVY = telegraphed, Bomber-only.
 
 @export_group("Visual")
 @export var silhouette_color: Color = Color(1.0, 0.24, 0.35)  # hazard calm #FF3D5A default.
+@export var silhouette_scale: float = 1.0  # Polygon2D scale = visual size (collision_radius is the hitbox; bump both to grow an enemy).

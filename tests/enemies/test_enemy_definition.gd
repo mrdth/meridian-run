@@ -30,7 +30,8 @@ func test_grunt_stats_match_gdd_baselines() -> void:
 	assert_eq(g.shot_kind, EnemyDefinition.ShotKind.STANDARD)
 	assert_eq(g.fire_interval_min_s, 1.2)
 	assert_eq(g.fire_interval_max_s, 2.4)
-	assert_eq(g.move_speed, 60.0)
+	# move_speed raised from the GDD baseline (60) — playtest-tuned for arcade entry/dive feel.
+	assert_eq(g.move_speed, 220.0)
 
 
 func test_shielder_stats_match_gdd_baselines() -> void:
@@ -41,7 +42,7 @@ func test_shielder_stats_match_gdd_baselines() -> void:
 	assert_eq(s.shot_kind, EnemyDefinition.ShotKind.STANDARD)
 	assert_eq(s.fire_interval_min_s, 0.9)
 	assert_eq(s.fire_interval_max_s, 1.8)
-	assert_eq(s.move_speed, 50.0)
+	assert_eq(s.move_speed, 180.0)  # playtest-tuned (GDD baseline 50)
 
 
 func test_bomber_stats_match_gdd_baselines() -> void:
@@ -53,7 +54,7 @@ func test_bomber_stats_match_gdd_baselines() -> void:
 	assert_eq(b.shot_kind, EnemyDefinition.ShotKind.HEAVY)
 	assert_eq(b.fire_interval_min_s, 1.6)
 	assert_eq(b.fire_interval_max_s, 2.8)
-	assert_eq(b.move_speed, 80.0)
+	assert_eq(b.move_speed, 280.0)  # playtest-tuned (GDD baseline 80)
 
 
 func test_projectile_speed_dodgeable_vs_player() -> void:

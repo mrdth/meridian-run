@@ -21,7 +21,7 @@ func _make() -> FormationSpawner:
 	s.shielder_scene = ShielderScene
 	s.bomber_scene = BomberScene
 	s.wave_duration_s = 3.0  # short for test pacing
-	s.pulses_per_wave = 3
+	s.group_size = 4
 	arena.add_child(s)  # _ready: creates _container, loads formation_def
 	s.player = Node2D.new()  # dummy player for dive aim
 	arena.add_child(s.player)  # freed with the autofree'd arena
@@ -55,14 +55,14 @@ func test_budget_caps_even_for_very_high_waves() -> void:
 
 
 func test_spawns_arrive_as_pulses_not_all_at_once() -> void:
-	# AC3 — spawns are pulsed across the duration, not instantaneous. At t≈0 only the first
-	# pulse has fired (per_pulse = ceil(5/3) = 2), not all 5.
+	# AC3 — spawns are pulsed across the duration, not instantaneous. Wave 1 (5) with
+	# group_size 4 → 2 pulses (3 + 2); at t≈0 only the first group (3) has spawned, not all 5.
 	var s: FormationSpawner = _make()
 	s.begin_wave(1)
 	s._physics_process(0.01)  # t≈0.01 — only pulse 0 (time 0) is due
 	var early: int = s.get_spawned_count()
 	assert_lt(early, 5)  # not all at once
-	assert_gte(early, 1)  # at least the first pulse fired
+	assert_gte(early, 1)  # at least the first group fired
 
 
 func test_enemies_progress_through_states_without_error() -> void:
