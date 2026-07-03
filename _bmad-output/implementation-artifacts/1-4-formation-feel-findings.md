@@ -1,7 +1,10 @@
 # Story 1.4 — Formation/Dive Feel Findings & Deferred Scope Decision
 
-**Date:** 2026-07-03 · **Author:** dev agent (gds-dev-story) · **Status:** option A in progress;
-option B deferred (trigger conditions below)
+**Date:** 2026-07-03 · **Author:** dev agent (gds-dev-story) · **Status:** **RESOLVED 2026-07-03.**
+Option B was implemented via a `gds-correct-course` pass → decision-log `[Wave-2]` + Sprint Change
+Proposal `planning-artifacts/sprint-change-proposal-2026-07-03.md`. The cap-12 concurrency model is
+**retired**; the escalating drip model (`per_tick(wave)` hard-capped per tick, no concurrency cap,
+dive-loop kept) is live in `formation_spawner.gd`. The findings below are retained for traceability.
 
 > **Purpose:** record the design findings from the 1.4 v1 playtest so a future
 > `gds-correct-course` — **without this session's context** — can pick up the deferred scope

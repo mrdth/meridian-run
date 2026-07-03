@@ -4,7 +4,7 @@ baseline_commit: fdd88655fc43e52e781f47f89925b69948c67d9e
 
 # Story 1.4: Enemy Types & Formation/Dive AI
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -20,7 +20,7 @@ so that each wave is a readable, escalating threat.
 
 1. **Given** `EnemyDefinition` `.tres` for Grunt/Shielder/Bomber, **When** a wave spawns, **Then** each enemy loads its GDD stats via `ContentRegistry` (no `load("res://...")` in gameplay code).
 2. **Given** a wave, **When** enemies enter, **Then** they fly to formation rows then execute dive patterns (Galaga-lineage) via **the shared state/pattern system**, on `enemy`/`enemy_projectile` collision layers.
-3. **Given** wave N, **Then** it spawns 4+N enemies (capped at 12) as formation pulses across the wave's duration — a spawn budget, not a kill quota (FR30; the wave ends on a timer [Wave-1]).
+3. **Given** wave N, **Then** formation pulses recur every `drip_interval_s` across the wave's duration, each spawning `per_tick(N) = min(per_tick_base + ⌊N × per_tick_growth⌋, max_per_tick)` enemies (wave-scaled, **hard-capped per tick**; **no concurrency cap**) — enemies enter → form → dive → re-enter and cycle until killed, so pressure escalates as pulses accumulate (FR30; timer-terminated [Wave-1][Wave-2]).
 4. **Given** enemies fire, **Then** Grunt/Shielder fire standard (1 dmg) shots; Bomber fires heavy (2 dmg) telegraphed shots.
 
 **Implicit / end-to-end requirements (the dev agent owns these — an implementation must leave the system working, not just satisfy the letter of the ACs):**
@@ -441,11 +441,19 @@ pre-existing `test_pool`/`test_projectile` orphans; not a regression.
   release to the Pool **only on death**, not on diving off-screen — persistent cycling threats.
   (3) **Spiraling/swooping `Curve2D` entry** + sweep dive (regenerated, Catmull-Rom-smoothed),
   replacing v1's straight lines. (4) **Coherent formation groups** — `group_size` drives pulse
-  count (`ceil(budget/group_size)`), each pulse a cluster entering together. (5) Per-enemy
-  ±25% formation-hold variance staggers dives. **Speed tuning deviation:** `move_speed` raised
-  from the GDD FR43 baseline (60/50/80) to 220/180/280 (~3.5×, ratios/ordering preserved) —
-  the baseline was too slow for arcade feel; GDD says "playtest-tuned," revisit at the 1.8 feel
-  gate. `dive_speed_multiplier` 2.0 → 2.5. 90/90 GUT pass (new dive-loop + state-progression
-  tests); headless launch clean. **Status remains in-progress until Mrdth confirms the feel in
-  the editor.** Not yet committed (rework sits uncommitted on `1-4-formation-rework` atop the
-  v1 checkpoint `82f235d`).
+  count, each pulse a cluster entering together. (5) Per-enemy ±25% formation-hold variance
+  staggers dives. **Speed tuning:** `move_speed` raised from the GDD FR43 baseline (60/50/80)
+  to 220/180/280 (~3.5×, ratios preserved); `dive_speed_multiplier` 2.0 → 2.5. Committed `ed31bab`.
+- 2026-07-03: **Larger enemies.** New data-driven `silhouette_scale` drives the Visual scale
+  (muzzle offset tracks it); `collision_radius` (hitbox) bumped alongside. Base variants 150%
+  (scale 1.5 / radius 21), Bomber 165% (1.65 / 26.4). New `test_visual_scale…` verifies both.
+- 2026-07-03: **Course correction applied — escalating drip spawn model [Wave-2]** (see
+  `planning-artifacts/sprint-change-proposal-2026-07-03.md` + decision-log `[Wave-2]`).
+  Retired the `4+N, cap 12` on-screen concurrency cap + its P3 readability rationale (a fixed
+  cap is a ceiling a godhood build trivializes; timer-termination requires replenishment).
+  `formation_spawner.gd` rewritten: formation pulses every `drip_interval_s` for the whole
+  `wave_duration_s`, each spawning `per_tick(wave) = min(base + ⌊wave×growth⌋, max_per_tick)`
+  (wave-scaled, **hard-capped per tick** = perf guardrail, **no concurrency cap**); dive-loop
+  kept so pressure escalates as pulses accumulate. GDD `gdd.md:166`, FR30 `epics.md:82`,
+  Story 1.4 AC3 (epics + this file), decision-log updated. 92/92 GUT pass; headless launch
+  clean. **Status remains in-progress until Mrdth playtests the drip feel.**

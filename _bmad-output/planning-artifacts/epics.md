@@ -79,7 +79,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 **Run Structure & Procedural Generation**
 
 - **FR29:** A standard run is **20 waves / 4 tiers / 5 waves per tier** (Brotato model); every 5th wave is a tier cap.
-- **FR30:** Wave composition is procedurally generated per seed as a **spawn budget over the wave's fixed duration** [Wave-1]: wave N = 4+N enemies (capped at 12) enter as **formation pulses** — a concurrency/spawn budget, **not a kill quota** (the wave ends on a timer, not on clear) — with variant mix scaling by tier; enemies use formation + dive AI (Galaga-lineage).
+- **FR30:** Wave composition is procedurally generated per seed as an **escalating spawn schedule over the wave's fixed duration** [Wave-1][Wave-2]: formation pulses recur every `drip_interval_s`, each spawning `per_tick(wave) = min(per_tick_base + ⌊wave × per_tick_growth⌋, max_per_tick)` enemies — **wave-scaled and hard-capped per tick** (a performance guardrail), **with NO on-screen concurrency cap**. Enemies enter → form → dive → **re-enter and cycle until killed** (Galaga-lineage loop), so pressure escalates as pulses accumulate; the wave ends on a timer, not on clear. Variant mix scales by tier. *(Retires the prior `4+N, cap 12` concurrency cap — see decision-log [Wave-2].)*
 - **FR31:** The **same seed produces the same wave layouts, spawns, and modifier selections** (deterministic); player timing varies (not a frame-exact replay).
 - **FR32:** All gameplay randomness flows through `SeedManager` **named sub-streams** (wave_composition / modifier_select / enemy_spawn…), each derived from seed + salt; global `randi()`/`randf()` is never used for reproducible behavior.
 - **FR33:** `RunGenerator` is **pure**: `(seed, wave, tier, run_flags) → WaveDefinition` (ordered spawns + modifier type + captor presence); authored (fixed) content = wave-20 boss, captor AI, individual enemy stats.
@@ -349,7 +349,7 @@ So that each wave is a readable, escalating threat.
 
 - **Given** `EnemyDefinition` `.tres` for Grunt/Shielder/Bomber, **When** a wave spawns, **Then** each enemy loads its GDD stats via `ContentRegistry` (no `load("res://...")` in gameplay code).
 - **Given** a wave, **When** enemies enter, **Then** they fly to formation rows then execute dive patterns (Galaga-lineage) via the shared state/pattern system, on `enemy`/`enemy_projectile` layers.
-- **Given** wave N, **Then** it spawns 4+N enemies (capped at 12) as formation pulses across the wave's duration — a spawn budget, not a kill quota (FR30; the wave ends on a timer [Wave-1]).
+- **Given** wave N, **Then** formation pulses recur every `drip_interval_s` across the wave's duration, each spawning `per_tick(N)` enemies (wave-scaled, hard-capped per tick; **no concurrency cap**) — enemies enter → form → dive → re-enter and cycle until killed, so pressure escalates as pulses accumulate (FR30; timer-terminated [Wave-1][Wave-2]).
 - **Given** enemies fire, **Then** Grunt/Shielder fire standard (1 dmg) shots; Bomber fires heavy (2 dmg) telegraphed shots.
 
 *(FR30, FR43, FR44, FR45 · AR5, AR6, AR8)*
