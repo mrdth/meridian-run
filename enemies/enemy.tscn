@@ -1,0 +1,54 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy.gd" id="1_enemy"]
+[ext_resource type="Resource" path="res://resources/enemies/enemy_grunt.tres" id="2_def"]
+[ext_resource type="Script" path="res://components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://components/faction_component.gd" id="4_faction"]
+[ext_resource type="Script" path="res://components/state_machine/state_machine.gd" id="5_sm"]
+[ext_resource type="Script" path="res://enemies/states/enter_state.gd" id="6_enter"]
+[ext_resource type="Script" path="res://enemies/states/formation_state.gd" id="7_form"]
+[ext_resource type="Script" path="res://enemies/states/dive_state.gd" id="8_dive"]
+[ext_resource type="Script" path="res://enemies/enemy_fire_system.gd" id="9_fire"]
+[ext_resource type="PackedScene" path="res://enemies/enemy_projectile.tscn" id="10_proj"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 14.0
+
+[node name="Enemy" type="CharacterBody2D"]
+collision_mask = 0
+script = ExtResource("1_enemy")
+definition = ExtResource("2_def")
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-14, -12, 14, -12, 0, 14)
+color = Color(1, 0.24, 0.35, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="FactionComponent" type="Node" parent="."]
+script = ExtResource("4_faction")
+faction = 1
+
+[node name="Muzzle" type="Marker2D" parent="."]
+position = Vector2(0, 18)
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("5_sm")
+initial_state = NodePath("EnterState")
+
+[node name="EnterState" type="Node" parent="StateMachine"]
+script = ExtResource("6_enter")
+
+[node name="FormationState" type="Node" parent="StateMachine"]
+script = ExtResource("7_form")
+
+[node name="DiveState" type="Node" parent="StateMachine"]
+script = ExtResource("8_dive")
+
+[node name="EnemyFireSystem" type="Node" parent="."]
+script = ExtResource("9_fire")
+projectile_scene = ExtResource("10_proj")

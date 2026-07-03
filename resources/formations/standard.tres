@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="FormationDefinition" format=3]
+
+[ext_resource type="Script" path="res://enemies/formation_definition.gd" id="1_cekrc"]
+
+[sub_resource type="Curve2D" id="Curve2D_mlh2x"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 300, 0, 0, 0, -300, 0, 0, 0, 900)
+}
+point_count = 2
+
+[sub_resource type="Curve2D" id="Curve2D_c7gog"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 150, 0, -300, 0, -150, 0, 0, 0, 0)
+}
+point_count = 2
+
+[resource]
+script = ExtResource("1_cekrc")
+slots = Array[Vector2]([Vector2(430, 130), Vector2(570, 130), Vector2(710, 130), Vector2(850, 130), Vector2(430, 210), Vector2(570, 210), Vector2(710, 210), Vector2(850, 210)])
+entry_curve = SubResource("Curve2D_c7gog")
+dive_curve = SubResource("Curve2D_mlh2x")

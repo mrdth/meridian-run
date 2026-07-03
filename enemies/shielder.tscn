@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://enemies/enemy.tscn" id="1_base"]
+[ext_resource type="Resource" path="res://resources/enemies/enemy_shielder.tres" id="2_def"]
+
+[node name="Shielder" instance=ExtResource("1_base")]
+definition = ExtResource("2_def")
+
+[node name="Visual" parent="." index="0"]
+polygon = PackedVector2Array(0, -14, 12, -7, 12, 7, 0, 14, -12, 7, -12, -7)
+color = Color(1, 0.24, 0.35, 1)

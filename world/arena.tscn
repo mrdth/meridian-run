@@ -1,7 +1,19 @@
-[gd_scene format=3 uid="uid://dj3d8yqj3v6b"]
+[gd_scene load_steps=7 format=3 uid="uid://dj3d8yqj3v6b"]
 
-[ext_resource type="PackedScene" path="res://player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://world/arena.gd" id="1_arena"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://world/formation_spawner.gd" id="3_spawner"]
+[ext_resource type="PackedScene" path="res://enemies/grunt.tscn" id="4_grunt"]
+[ext_resource type="PackedScene" path="res://enemies/shielder.tscn" id="5_shielder"]
+[ext_resource type="PackedScene" path="res://enemies/bomber.tscn" id="6_bomber"]
 
-[node name="Arena" type="Node2D" unique_id=463908770]
+[node name="Arena" type="Node2D"]
+script = ExtResource("1_arena")
 
-[node name="Player" parent="." unique_id=1416614045 instance=ExtResource("1_player")]
+[node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="FormationSpawner" type="Node" parent="."]
+script = ExtResource("3_spawner")
+grunt_scene = ExtResource("4_grunt")
+shielder_scene = ExtResource("5_shielder")
+bomber_scene = ExtResource("6_bomber")

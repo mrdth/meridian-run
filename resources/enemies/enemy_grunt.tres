@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"grunt"
+formation_id = &"standard"
+max_hp = 30
+score_value = 100
+collision_radius = 14.0
+fire_damage = 1
+shot_kind = 0
+fire_interval_min_s = 1.2
+fire_interval_max_s = 2.4
+projectile_speed = 280.0
+heavy_windup_s = 0.0
+fires_during_dive = true
+move_speed = 60.0
+dive_speed_multiplier = 2.0
+silhouette_color = Color(1, 0.24, 0.35, 1)
