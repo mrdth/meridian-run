@@ -78,7 +78,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 
 **Run Structure & Procedural Generation**
 
-- **FR29:** A standard run is **20 waves / 4 tiers / 5 waves per tier** (Brotato model); every 5th wave is a tier cap.
+- **FR29:** A standard run is **20 waves** (Brotato model). **4 tiers** are difficulty-scaled replay loops unlocked sequentially by beating wave 20 (not a per-run 5-wave subdivision — see decision-log `[Tier-terminology]`); every 5th wave (5/10/15) is a **tier-cap wave** (modifier only at Tier 1, modifier + mini-boss at Tier 2+); wave 20 is the fixed final boss.
 - **FR30:** Wave composition is procedurally generated per seed as an **escalating spawn schedule over the wave's fixed duration** [Wave-1][Wave-2]: formation pulses recur every `drip_interval_s`, each spawning `per_tick(wave) = min(per_tick_base + ⌊wave × per_tick_growth⌋, max_per_tick)` enemies — **wave-scaled and hard-capped per tick** (a performance guardrail), **with NO on-screen concurrency cap**. Enemies enter → form → dive → **re-enter and cycle until killed** (Galaga-lineage loop), so pressure escalates as pulses accumulate; the wave ends on a timer, not on clear. Variant mix scales by tier. *(Retires the prior `4+N, cap 12` concurrency cap — see decision-log [Wave-2].)*
 - **FR31:** The **same seed produces the same wave layouts, spawns, and modifier selections** (deterministic); player timing varies (not a frame-exact replay).
 - **FR32:** All gameplay randomness flows through `SeedManager` **named sub-streams** (wave_composition / modifier_select / enemy_spawn…), each derived from seed + salt; global `randi()`/`randf()` is never used for reproducible behavior.
@@ -101,7 +101,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 
 **Enemies & Arena**
 
-- **FR43:** Enemy types (data-tunable baselines, retuned per tier): Grunt (HP 30, score 100, downward cannon-fodder, fire 1.2–2.4 s, speed 60), Shielder (HP 50, score 150, tougher, fire 0.9–1.8 s, speed 50), Bomber (HP 80, score 300, heavy 2 dmg, fire 1.6–2.8 s, speed 80), Captor (HP 60 +50%/tier, 5-state FSM).
+- **FR43:** Enemy types (data-tunable baselines, retuned per tier): Grunt (HP 30, score 100, downward cannon-fodder, fire 1.2–2.4 s, speed 220), Shielder (HP 50, score 150, tougher, fire 0.9–1.8 s, speed 180), Bomber (HP 80, score 300, heavy 2 dmg, fire 1.6–2.8 s, speed 280), Captor (HP 60 +50%/tier, 5-state FSM). *(Speed retuned ~3.5× from the original 60/50/80 baseline 2026-07-03 — see decision-log `[Speed-tuning]`.)*
 - **FR44:** The arena is a **single fixed screen** with the player locked to the bottom, a 1-axis horizontal lane, vertical fire geometry, no cover and no verticality; power-up drops occur on wave clear and on Bounty modifier waves.
 - **FR45:** No screen-clearing weapons exist; large-AoE only when rare/earned/non-repeatable. Multiplayer is out of scope (single-player only).
 

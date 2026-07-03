@@ -17,13 +17,16 @@ var _enemy: Enemy
 var _t: float = 0.0
 var _baked_length: float = 0.0
 var _aim_offset: float = 0.0
+var _logged_degenerate_curve: bool = false
 
 
 func enter(_msg: Dictionary = {}) -> void:
 	_enemy = owner as Enemy
 	_t = 0.0
+	_logged_degenerate_curve = false
 	if _enemy == null or _enemy.formation_def == null or _enemy.formation_def.dive_curve == null:
 		return
+	assert(_enemy.collision_mask == 0, "DiveState: exact-tracking movement requires collision_mask == 0")
 	_baked_length = _enemy.formation_def.dive_curve.get_baked_length()
 	# Capture the player's x ONCE at dive-start (injected player_target ref). The dive bends
 	# toward where the player is now — classic Galaga dive aim.
@@ -35,7 +38,15 @@ func enter(_msg: Dictionary = {}) -> void:
 
 
 func physics_process(delta: float) -> void:
-	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null or delta <= 0.0 or _baked_length <= 0.0:
+	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null or delta <= 0.0:
+		return
+	if _baked_length <= 0.0:
+		# A degenerate dive_curve would otherwise soft-lock the enemy here forever with no
+		# diagnostic (review fix) — log once per state-entry so a bad FormationDefinition .tres
+		# is discoverable instead of silently freezing enemies.
+		if not _logged_degenerate_curve:
+			Log.err("enemies", "DiveState: dive_curve has zero baked length — enemy stuck")
+			_logged_degenerate_curve = true
 		return
 	var form: FormationDefinition = _enemy.formation_def
 	var curve: Curve2D = form.dive_curve

@@ -24,6 +24,7 @@ var _definition: EnemyDefinition
 var _rng: RandomNumberGenerator
 var _armed: bool = false
 var _cooldown: float = 0.0
+var _windup_remaining: float = -1.0  # >= 0 while telegraphing a heavy shot (review fix).
 
 
 func arm(definition: EnemyDefinition, rng: RandomNumberGenerator, active: bool) -> void:
@@ -33,6 +34,7 @@ func arm(definition: EnemyDefinition, rng: RandomNumberGenerator, active: bool) 
 	_definition = definition
 	_rng = rng
 	_armed = active
+	_windup_remaining = -1.0
 	if _armed and _definition != null and _rng != null:
 		_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
 
@@ -40,11 +42,23 @@ func arm(definition: EnemyDefinition, rng: RandomNumberGenerator, active: bool) 
 func _physics_process(delta: float) -> void:
 	if _definition == null or _rng == null:
 		return
+	# Mid-windup: hold fire until the telegraph elapses, then actually spawn (review fix —
+	# heavy_windup_s was previously stored but never delayed the shot).
+	if _windup_remaining >= 0.0:
+		_windup_remaining -= delta
+		if _windup_remaining <= 0.0:
+			_windup_remaining = -1.0
+			_spawn()
+			_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
+		return
 	# Cooldown accumulator; clamp at 0 to avoid unbounded-negative drift (1.3 review).
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	if _armed and _cooldown <= 0.0:
-		_spawn()
-		_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
+		if _definition.shot_kind == EnemyDefinition.ShotKind.HEAVY and _definition.heavy_windup_s > 0.0:
+			_windup_remaining = _definition.heavy_windup_s
+		else:
+			_spawn()
+			_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
 
 
 func _spawn() -> void:
@@ -56,6 +70,9 @@ func _spawn() -> void:
 	var scene: PackedScene = projectile_scene
 	if heavy and heavy_projectile_scene != null:
 		scene = heavy_projectile_scene
+	if scene == null:
+		Log.err("enemies", "EnemyFireSystem: projectile_scene unassigned — shot skipped")
+		return
 	# Pool.acquire() — NEVER instantiate() on the hot path (AR6).
 	var p: EnemyProjectile = Pool.acquire(scene) as EnemyProjectile
 	assert(p != null, "EnemyFireSystem: acquired node is not an EnemyProjectile — wrong scene?")

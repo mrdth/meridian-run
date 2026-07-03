@@ -12,15 +12,18 @@ extends State
 var _enemy: Enemy
 var _t: float = 0.0
 var _baked_length: float = 0.0
+var _logged_degenerate_curve: bool = false
 
 
 func enter(_msg: Dictionary = {}) -> void:
 	_enemy = owner as Enemy
 	_t = 0.0
+	_logged_degenerate_curve = false
 	# Defensive: StateMachine._ready calls enter() once before activate() sets formation_def
 	# (first acquire). No-op until activate re-enters us with per-spawn data.
 	if _enemy == null or _enemy.formation_def == null or _enemy.formation_def.entry_curve == null:
 		return
+	assert(_enemy.collision_mask == 0, "EnterState: exact-tracking movement requires collision_mask == 0")
 	var curve: Curve2D = _enemy.formation_def.entry_curve
 	_baked_length = curve.get_baked_length()
 	# Spawn/re-enter at the curve start (off-screen above the slot) — one-time positioning, not
@@ -31,7 +34,15 @@ func enter(_msg: Dictionary = {}) -> void:
 
 
 func physics_process(delta: float) -> void:
-	if _enemy == null or _enemy.formation_def == null or delta <= 0.0 or _baked_length <= 0.0:
+	if _enemy == null or _enemy.formation_def == null or delta <= 0.0:
+		return
+	if _baked_length <= 0.0:
+		# A degenerate entry_curve would otherwise soft-lock the enemy here forever with no
+		# diagnostic (review fix) — log once per state-entry so a bad FormationDefinition .tres
+		# is discoverable instead of silently freezing enemies.
+		if not _logged_degenerate_curve:
+			Log.err("enemies", "EnterState: entry_curve has zero baked length — enemy stuck")
+			_logged_degenerate_curve = true
 		return
 	var curve: Curve2D = _enemy.formation_def.entry_curve
 	# Advance t by actual movement (speed-based traversal — variants differ in entry speed).

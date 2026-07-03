@@ -160,7 +160,7 @@ You make **one active choice — Sacrifice now, or Hold:**
 
 ### Run Structure
 
-- **20 waves / 4 tiers** (Brotato model). Every 5th wave is a modifier wave.
+- **20 waves per tier-run, 4 tiers** (Brotato model) — **[Tier-terminology] (2026-07-03, correct-course)** tiers are **difficulty-scaled replay loops** (Tier 2/3 unlocked sequentially by beating wave 20, see `Multi-tier loops` below), **not** a per-run 5-wave subdivision. Every 5th wave (5/10/15) is a **tier-cap wave** — modifier only at Tier 1, modifier + mini-boss at Tier 2+ (see `Tier-cap escalation`); wave 20 is the fixed final boss. See decision-log `[Tier-terminology]`.
 - **Wave termination = timed (Brotato-clock), not kill-count** [Wave-1]. A wave ends when its **fixed, data-tuned duration** (`wave_tuning.tres`) expires — **not** when the screen is cleared. The fixed clock is the only model that (a) bounds run length, (b) preserves godhood *duration* (P1 — the clock is the ruler power is measured against; kill-count *shrinks* late waves and thus the peak window), (c) guarantees the captor FSM its full gamble runway + a predictable *Keep*-outcome horizon (P2), (d) keeps the [Risk-12] docked-hitbox cost honest for the whole wave (P3 — kill-count lets strong builds dodge the cost via short exposure), and (e) lets the **Gauntlet** modifier ("dense fire, *few* foes") function as a real dodge test. *(The prototype's clear-condition was gated on a per-wave boss no longer in the design — boss is wave-20 only — so it does not carry over.)*
 - **Run-length budget = a feel guideline, not a cap.** A full 20-wave run (excl. endless) is expected to land **~25–45 minutes** — naturally bounded by timed waves + the between-wave reward/shop interludes. The 20–30 min gut-feel is **not** a hard cap; ~45 min is acceptable. Wave duration is the primary dial, tuned in playtest (logged as a Difficulty-curve knob). *(Endless is bounded only by player skill.)*
 - **Spawning within a wave = escalating pulsed formations** [Wave-1][Wave-2]. `RunGenerator` emits a **spawn schedule** — an ordered list of **formation pulses** (composition + entry timing + dive pattern + captor-presence) via the `enemy_spawn` sub-stream. Pulses recur every `drip_interval_s` for the whole duration; each spawns `per_tick(wave) = min(per_tick_base + ⌊wave × per_tick_growth⌋, max_per_tick)` enemies — **wave-scaled and hard-capped per tick (a performance guardrail), with NO on-screen concurrency cap**. Each pulse enters → forms → dives → **re-enters and cycles until killed** (Galaga-lineage loop); as one disperses, the next enters, so **pressure escalates** across the wave (timer-terminated waves *require* replenishment — a fixed batch clears-fast-then-waits). The per-tick cap bounds spawn *rate*, not on-screen count; worst-case entities (`wave_duration / drip_interval × max_per_tick`) are verified at the perf gate. *Galaga's choreographed soul inside Brotato's bounded clock.* **[Wave-2] (2026-07-03, correct-course):** retires the prior `4+N, cap 12` concurrency cap and its P3 readability rationale — a fixed cap is a ceiling an 8–12× godhood build trivializes, and timer-termination demands replenishment. See decision-log `[Wave-2]`.
@@ -239,10 +239,14 @@ Prototype baselines (retuned per tier in v1.0):
 
 | Enemy | HP | Score | Behavior | Fire interval | Speed |
 |---|---|---|---|---|---|
-| Grunt | 30 | 100 | downward, cannon-fodder | 1.2–2.4 s | 60 |
-| Shielder | 50 | 150 | tougher | 0.9–1.8 s | 50 |
-| Bomber | 80 | 300 | heavy (**2 dmg**) | 1.6–2.8 s | 80 |
+| Grunt | 30 | 100 | downward, cannon-fodder | 1.2–2.4 s | 220 |
+| Shielder | 50 | 150 | tougher | 0.9–1.8 s | 180 |
+| Bomber | 80 | 300 | heavy (**2 dmg**) | 1.6–2.8 s | 280 |
 | Captor (Tractor) | 60 *(+50%/tier)* | — | enter/formation/telegraph/capture/dive state machine | — | — |
+
+**Speed retuned 2026-07-03** (Story 1.4 code review, confirmed by Mrdth): raised ~3.5× from the
+original 60/50/80 baseline (ratios preserved) so formation entry/dive reads as fast and snappy
+rather than sluggish. See decision-log `[Speed-tuning]`.
 
 - **Formation + dive AI** (*Galaga*-lineage); wave N = 4+N enemies, cap 12; variant mix scales by tier.
 - 🚧 **Captor variety at higher tiers** — open run-variety question (decoupled from the meta model after the mainframe-hack clarification).

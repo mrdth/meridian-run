@@ -4,7 +4,7 @@ baseline_commit: fdd88655fc43e52e781f47f89925b69948c67d9e
 
 # Story 1.4: Enemy Types & Formation/Dive AI
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,7 +25,7 @@ so that each wave is a readable, escalating threat.
 
 **Implicit / end-to-end requirements (the dev agent owns these — an implementation must leave the system working, not just satisfy the letter of the ACs):**
 - The existing player vertical-fire system (Story 1.3) must still kill these enemies: the player projectile's `body_entered` hit path must detect a `CharacterBody2D` enemy on `LAYER_ENEMY` and apply `take_damage()` to its `HealthComponent`. Do **not** regress Story 1.3.
-- Enemies must be killable by player fire, must damage the player with their own fire, and must return to the `Pool` on death/off-screen — never `queue_free()`.
+- Enemies must be killable by player fire, must damage the player with their own fire, and must return to the `Pool` on death — never `queue_free()`. **Superseded 2026-07-03 (Option-A rework):** off-screen-bottom during a dive is no longer an immediate release — it re-enters from the top (the Galaga dive→return loop); enemies release to the `Pool` only on death or on wave-end collection (Task 5.2). See `1-4-formation-feel-findings.md`.
 
 ---
 
@@ -68,7 +68,7 @@ so that each wave is a readable, escalating threat.
   - `@export var slots: Array[Vector2]` — formation positions (relative to a formation anchor / row). Author a small grid (e.g. 2 rows × 4 cols). **Formation row Y/spacing are NOT in the GDD** (the prototype's `y=110` is reference-only) — author as data here; tune in playtest.
   - `@export var entry_curve: Curve2D` — entry path (off-screen top → formation slot). Bezier.
   - `@export var dive_curve: Curve2D` — dive path (formation slot → off-screen bottom), bezier, Galaga-lineage arc.
-  - `@export var formation_hold_s: float` — time in formation before diving (3.5–5.5 s band, per captor's formation-phase precedent).
+  - `@export var formation_hold_s: float` — time in formation before diving (originally speced as a 3.5–5.5 s band, per captor's formation-phase precedent; **retuned to 2.5 s 2026-07-03**, confirmed by Mrdth for faster wave rhythm under the escalating-drip model — see decision-log `[Speed-tuning]`).
   - `@export var side_drift_amplitude_px: float` / `@export var side_drift_period_s: float` — side-to-side drift in formation (Galaga-lineage).
   - `@export var entry_duration_s: float` / `@export var dive_duration_s: float`.
 - [x] 2.3 Create `.tres` instance `resources/formations/standard.tres` with sane v0.1 values (one formation pattern for E1's authored wave). Adding formations later = add a `.tres`, zero code (D9).
@@ -96,7 +96,7 @@ so that each wave is a readable, escalating threat.
 - [x] 3.3 The three AI states (each `extends State`, in `enemies/states/`):
   - `enter_state.gd` — `enter()`: capture formation slot position; advance parametric `t` over `entry_duration_s`; set enemy velocity toward `entry_curve.sample_baked(t)`; on completion → `transition_to(formation_state)`.
   - `formation_state.gd` — `enter()`: arm fire system (pass `rng`, `definition.fire_interval_*`); start `formation_hold_s` timer (accumulate in `physics_process`, no Timer node — mirror `fire_system.gd` cooldown). Apply side-to-side drift (sine of elapsed time × `side_drift_amplitude` / `period`) anchored to the slot. On `formation_hold_s` elapsed → `transition_to(dive_state)`.
-  - `dive_state.gd` — `enter()`: capture player x ONCE at dive-start (read from the formation spawner / injected player ref — do NOT reach across domains via node paths); compute a per-enemy horizontal aim offset and apply it when sampling `dive_curve` (see Dev Notes §"Movement" — **do NOT mutate the shared curve**); advance `t` over `dive_duration_s`; set velocity along the curve at `move_speed * dive_speed_multiplier`. Fire during dive if `definition.fires_during_dive`. When the enemy passes off-screen bottom (`global_position.y > Constants.BASE_RESOLUTION.y + margin`) → `Pool.release.call_deferred(self)` (left the screen, not a death — no score).
+  - `dive_state.gd` — `enter()`: capture player x ONCE at dive-start (read from the formation spawner / injected player ref — do NOT reach across domains via node paths); compute a per-enemy horizontal aim offset and apply it when sampling `dive_curve` (see Dev Notes §"Movement" — **do NOT mutate the shared curve**); advance `t` over `dive_duration_s`; set velocity along the curve at `move_speed * dive_speed_multiplier`. Fire during dive if `definition.fires_during_dive`. When the enemy passes off-screen bottom (`global_position.y > Constants.BASE_RESOLUTION.y + margin`) → ~~`Pool.release.call_deferred(self)` (left the screen, not a death — no score)~~ **superseded 2026-07-03: `to_enter()` (re-enter from the top — the Galaga dive→return loop; release to Pool is death-only, see Implicit requirements above).**
 - [x] 3.4 Variant scenes `enemies/grunt.tscn`, `shielder.tscn`, `bomber.tscn` — inherit `enemy.tscn`; set `definition` to the matching `EnemyDefinition` `.tres`; customize `Visual` silhouette per type (distinct hazard-family shapes — see Dev Notes §"Silhouettes"); set `FactionComponent.faction = ENEMY`.
 - [x] 3.5 Integration test `tests/enemies/test_enemy.gd` (mirror `tests/player/test_projectile.gd`'s pool-fixture style): each variant scene has `collision_layer == Constants.LAYER_ENEMY`; `HealthComponent` child named exactly `"HealthComponent"` with correct `max_hp`; `FactionComponent.faction == Faction.ENEMY`; `take_damage()` decrements HP, emits `health_changed`, emits `died` exactly once at 0; pool round-trip (`acquire` → `activate` → release → re-`acquire` works, no stacked signal connections); a dummy player projectile hitting the enemy applies damage via the existing `body_entered` path (regression guard for Story 1.3).
 
@@ -133,6 +133,33 @@ so that each wave is a readable, escalating threat.
 - [x] 6.3 Remove the `.gdkeep` placeholders from `enemies/` and `tests/enemies/` (now populated). Confirm `components/state_machine/` and `resources/enemies/`, `resources/formations/` exist.
 - [x] 6.4 Manual/visual check in the editor: launch the Arena, confirm enemies enter in formation, drift, dive off-screen, fire downward; player fire kills them; enemy fire damages the player's HP. (No hit-flash/particles yet — those are Story 1.6.)
 
+### Review Findings
+
+_Code review (2026-07-03), diff `fdd8865..HEAD` (v1 + Option-A rework + Wave-2 course-correction). 3-layer adversarial review (Blind Hunter, Edge Case Hunter, Acceptance Auditor), cross-verified against live code._
+
+- [x] [Review][Decision] ~~Formation slot collisions~~ **RESOLVED (Mrdth):** allow slot sharing with a jitter/offset — keep the no-concurrency-cap design intact; when a slot is already occupied, offset the new enemy's target position so it doesn't exactly overlap the occupant. **→ converted to patch, see below.**
+- [x] [Review][Decision] ~~`formation_hold_s = 2.5` below spec band~~ **RESOLVED (Mrdth):** intentional feel-tuning from the Option-A rework, confirmed. Dev Notes + decision-log `[Speed-tuning]` updated to record it.
+- [x] [Review][Decision] ~~`move_speed` deviates ~3.5x from GDD/FR43 baseline~~ **RESOLVED (Mrdth):** intentional (entry/dive speed separation). GDD `gdd.md:240-244`, FR43 `epics.md:104`, and this story's stat table updated to the shipped 220/180/280 baseline; decision-log `[Speed-tuning]` added.
+- [x] [Review][Decision] ~~Undocumented GDD edit (tier-cap → "modifier wave")~~ **RESOLVED (Mrdth):** the GDD contradiction is real — reconciled to "tiers are difficulty-scaled replay loops unlocked by beating wave 20, not a per-run 5-wave subdivision; every 5th wave is a tier-cap wave (modifier at Tier 1, modifier + mini-boss at Tier 2+)." `gdd.md:163` and FR29 `epics.md:81` reworded; decision-log `[Tier-terminology]` added.
+- [x] [Review][Decision] ~~Story doc self-contradiction on status~~ **RESOLVED (Mrdth):** the drip feel has been playtested and confirmed good — story genuinely ready for `review`. Change Log's stale "remains in-progress" line corrected.
+- [x] [Review][Patch] Formation slot collisions — **Fixed:** `Enemy.activate()` now applies a small randomized jitter (`_SLOT_JITTER_PX = 14.0`, via the spawner's seeded `rng`) to `slot_world_pos`, so co-occupants of a reused slot don't exactly coincide; the no-concurrency-cap design is unchanged. [enemies/enemy.gd:activate]
+- [x] [Review][Patch] `formation_spawner.gd` never guards against `ContentRegistry.get_formation_def()` returning `null` on a miss — **Fixed:** `_ready()` logs and `_spawn_pulse()` now no-ops if `_formation_def` is null (or has no slots). [world/formation_spawner.gd:_ready,_spawn_pulse]
+- [x] [Review][Patch] Modulo-by-zero if a `FormationDefinition.slots` array is empty — **Fixed:** same guard as above (`_formation_def.slots.is_empty()` check in `_spawn_pulse`). [world/formation_spawner.gd:_spawn_pulse]
+- [x] [Review][Patch] Infinite loop / engine hang if `drip_interval_s` is set to `0` or negative — **Fixed:** `_physics_process` now floors the interval at `_MIN_DRIP_INTERVAL_S` (0.05s). [world/formation_spawner.gd:_physics_process]
+- [x] [Review][Patch] Spawner's `RandomNumberGenerator` is never seeded — **Fixed:** `_ready()` now sets `_rng.seed = hash(formation_id)` as a deterministic placeholder until `SeedManager` sub-streams land in Story 4.1 (per Dev Notes #6). [world/formation_spawner.gd:_ready]
+- [x] [Review][Patch] Task 5.2 checked off but not implemented (survivors loop forever) — **Fixed:** added `_despawn_survivors()`, called when `wave_duration_s` elapses; releases every enemy still in `_container` via the new `Enemy.despawn()` (collected, not killed — no score). [world/formation_spawner.gd:_despawn_survivors, enemies/enemy.gd:despawn]
+- [x] [Review][Patch] `EnemyDefinition.silhouette_color` is dead data — **Fixed:** `Enemy._ready()` now applies `definition.silhouette_color` to `_visual.color`. [enemies/enemy.gd:_ready]
+- [x] [Review][Patch] `heavy_windup_s` never wired to an actual pre-fire delay — **Fixed:** `EnemyFireSystem._physics_process()` now holds fire for `heavy_windup_s` (via a new `_windup_remaining` accumulator) before spawning a HEAVY shot, instead of firing immediately. [enemies/enemy_fire_system.gd]
+- [x] [Review][Patch] `FormationState.enter()` doesn't guard `_enemy.rng` for null — **Fixed:** added `_enemy.rng == null` to the guard, consistent with `EnemyFireSystem`. [enemies/states/formation_state.gd:enter]
+- [x] [Review][Patch] `FormationState.physics_process()` divides by `side_drift_period_s` with no zero-guard — **Fixed:** added a `side_drift_period_s <= 0.0` early return, mirroring the `_baked_length` guard pattern. [enemies/states/formation_state.gd:physics_process]
+- [x] [Review][Patch] `ContentRegistry` silently overwrites on duplicate `.tres` `id`s — **Fixed:** `_ready()` now `Log.warn`s before overwriting an existing enemy/formation id. [systems/content_registry.gd:_ready]
+- [x] [Review][Patch] `EnemyFireSystem._spawn()` doesn't guard `projectile_scene == null` — **Fixed:** added a null check with `Log.err` before `Pool.acquire()`. [enemies/enemy_fire_system.gd:_spawn]
+- [x] [Review][Patch] Degenerate `Curve2D` silently soft-locks enemies — **Fixed:** `EnterState`/`DiveState` now `Log.err` once per state-entry when `_baked_length <= 0.0`, instead of failing silently. [enemies/states/enter_state.gd, dive_state.gd]
+- [x] [Review][Patch] Drip-spawn loop has no per-frame pulse bound — **Fixed:** same edit as the `drip_interval_s` fix above — `_physics_process` now caps catch-up pulses at `_MAX_PULSES_PER_FRAME` (4) per frame. [world/formation_spawner.gd:_physics_process]
+- [x] [Review][Patch] Task 3.3 / Implicit-requirements text stale vs. actual dive-loop behavior — **Fixed:** both sections annotated with the superseding Option-A rework behavior (re-enter, not release-on-off-screen). [Story doc Task 3.3 / Implicit requirements section]
+- [x] [Review][Patch] `test_physics_process_makes_no_per_frame_allocations` was a hollow source-grep — **Fixed:** rewritten as a runtime check using `Performance.get_monitor(Performance.OBJECT_COUNT)` around 600 disarmed ticks, asserting zero object growth on the real hot path. [tests/enemies/test_enemy_fire_system.gd]
+- [x] [Review][Patch] "Exact tracking" movement's `collision_mask == 0` invariant was comment-only — **Fixed:** added `assert(_enemy.collision_mask == 0, ...)` to `EnterState`/`FormationState`/`DiveState`'s `enter()`. [enemies/states/enter_state.gd, formation_state.gd, dive_state.gd]
+
 ---
 
 ## Dev Notes
@@ -156,7 +183,7 @@ so that each wave is a readable, escalating threat.
 | `shot_kind` | STANDARD | STANDARD | **HEAVY** (telegraphed) | GDD 108 |
 | `fire_interval_min_s` | 1.2 | 0.9 | 1.6 | FR43 |
 | `fire_interval_max_s` | 2.4 | 1.8 | 2.8 | FR43 |
-| `move_speed` (px/s) | 60 | 50 | 80 | FR43 |
+| `move_speed` (px/s) | 220 | 180 | 280 | FR43 *(retuned 2026-07-03, ~3.5× original 60/50/80 — see decision-log `[Speed-tuning]`)* |
 | Formation drift behavior | side-to-side + periodic fire (same for all three — Galaga-lineage) | | | GDD 141 (captor formation-phase precedent) |
 
 **Damage/HP scaling is intentional — do NOT "fix" it.** The player projectile deals **10 dmg** (set in Story 1.3, `resources/player_tuning.tres`). Enemy HP is 30/50/80. So Grunt = 3 hits, Shielder = 5 hits, Bomber = 8 hits. This 10× scaling (vs the prototype's 1 dmg / 3 HP) preserves the prototype's 3-hit-kill feel while giving integer tuning headroom. Enemy HP = GDD baselines; player damage stays 10. No reconciliation needed.
@@ -456,4 +483,21 @@ pre-existing `test_pool`/`test_projectile` orphans; not a regression.
   (wave-scaled, **hard-capped per tick** = perf guardrail, **no concurrency cap**); dive-loop
   kept so pressure escalates as pulses accumulate. GDD `gdd.md:166`, FR30 `epics.md:82`,
   Story 1.4 AC3 (epics + this file), decision-log updated. 92/92 GUT pass; headless launch
-  clean. **Status remains in-progress until Mrdth playtests the drip feel.**
+  clean. **2026-07-03: Mrdth playtested the drip feel — confirmed good. Status → review.**
+- 2026-07-03: **Code review.** 3-layer adversarial review (Blind Hunter, Edge Case Hunter,
+  Acceptance Auditor); findings written to the Review Findings subsection above. 5 decisions
+  resolved with Mrdth (formation slot-collision handling → jitter/no hard cap; `formation_hold_s`
+  and `move_speed` tuning deviations confirmed intentional, GDD/FR43 amended accordingly; the
+  undocumented `gdd.md:163` tier-cap/modifier-wave wording reconciled — tiers are
+  difficulty-scaled replay loops, not a per-run 5-wave subdivision, see decision-log
+  `[Tier-terminology]`; this status contradiction resolved). 16 patch findings remain to be
+  applied.
+- 2026-07-03: **All 17 patch findings applied** (16 original + the slot-collision jitter fix
+  converted from decision #1). Notable fixes: `Enemy.despawn()` + `FormationSpawner._despawn_survivors()`
+  (Task 5.2, survivors no longer loop forever past wave end); slot-position jitter on `activate()`;
+  `heavy_windup_s` now actually delays the Bomber's telegraphed shot; `silhouette_color` now
+  applied to `Visual`; null/zero guards added around `FormationDefinition` lookups, `rng`,
+  `side_drift_period_s`, and degenerate curves; `drip_interval_s` floored + pulses-per-frame
+  bounded; spawner RNG seeded; `ContentRegistry` warns on duplicate ids; `collision_mask == 0`
+  now asserted, not just commented; the fake allocation-grep test replaced with a real
+  `Performance.get_monitor(OBJECT_COUNT)` check. 92/92 GUT tests pass; headless launch clean.

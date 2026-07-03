@@ -12,6 +12,9 @@ extends CharacterBody2D
 
 @export var definition: EnemyDefinition
 
+const _SLOT_JITTER_PX: float = 14.0  # review fix: prevents exact-overlap when a slot is reused
+                                      # by a later pulse while the prior occupant is still alive.
+
 signal died(score_value: int)  # direct local signal (D8) — the spawner connects it directly.
 
 @onready var _health: HealthComponent = $HealthComponent
@@ -51,6 +54,7 @@ func _ready() -> void:
 	# so visual size and collision can be tuned independently for fairness).
 	if _visual != null:
 		_visual.scale = Vector2.ONE * definition.silhouette_scale
+		_visual.color = definition.silhouette_color
 	# The Muzzle is a scene-fixed Marker2D (sibling of Visual), so it does NOT follow
 	# silhouette_scale — scale its offset to match, or big enemies fire from inside themselves.
 	if _muzzle != null:
@@ -73,6 +77,14 @@ func activate(p_formation_def: FormationDefinition, p_slot_index: int, p_rng: Ra
 	assert(formation_def != null, "Enemy: activate without formation_def")
 	assert(slot_index >= 0 and slot_index < formation_def.slots.size(), "Enemy: slot_index out of range")
 	slot_world_pos = formation_def.slots[slot_index]
+	# Jitter (review fix): the drip model has no on-screen concurrency cap, so a later pulse can
+	# reuse a slot still held by a living enemy from an earlier pulse. A small random offset keeps
+	# co-occupants from exactly overlapping without imposing a hard slot cap.
+	if rng != null:
+		slot_world_pos += Vector2(
+			rng.randf_range(-_SLOT_JITTER_PX, _SLOT_JITTER_PX),
+			rng.randf_range(-_SLOT_JITTER_PX, _SLOT_JITTER_PX)
+		)
 	# HP wiring (Dev Notes §"HP wiring"): max_hp is per-EnemyDefinition; restore per spawn.
 	_health.max_hp = definition.max_hp
 	_health.reset_to_full()
@@ -109,6 +121,13 @@ func arm_fire() -> void:
 func disarm_fire() -> void:
 	if _fire != null:
 		_fire.arm(definition, rng, false)
+
+
+func despawn() -> void:
+	# Wave-end collection (Task 5.2, review fix) — a survivor is collected, not killed: no score,
+	# no `died` signal. Called from a non-physics context (spawner's _physics_process, but not
+	# from within a body_entered callback), so a synchronous release is safe here.
+	Pool.release(self)
 
 
 func _on_died() -> void:

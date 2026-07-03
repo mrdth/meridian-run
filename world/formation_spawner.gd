@@ -29,6 +29,9 @@ const _COMPOSITION: Array[StringName] = [
 	&"grunt", &"shielder", &"grunt", &"grunt", &"bomber",
 ]
 
+const _MIN_DRIP_INTERVAL_S: float = 0.05  # floor for the drip_interval_s knob (review fix).
+const _MAX_PULSES_PER_FRAME: int = 4      # bounds catch-up spawning after a delta spike (review fix).
+
 var _container: Node2D
 var _formation_def: FormationDefinition
 var _rng: RandomNumberGenerator
@@ -47,7 +50,12 @@ func _ready() -> void:
 	_container.name = "Enemies"
 	add_child(_container)
 	_formation_def = ContentRegistry.get_formation_def(formation_id)
+	if _formation_def == null:
+		Log.err("spawner", "no FormationDefinition '%s' — spawning disabled" % formation_id)
 	_rng = RandomNumberGenerator.new()
+	# Deterministic placeholder seed (review fix — Dev Notes #6): SeedManager sub-streams land
+	# in Story 4.1; until then this local RNG must still be seeded, not OS-random.
+	_rng.seed = hash(formation_id)
 
 
 func begin_wave(n: int) -> void:
@@ -84,19 +92,36 @@ func get_active_count() -> int:
 
 func _physics_process(delta: float) -> void:
 	_wave_time += delta
-	# Fire every pulse whose time has come, while still inside the wave duration.
-	while _wave_time >= _next_pulse_time and _next_pulse_time <= wave_duration_s:
+	# Fire every pulse whose time has come, while still inside the wave duration. Interval is
+	# floored (review fix: drip_interval_s <= 0 would never advance _next_pulse_time — hang) and
+	# pulses-per-frame is bounded (review fix: a delta spike must not catch up unbounded pulses).
+	var interval: float = maxf(drip_interval_s, _MIN_DRIP_INTERVAL_S)
+	var pulses_fired: int = 0
+	while _wave_time >= _next_pulse_time and _next_pulse_time <= wave_duration_s and pulses_fired < _MAX_PULSES_PER_FRAME:
 		_spawn_pulse(per_tick(_wave_n))
-		_next_pulse_time += drip_interval_s
-	# Wave duration elapsed → stop spawning. Existing enemies keep cycling (dive-loop) until
-	# killed; the full wave-end FSM (collect survivors, reward, next wave) is Story 1.8.
+		_next_pulse_time += interval
+		pulses_fired += 1
+	# Wave duration elapsed → stop spawning and collect any survivors (minimal Task 5.2 — the
+	# full wave-end FSM with reward/next_wave is Story 1.8).
 	if _wave_time > wave_duration_s:
 		set_physics_process(false)
+		_despawn_survivors()
+
+
+func _despawn_survivors() -> void:
+	# Minimal wave-end collection (Task 5.2): survivors are not kills (no score) — just returned
+	# to the Pool so they don't keep cycling past the wave's authored duration. get_children()
+	# returns a snapshot Array (not a live view), so releasing (which reparents out of
+	# _container) mid-loop is safe — not the splice-during-iteration hazard.
+	for enemy in _container.get_children():
+		(enemy as Enemy).despawn()
 
 
 func _spawn_pulse(count: int) -> void:
 	# One formation-entry group: `count` enemies entering together, contiguous formation slots
 	# (a cluster), variant from the authored composition cycle.
+	if _formation_def == null or _formation_def.slots.is_empty():
+		return
 	for _i in count:
 		var id: StringName = _COMPOSITION[_spawned % _COMPOSITION.size()]
 		var slot: int = _slot_cursor % _formation_def.slots.size()

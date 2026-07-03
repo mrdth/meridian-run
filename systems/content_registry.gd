@@ -17,9 +17,13 @@ var _grunt_fallback: EnemyDefinition
 func _ready() -> void:
 	for r in _load_all(_ENEMY_DIR):
 		if r is EnemyDefinition:
+			if _enemy_defs.has(r.id):
+				Log.warn("content", "duplicate EnemyDefinition id '%s' — overwriting" % r.id)
 			_enemy_defs[r.id] = r
 	for r in _load_all(_FORMATION_DIR):
 		if r is FormationDefinition:
+			if _formation_defs.has(r.id):
+				Log.warn("content", "duplicate FormationDefinition id '%s' — overwriting" % r.id)
 			_formation_defs[r.id] = r
 	_grunt_fallback = load(_GRUNT_PATH) as EnemyDefinition
 	if _grunt_fallback == null:

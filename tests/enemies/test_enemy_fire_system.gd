@@ -86,16 +86,16 @@ func test_bomber_spawns_heavy_two_damage_shot() -> void:
 
 
 func test_physics_process_makes_no_per_frame_allocations() -> void:
-	# Structural: the _physics_process body constructs no Vector2/Array/Dict/.new (zero
-	# per-frame allocations on the hot path). Scoped to that method only.
-	var src: String = (load("res://enemies/enemy_fire_system.gd") as GDScript).source_code
-	var start: int = src.find("func _physics_process")
-	assert_gt(start, -1, "could not find _physics_process in enemy_fire_system.gd")
-	var end: int = src.find("\nfunc ", start + 1)
-	if end == -1:
-		end = src.length()
-	var body: String = src.substr(start, end - start)
-	assert_false(body.contains("Vector2("))
-	assert_false(body.contains("Array("))
-	assert_false(body.contains("Dictionary("))
-	assert_false(body.contains(".new("))
+	# Runtime check (review fix — a source-text grep proved nothing about actual allocation and
+	# was trivially defeated by reformatting). Drives the cooldown-accumulator hot path — the
+	# code that runs every physics tick regardless of firing — for many ticks and asserts the
+	# engine's live Object count doesn't grow. Disarmed (never spawns) so this isolates the
+	# accumulator logic itself from _spawn()'s legitimate first-instantiate pool allocation.
+	var fire: EnemyFireSystem = _make(GruntScene)
+	var rng := RandomNumberGenerator.new()
+	fire.arm((fire.get_parent() as Enemy).definition, rng, false)  # disarmed: never spawns
+	var before: int = Performance.get_monitor(Performance.OBJECT_COUNT)
+	for _i in 600:  # 10 s of ticks through the real hot-path body
+		fire._physics_process(1.0 / 60.0)
+	var after: int = Performance.get_monitor(Performance.OBJECT_COUNT)
+	assert_eq(after, before, "physics_process should allocate zero objects on the hot path")

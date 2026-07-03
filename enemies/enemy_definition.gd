@@ -28,7 +28,7 @@ enum ShotKind { STANDARD, HEAVY }  # HEAVY = telegraphed, Bomber-only.
 @export var fires_during_dive: bool = true    # Galaga-lineage default.
 
 @export_group("Movement")
-@export var move_speed: float = 60.0          # Grunt 60 / Shielder 50 / Bomber 80 (FR43).
+@export var move_speed: float = 60.0          # Grunt 220 / Shielder 180 / Bomber 280 (FR43, retuned 2026-07-03 — see decision-log [Speed-tuning]).
 @export var dive_speed_multiplier: float = 2.0  # multiplies move_speed during dive (data-tunable).
 
 @export_group("Visual")

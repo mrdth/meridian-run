@@ -13,8 +13,9 @@ var _hold_duration: float = 0.0
 func enter(_msg: Dictionary = {}) -> void:
 	_enemy = owner as Enemy
 	_hold_t = 0.0
-	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null:
+	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null or _enemy.rng == null:
 		return
+	assert(_enemy.collision_mask == 0, "FormationState: exact-tracking movement requires collision_mask == 0")
 	# Per-enemy hold variance staggers dives. Re-rolled each formation cycle (re-entry) for
 	# naturalistic timing.
 	_hold_duration = _enemy.formation_def.formation_hold_s * _enemy.rng.randf_range(0.75, 1.25)
@@ -27,6 +28,8 @@ func physics_process(delta: float) -> void:
 	if _enemy == null or _enemy.formation_def == null or _enemy.definition == null or delta <= 0.0:
 		return
 	var form: FormationDefinition = _enemy.formation_def
+	if form.side_drift_period_s <= 0.0:
+		return
 	_hold_t += delta
 	# Side-to-side drift anchored to the slot (sine of elapsed time over the drift period).
 	var drift_x: float = sin((_hold_t / form.side_drift_period_s) * TAU) * form.side_drift_amplitude_px
