@@ -1,0 +1,84 @@
+class_name JuiceCoordinator
+extends Node2D
+# Arena-scoped juice conductor (Story 1.6 / AC1, AC2, AC5). Listens to the three EventBus juice
+# REQUEST signals and drives its ScreenShake / HitFlash / pooled ParticleBurst children. Lives in
+# arena.tscn — NOT an autoload (AR9): juice is run-scoped FEEL, so "auto-disabled in menus" (UX
+# F8) is satisfied structurally (menu scenes never include this node). The 11-autoload registry is
+# unchanged. Destroyed + recreated on game-over replay (clean).
+#
+# Safety caps (MAX_FLASH_HZ, MAX_SHAKE_PX) are immutable (Constants); this coordinator only FEEDS
+# feel values (JuiceTuning) into its children and clamps incoming requests to those caps.
+
+const PARTICLE_SCENE := preload("res://juice/particle_burst.tscn")
+
+@export var tuning: JuiceTuning
+
+@onready var _camera: Camera2D = $Camera2D
+@onready var _shake: ScreenShake = $ScreenShake
+@onready var _flash: HitFlash = $HitFlash
+
+var _motion_scale: float = 1.0  # accessibility dampen (1.0 full / tuning.motion_scale_reduced)
+# ONE reused burst-config dict (NFR3 — no per-event Dictionary.new(); mutated in place). The base
+# profile is read from tuning (read-only); we copy the fields here and apply the per-event size scale.
+var _profile_out: Dictionary = {}
+
+
+func _ready() -> void:
+	# AR11 fail-safe: an unassigned tuning falls back to defaults (the coordinator still works).
+	# _ready runs once ⇒ this warn is naturally once.
+	if tuning == null:
+		tuning = JuiceTuning.new()
+		Log.warn("juice", "JuiceCoordinator: tuning unassigned — using JuiceTuning defaults")
+	# Wire the shake's camera + seed _motion_scale from current settings, then propagate.
+	_shake.set_camera(_camera)
+	_motion_scale = tuning.motion_scale_reduced if Settings.get_reduced_motion() else 1.0
+	_shake.set_motion_scale(_motion_scale)
+	_flash.set_motion_scale(_motion_scale)
+	# Subscribe to juice requests (D8 — global feedback requests, imperative `_requested`).
+	EventBus.screen_shake_requested.connect(_on_shake_requested)
+	EventBus.hit_flash_requested.connect(_on_flash_requested)
+	EventBus.particles_requested.connect(_on_particles_requested)
+	Settings.setting_changed.connect(_on_setting_changed)
+
+
+func _on_shake_requested(amount: float, duration: float) -> void:
+	# Clamp incoming amplitude to MAX_SHAKE_PX (immutable safety cap) before handing to the shake.
+	_shake.request(clampf(amount, 0.0, Constants.MAX_SHAKE_PX), duration)
+
+
+func _on_flash_requested(target: Node2D, color: Color) -> void:
+	# HitFlash applies its own central ≤3 Hz gate (unconditional) + the per-target tween. Duration
+	# comes from tuning; HitFlash dampens it by _motion_scale internally.
+	_flash.request(target, color, tuning.flash_duration)
+
+
+func _on_particles_requested(effect: StringName, at: Vector2, color: Color, scale_arg: float) -> void:
+	# Look up the (cached, read-only) base profile, copy into the reused _profile_out dict applying
+	# the per-event size multiplier, acquire a pooled burst, parent it here (coordinator sits at arena
+	# origin ⇒ child global_position == world position), and activate. Pool.acquire + add_child +
+	# activate are all additive ⇒ safe even though this handler can run inside a physics callback.
+	# _motion_scale dampens SPEED + SCALE (visual amplitude) under reduced motion — AC5 — count/
+	# lifetime/spread/gravity are left alone so the burst is still clearly present, just calmer.
+	var base: Dictionary = tuning.get_effect_profile(effect)
+	_profile_out[&"amount"] = base[&"amount"]
+	_profile_out[&"lifetime"] = base[&"lifetime"]
+	_profile_out[&"spread_rad"] = base[&"spread_rad"]
+	_profile_out[&"direction"] = base[&"direction"]
+	_profile_out[&"speed"] = float(base[&"speed"]) * _motion_scale
+	_profile_out[&"scale"] = float(base[&"scale"]) * scale_arg * _motion_scale
+	_profile_out[&"gravity"] = base[&"gravity"]
+	var burst: ParticleBurst = Pool.acquire(PARTICLE_SCENE) as ParticleBurst
+	if burst == null:
+		Log.err("juice", "JuiceCoordinator: acquired node is not a ParticleBurst — wrong scene?")
+		return
+	add_child(burst)  # host directly under the coordinator (at arena origin)
+	burst.activate(effect, at, color, _profile_out)
+
+
+func _on_setting_changed(key: StringName, value: Variant) -> void:
+	# Reduced-motion toggles the amplitude dampen (dampen, don't remove — D14). The ≤3 Hz cap is
+	# NOT affected (it lives on HitFlash, unconditional).
+	if key == Settings.REDUCED_MOTION_KEY:
+		_motion_scale = tuning.motion_scale_reduced if bool(value) else 1.0
+		_shake.set_motion_scale(_motion_scale)
+		_flash.set_motion_scale(_motion_scale)

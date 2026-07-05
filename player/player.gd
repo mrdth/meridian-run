@@ -23,7 +23,7 @@ signal ship_depleted()
 
 var _min_x: float = 0.0
 var _max_x: float = 0.0
-var _flicker_t: float = 0.0  # i-frame flicker phase (placeholder; Story 1.6 owns the juice pass).
+var _flicker_t: float = 0.0  # i-frame pulse phase (sustained invuln cue; the impact flash is JuiceCoordinator-driven)
 
 
 func _ready() -> void:
@@ -61,13 +61,15 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Minimal i-frame VISIBILITY (Story 1.5 placeholder so i-frames are testable). Story
-	# 1.6 ("Hit Feedback & Juice") owns the polished presentation (hit-flash, shake,
-	# particles via JuiceCoordinator). One cheap flicker line while invulnerable; nothing
-	# per-frame while vulnerable (NFR2/AR14).
+	# Sustained i-frame VISIBILITY cue (Story 1.6 refined — the 1.5 sin-flicker placeholder is
+	# retired). The IMPACT hit-flash on a damaging hit is driven by the JuiceCoordinator (it tweens
+	# the player BODY's modulate via the enemy_projectile juice emit); this is the calmer, ongoing
+	# alpha pulse that signals "invulnerable" across the whole window. ~1.9 Hz — well under the 3 Hz
+	# photosensitive cap (which governs hit_flash_requested anyway, not this sustained modulation).
+	# One cheap line while invulnerable; restores fully opaque when vulnerable (NFR2/AR14).
 	if _health.is_invulnerable():
 		_flicker_t += delta
-		_visual.modulate.a = 0.5 + 0.5 * sin(_flicker_t * 30.0)
+		_visual.modulate.a = 0.55 + 0.35 * sin(_flicker_t * 12.0)
 	else:
 		_visual.modulate.a = 1.0
 

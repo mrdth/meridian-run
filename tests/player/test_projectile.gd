@@ -85,6 +85,66 @@ func test_hits_enemy_body_applies_damage_and_consumes() -> void:
 	assert_eq(p.get_parent(), null)   # consume-on-hit → released
 
 
+func test_sublethal_hit_fires_hit_flash_juice() -> void:
+	# Sub-lethal impact juice (Story 1.6 / AC1) — a surviving hit must still flash the enemy.
+	var target: CharacterBody2D = CharacterBody2D.new()
+	target.collision_layer = Constants.LAYER_ENEMY
+	var tshape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(40, 40)
+	tshape.shape = rect
+	target.add_child(tshape)
+	var hc := HealthComponent.new()
+	hc.max_hp = 100
+	hc.name = "HealthComponent"
+	target.add_child(hc)
+	target.global_position = Vector2(100.0, 200.0)
+	add_child_autofree(target)
+
+	watch_signals(EventBus)
+	var p: Projectile = Pool.acquire(ProjectileScene) as Projectile
+	add_child(p)
+	p.activate(Vector2(100.0, 225.0), 620.0, 10)  # 10 damage on 100 hp ⇒ survives
+
+	for _i in 5:
+		await get_tree().physics_frame
+
+	assert_eq(hc.current_hp, 90)
+	assert_signal_emitted(EventBus, "hit_flash_requested")
+
+
+func test_lethal_hit_does_not_fire_hit_flash_juice() -> void:
+	# Review fix — a killing blow must NOT also fire the sub-lethal hit-flash. `Enemy._on_died()`
+	# owns death juice (explosion/kill-shake/kill-SFX — no flash; the tuning table scopes a kill's
+	# flash column as "— it's exploding") and defers `Pool.release()` the SAME frame a flash tween
+	# started here would still be animating `modulate`, so a reacquired pooled node for an unrelated
+	# new spawn could visibly flash. Skipping the flash on a lethal hit removes the race entirely.
+	var target: CharacterBody2D = CharacterBody2D.new()
+	target.collision_layer = Constants.LAYER_ENEMY
+	var tshape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(40, 40)
+	tshape.shape = rect
+	target.add_child(tshape)
+	var hc := HealthComponent.new()
+	hc.max_hp = 5
+	hc.name = "HealthComponent"
+	target.add_child(hc)
+	target.global_position = Vector2(100.0, 200.0)
+	add_child_autofree(target)
+
+	watch_signals(EventBus)
+	var p: Projectile = Pool.acquire(ProjectileScene) as Projectile
+	add_child(p)
+	p.activate(Vector2(100.0, 225.0), 620.0, 10)  # 10 damage on 5 hp ⇒ lethal
+
+	for _i in 5:
+		await get_tree().physics_frame
+
+	assert_eq(hc.current_hp, 0)
+	assert_signal_not_emitted(EventBus, "hit_flash_requested")
+
+
 func test_second_body_entered_before_release_is_ignored() -> void:
 	# Review fix (Decision #10, consume-on-hit / no piercing): release on hit is
 	# deferred (the engine forbids synchronous removal during a physics callback),

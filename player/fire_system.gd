@@ -4,8 +4,11 @@ extends Node
 # _physics_process (Decision #2 — pure logic, no Timer node, fixed-timestep-
 # deterministic). Acquires pooled Projectiles from Pool and activates them at the
 # Muzzle; projectiles parent to the injected projectile_parent (world space, NOT
-# the Player) so they don't inherit the ship's transform (Decision #8). Fire is
-# intra-entity (D8) — emits nothing to EventBus. Zero per-frame allocations (NFR3).
+# the Player) so they don't inherit the ship's transform (Decision #8). Fire emits
+# NO game-flow signal (fire is not game-flow), but DOES emit juice REQUEST signals
+# (on-fire SFX + a light muzzle puff) via JuiceFx (Story 1.6) — juice requests are
+# an allowed global channel (D8), distinct from game-flow events. Zero per-frame
+# allocations (NFR3).
 
 @export var tuning: PlayerTuning
 @export var projectile_scene: PackedScene
@@ -52,3 +55,7 @@ func _spawn() -> void:
 	p.activate(_muzzle.global_position, tuning.bullet_speed, tuning.projectile_damage)
 	# Parent to the injected world-space container, NOT the Player (transform-independence).
 	projectile_parent.add_child(p)
+	# On-fire juice (Story 1.6 / AC4): fire SFX (mandated, ±5% pitch inside play_fire) + a light
+	# optional muzzle puff. Juice request signals only — no game-flow. (Story 1.3's "emits nothing
+	# to EventBus" note referred to GAME-FLOW signals; juice requests are a separate, allowed channel.)
+	JuiceFx.player_fired(_muzzle.global_position)

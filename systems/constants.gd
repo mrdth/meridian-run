@@ -19,3 +19,12 @@ const BASE_HP: int = 3
 # HP cap (GDD decision-log 58 — grows via build in E3's +HP-cap power-up; encoded now,
 # exercised at 3 in E1). Deferred-work item from the 1.1 code review.
 const MAX_HP: int = 3
+
+# --- Juice safety caps (Story 1.6 — AR10 "immutable" tier, non-negotiable limits) ---
+# These are SAFETY limits, not feel knobs — feel lives in juice_tuning.tres. Photosensitive
+# flash cadence ceiling (UX A1; arch D14) — enforced centrally on the JuiceCoordinator's
+# HitFlash (one global gate), unconditionally regardless of reduced_motion.
+const MAX_FLASH_HZ: float = 3.0
+# Clamp on shake amplitude so a miscalibrated tuning/_motion_scale can never seizure the
+# screen. The coordinator clamps incoming requests to this before applying _motion_scale.
+const MAX_SHAKE_PX: float = 8.0

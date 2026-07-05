@@ -76,6 +76,17 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 	_consumed = true
 	var hc: Node = body.get_node_or_null("HealthComponent")
+	# i-frames make take_damage() a full no-op (no damage, no signals) — capture that BEFORE the
+	# call so a phantom hit doesn't burn the shared ≤3Hz hit-flash budget / shake / SFX for damage
+	# that never landed (review fix: a hit during i-frames must not fire juice at all).
+	var was_invulnerable: bool = hc != null and hc.has_method("is_invulnerable") and hc.is_invulnerable()
 	if hc != null and hc.has_method("take_damage"):
 		hc.take_damage(_damage)
+	if not was_invulnerable:
+		# Player-hit juice (Story 1.6 / AC1) — the inverse faction of projectile.gd. `_heavy` is in
+		# scope here, so the heavy (Bomber) variant scales the shake/spark/pitch via JuiceFx. Emits
+		# the impact hit-flash on the player BODY (the JuiceCoordinator tweens it); player.gd
+		# separately keeps the SUSTAINED i-frame pulse. Juice is additive — the damage/i-frame path
+		# is untouched.
+		JuiceFx.player_hit(global_position, body, _heavy)
 	Pool.release.call_deferred(self)

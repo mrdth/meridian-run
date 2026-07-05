@@ -10,6 +10,11 @@ const _SECTION := "prefs"
 
 var _config := ConfigFile.new()
 
+# Reduced-motion key (Story 1.6 / D14 — accessibility input). Consumed by the
+# JuiceCoordinator; the player-facing toggle UI ships at Story 8.4 (E8). Default
+# false so the v0.1 feel gate evaluates FULL juice (A1 = "default-on *capable*").
+const REDUCED_MOTION_KEY := &"reduced_motion"
+
 
 func _ready() -> void:
 	var err := _config.load(SETTINGS_PATH)
@@ -30,3 +35,15 @@ func set_value(key: String, value: Variant) -> void:
 	if err != OK:
 		Log.warn("settings", "failed to save prefs (code %d)" % err)
 	setting_changed.emit(StringName(key), value)
+
+
+# --- reduced_motion (Story 1.6 / D14) ---
+# Typed accessors over the existing ConfigFile mechanism. set_reduced_motion
+# persists + emits setting_changed(&"reduced_motion", value) via set_value — the
+# JuiceCoordinator listens and re-derives _motion_scale. Do NOT duplicate the signal.
+func get_reduced_motion() -> bool:
+	return bool(get_value(REDUCED_MOTION_KEY, false))
+
+
+func set_reduced_motion(value: bool) -> void:
+	set_value(REDUCED_MOTION_KEY, value)

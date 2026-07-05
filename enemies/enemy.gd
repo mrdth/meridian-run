@@ -135,6 +135,11 @@ func _on_died() -> void:
 	# → died.emit), so the release is deferred (engine forbids synchronous removal then).
 	# Emits the local died signal carrying score_value (D8); the spawner accumulates score.
 	died.emit(definition.score_value)
+	# Death juice (Story 1.6 / AC1) — emit BEFORE the deferred release, capturing global_position
+	# NOW (the node is still valid this frame; the emit is synchronous). Kill ≠ despawn: this fires
+	# on REAL death ONLY — despawn() (wave-end survivor cleanup) emits NO juice. The explosion
+	# particle is a separate pooled node that persists after this enemy returns to the pool.
+	JuiceFx.enemy_killed(global_position, definition.silhouette_color, definition.silhouette_scale)
 	# Defer a NO-ARG method on self rather than `Pool.release.call_deferred(self)`: Godot 4.6
 	# fails to marshal a CharacterBody2D (PhysicsBody2D) as a typed deferred argument
 	# ("Cannot convert argument 1 from Object to Object"). Deferring a parameterless method

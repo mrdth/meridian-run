@@ -65,8 +65,22 @@ func _on_body_entered(body: Node2D) -> void:
 	# HurtboxComponent-mediated wiring lands in 1.4; this node-name lookup is
 	# forward-compatible (1.4 enemies follow the same HealthComponent convention).
 	var hc: Node = body.get_node_or_null("HealthComponent")
+	var lethal := false
 	if hc != null and hc.has_method("take_damage"):
 		hc.take_damage(_damage)
+		lethal = hc.current_hp <= 0
+	# Impact juice (Story 1.6 / AC1): emit from the impact SOURCE (Key Decision #1) — this
+	# projectile knows the exact contact global_position + faction. Runs exactly once per shot
+	# (after the _consumed guard). Juice is ADDED ON TOP of the damage above; the hit resolution
+	# is untouched. Emitting a signal + AudioManager call from a physics callback is safe (only
+	# node removal is forbidden mid-physics, and the coordinator's spawn is additive).
+	# Skip the sub-lethal hit-flash on a KILLING blow (review fix): `Enemy._on_died()` fires its
+	# own death juice (explosion/kill-shake/kill-SFX, no flash — the tuning table already scopes
+	# a kill's flash column as "— it's exploding") and defers Pool.release() the SAME frame. A
+	# flash tween started here would otherwise still be animating `modulate` when this pooled
+	# Enemy node gets reacquired for a new spawn, visibly flashing an unrelated undamaged enemy.
+	if not lethal:
+		JuiceFx.enemy_hit(global_position, body)
 	# Consume-on-hit → release. Deferred because body_entered fires DURING the
 	# physics step, and removing a CollisionObject (this Area2D) synchronously inside
 	# a physics callback is forbidden by the engine ("use call_deferred"). Damage

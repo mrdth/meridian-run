@@ -82,6 +82,26 @@ func test_damage_value_flows_through_activate() -> void:
 	assert_eq(hc.current_hp, 98)  # 100 - 2
 
 
+func test_hit_during_iframes_does_not_fire_juice() -> void:
+	# Review fix — take_damage() fully no-ops while the player is invulnerable (no damage, no
+	# signals), but the juice emit ran unconditionally regardless, burning the shared ≤3Hz
+	# hit-flash budget (and shake/SFX) on a hit that mechanically did nothing. Granting i-frames
+	# BEFORE the hit lands must suppress the juice entirely.
+	var player := _make_player_fixture(Vector2(100.0, 400.0))
+	var hc: HealthComponent = player.get_node("HealthComponent")
+	hc.set_invuln(5.0)  # invulnerable before the bullet arrives
+	watch_signals(EventBus)
+	var p: EnemyProjectile = Pool.acquire(Scene) as EnemyProjectile
+	add_child(p)
+	p.activate(Vector2(100.0, 350.0), 280.0, 10)
+	for _i in 12:
+		await get_tree().physics_frame
+	assert_eq(hc.current_hp, 100)  # damage fully ignored
+	assert_signal_not_emitted(EventBus, "hit_flash_requested")
+	assert_signal_not_emitted(EventBus, "screen_shake_requested")
+	assert_signal_not_emitted(EventBus, "particles_requested")
+
+
 func _make_player_fixture(pos: Vector2) -> CharacterBody2D:
 	var player := CharacterBody2D.new()
 	player.collision_layer = Constants.LAYER_PLAYER
