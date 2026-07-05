@@ -11,3 +11,4 @@ fire_cooldown = 0.16
 bullet_speed = 620.0
 projectile_damage = 10
 muzzle_offset_y = -20.0
+iframe_s = 1.0

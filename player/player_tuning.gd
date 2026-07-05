@@ -14,3 +14,6 @@ extends Resource
 @export var bullet_speed: float = 620.0      # px/s straight up (vertical fire-column).
 @export var projectile_damage: int = 10      # base player shot damage.
 @export var muzzle_offset_y: float = -20.0   # local Y of the Muzzle marker (ship nose).
+
+# --- Life economy (1.5 — FR11/GDD 108: "i-frames 1 s after each hit") ---
+@export var iframe_s: float = 1.0            # i-frame window granted after a damaging hit / on respawn.

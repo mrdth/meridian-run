@@ -93,3 +93,88 @@ func test_reset_to_full_allows_dying_again() -> void:
 	assert_eq(hc.current_hp, 3)
 	hc.take_damage(3)
 	assert_signal_emit_count(hc, "died", 2)
+
+
+# --- i-frame window (Story 1.5 / AC2) ---
+
+func _make_iframed() -> HealthComponent:
+	# A player-like component: i-frame window on after a hit. Mirrors how the player sets
+	# invuln_after_hit_s from tuning in _ready (1.0 here, matching player_tuning.iframe_s).
+	var hc := _make()
+	hc.invuln_after_hit_s = 1.0
+	return hc
+
+
+func test_default_invuln_is_zero_never_invulnerable() -> void:
+	# Regression guard for ENEMIES (default 0.0): a hit never grants a window, so pooled
+	# enemies / re-activate() are unaffected (Story 1.5 key decision #2).
+	var hc := _make()  # invuln_after_hit_s = 0.0 default
+	hc.take_damage(1)
+	assert_false(hc.is_invulnerable())
+
+
+func test_take_damage_grants_iframe_window() -> void:
+	var hc := _make_iframed()
+	hc.take_damage(1)  # real damaging hit
+	assert_eq(hc.current_hp, 2)
+	assert_true(hc.is_invulnerable())
+
+
+func test_second_hit_during_window_is_noop() -> void:
+	# During the window: no damage, no health_changed, no died (the hit is fully ignored).
+	var hc := _make_iframed()
+	watch_signals(hc)
+	hc.take_damage(1)  # -> 2, grants window
+	var changed_after_first: int = get_signal_emit_count(hc, "health_changed")
+	hc.take_damage(2)  # within the window — fully ignored
+	assert_eq(hc.current_hp, 2)  # unchanged
+	assert_signal_emit_count(hc, "health_changed", changed_after_first)  # no new emit
+	assert_signal_emit_count(hc, "died", 0)
+
+
+func test_hit_applies_again_after_window_expires_via_process() -> void:
+	var hc := _make_iframed()
+	hc.take_damage(1)  # -> 2, window granted
+	assert_true(hc.is_invulnerable())
+	hc._process(1.0)  # step the timer down by the full window
+	assert_false(hc.is_invulnerable())
+	hc.take_damage(1)  # window expired — damage applies
+	assert_eq(hc.current_hp, 1)
+
+
+func test_hit_applies_again_after_set_invuln_zero() -> void:
+	# set_invuln(0.0) disables the window immediately (the respawn/expire path).
+	var hc := _make_iframed()
+	hc.take_damage(1)  # -> 2
+	hc.set_invuln(0.0)
+	assert_false(hc.is_invulnerable())
+	hc.take_damage(1)
+	assert_eq(hc.current_hp, 1)
+
+
+func test_is_invulnerable_tracks_timer() -> void:
+	var hc := _make()
+	hc.set_invuln(0.5)
+	assert_true(hc.is_invulnerable())
+	hc._process(0.5)
+	assert_false(hc.is_invulnerable())  # exactly expired
+
+
+func test_zero_damage_does_not_grant_window() -> void:
+	# A no-op hit (zero/negative) grants no window — only a REAL damaging hit does.
+	var hc := _make_iframed()
+	hc.take_damage(0)
+	assert_false(hc.is_invulnerable())
+	hc.take_damage(-5)
+	assert_false(hc.is_invulnerable())
+
+
+func test_reset_to_full_clears_invuln_window() -> void:
+	# A fresh-full ship starts vulnerable; respawn grants its OWN window via set_invuln.
+	var hc := _make_iframed()
+	hc.take_damage(1)
+	hc.set_invuln(5.0)  # some lingering window
+	assert_true(hc.is_invulnerable())
+	hc.reset_to_full()
+	assert_false(hc.is_invulnerable())
+	assert_eq(hc.current_hp, 3)

@@ -30,6 +30,8 @@ func _make() -> FormationSpawner:
 	arena.add_child(s)  # _ready: creates _container, loads formation_def
 	s.player = Node2D.new()  # dummy player for dive aim
 	arena.add_child(s.player)
+	s.run_state = RunState.new()  # injected by Arena before begin_wave (Task 5.1)
+	s.run_state.begin_run()
 	return s
 
 
@@ -102,7 +104,8 @@ func test_spawns_over_time_without_error() -> void:
 
 
 func test_score_changed_fires_on_enemy_death() -> void:
-	# enemy.died → spawner accumulates → EventBus.score_changed (D8 global game-flow).
+	# enemy.died → spawner routes through RunState → EventBus.score_changed (D8 global
+	# game-flow). Score now lives on RunState, not a spawner field (AR2/FR49).
 	var s: FormationSpawner = _make()
 	s.begin_wave(1)
 	for _i in 60:  # 1s — first pulse spawned, an enemy is on-screen
@@ -112,5 +115,58 @@ func test_score_changed_fires_on_enemy_death() -> void:
 	var expected: int = enemy.definition.score_value
 	enemy.get_node("HealthComponent").take_damage(100000)  # kill → died → score_changed
 	assert_signal_emitted(EventBus, "score_changed")
-	assert_eq(s.get_run_score(), expected)
+	assert_eq(s.run_state.score, expected)  # run-scope owner holds the cumulative score
+	assert_eq(s.get_run_score(), expected)  # reads through to RunState
+	# score_changed broadcasts RunState.score (not a private spawner accumulator).
+	var params: Array = get_signal_parameters(EventBus, "score_changed")
+	assert_eq(params[0], expected)
 	await get_tree().physics_frame  # let the deferred death-release land before teardown
+
+
+func test_wave_cleared_emits_on_timer_expiry() -> void:
+	# Wave duration elapsed → board cleared → EventBus.wave_cleared(wave) (Task 5.2 / AC4).
+	var s: FormationSpawner = _make()
+	s.wave_duration_s = 1.0
+	s.drip_interval_s = 0.5
+	watch_signals(EventBus)
+	s.begin_wave(1)
+	for _i in 200:  # 3.3s — well past the 1s wave
+		s._physics_process(1.0 / 60.0)
+	assert_signal_emitted(EventBus, "wave_cleared")
+	var params: Array = get_signal_parameters(EventBus, "wave_cleared")
+	assert_eq(params[0], 1)  # carries the wave number
+
+
+func test_begin_wave_is_restartable() -> void:
+	# Arena's wave loop calls begin_wave(n+1) on wave_cleared — it must fully reset so the
+	# next wave starts clean (no stacked signals, _wave_time back to ~0).
+	var s: FormationSpawner = _make()
+	s.wave_duration_s = 1.0
+	s.drip_interval_s = 0.5
+	watch_signals(EventBus)
+	s.begin_wave(1)
+	for _i in 100:  # 1.67s — wave 1 ends → wave_cleared(1) emits
+		s._physics_process(1.0 / 60.0)
+	var cleared_after_wave1: int = get_signal_emit_count(EventBus, "wave_cleared")
+	s.begin_wave(2)  # Arena's loop restarts the spawner for the next wave
+	for _i in 10:  # a little into wave 2 — NOT past its duration
+		s._physics_process(1.0 / 60.0)
+	# No new wave_cleared yet (wave 2 hasn't elapsed) → no stacked/duplicate signal.
+	assert_eq(get_signal_emit_count(EventBus, "wave_cleared"), cleared_after_wave1)
+	assert_lt(s._wave_time, s.wave_duration_s)  # _wave_time reset by begin_wave(2)
+
+
+func test_enemy_death_without_run_state_degrades_safely() -> void:
+	# AR11 fail-safe: if Arena hasn't wired run_state, an enemy death must not crash — it
+	# logs (once) and skips the score broadcast. The push_error is an EXPECTED error here.
+	var s: FormationSpawner = _make()
+	s.run_state = null  # simulate Arena not having injected it yet
+	s.begin_wave(1)
+	for _i in 60:  # 1s — first pulse spawned
+		s._physics_process(1.0 / 60.0)
+	watch_signals(EventBus)
+	var enemy: Enemy = s._container.get_child(0) as Enemy
+	enemy.get_node("HealthComponent").take_damage(100000)  # kill → died → null-guard
+	assert_push_error("run_state is null")  # consume the expected degradation error
+	assert_signal_emit_count(EventBus, "score_changed", 0)  # no broadcast without run_state
+	await get_tree().physics_frame

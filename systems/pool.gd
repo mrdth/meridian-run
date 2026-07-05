@@ -16,6 +16,12 @@ func acquire(scene: PackedScene) -> Node:
 		node = scene.instantiate()
 	else:
 		node = pool.pop_back()
+		# Defensive fail-safe (AR11): a pooled entry can be freed out-of-band — e.g. the
+		# game-over replay's reload_current_scene() frees the arena subtree while released
+		# pooled nodes linger, or a clear() forgets nodes without freeing them. Never hand a
+		# freed node back to a consumer; make a fresh one instead of hard-crashing.
+		if not is_instance_valid(node):
+			node = scene.instantiate()
 	_pools[path] = pool
 	_node_paths[node.get_instance_id()] = path
 	return node
@@ -46,10 +52,16 @@ func release(node: Node) -> void:
 
 
 func clear() -> void:
-	# Test-support hook only — not called by gameplay code. Pool is an autoload, so
-	# its state otherwise persists across every GUT test in a run; test files call
-	# this in before_each() so each test starts from a known-empty pool instead of
-	# leaning on cross-test LIFO-reuse ordering for correctness (D7 review, 1.3).
+	# Called by test before_each() hooks (Pool is an autoload — state otherwise persists
+	# across every GUT test) AND by Arena's game-over replay (Story 1.5). Released/inactive
+	# nodes are detached from the scene tree in release() (parent.remove_child) and kept
+	# alive only by _pools' Array references — Godot 4 Node is NOT RefCounted, so dropping
+	# those references without freeing would leak them (a real leak on every replay, since
+	# reload_current_scene() only frees tree-attached nodes, not these detached ones).
+	for pool: Array[Node] in _pools.values():
+		for node: Node in pool:
+			if is_instance_valid(node):
+				node.free()
 	_pools.clear()
 	_node_paths.clear()
 

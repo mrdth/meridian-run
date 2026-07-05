@@ -22,6 +22,10 @@ extends Node
 
 # Injected (by arena.gd or a test) player ref for dive aim — NOT a cross-domain ../../Player.
 var player: Node2D
+# Injected by Arena in _ready BEFORE begin_wave: the run-scope state the spawner routes
+# score through (AR2/FR49 — score is run-cumulative on RunState, never spawner-owned).
+var run_state: RunState
+var _logged_missing_run_state: bool = false  # fail-safe log spam guard (AR11)
 
 # Authored variant mix (Tier 1): grunt-dominant, recurring cycle (wraps at any count).
 const _COMPOSITION: Array[StringName] = [
@@ -35,7 +39,6 @@ const _MAX_PULSES_PER_FRAME: int = 4      # bounds catch-up spawning after a del
 var _container: Node2D
 var _formation_def: FormationDefinition
 var _rng: RandomNumberGenerator
-var _run_score: int = 0
 var _wave_n: int = 0
 var _wave_time: float = 0.0
 var _next_pulse_time: float = 0.0
@@ -59,16 +62,24 @@ func _ready() -> void:
 
 
 func begin_wave(n: int) -> void:
-	# Begin escalating drip for wave n. First pulse fires immediately (t=0); subsequent pulses
-	# every drip_interval_s until wave_duration_s elapses.
+	# Begin escalating drip for wave n. RESTARTABLE — Arena's wave loop calls this again on
+	# wave_cleared (Task 4.2), so it must fully reset per-wave state (idempotent). First pulse
+	# fires immediately (t=0); subsequent pulses every drip_interval_s until wave_duration_s.
 	_wave_n = n
 	_wave_time = 0.0
 	_next_pulse_time = 0.0
 	_spawned = 0
 	_slot_cursor = 0
+	_logged_missing_run_state = false  # a new wave is a fresh chance for Arena to wire run_state
 	set_physics_process(true)
 	Log.info("spawner", "wave %d: escalating drip every %.1fs for %.1fs (per_tick=%d, cap %d)" %
 		[n, drip_interval_s, wave_duration_s, per_tick(_wave_n), max_per_tick])
+
+
+func set_active(active: bool) -> void:
+	# Arena stops spawning on game-over. Maps to physics toggling (drives both the drip timer
+	# and the wave-duration check). Story 1.8's wave_controller owns richer run control.
+	set_physics_process(active)
 
 
 func per_tick(wave: int) -> int:
@@ -82,7 +93,8 @@ func get_spawned_count() -> int:
 
 
 func get_run_score() -> int:
-	return _run_score
+	# Reads through to RunState (score is run-scope now, not spawner-owned). 0 if unwired.
+	return run_state.score if run_state != null else 0
 
 
 func get_active_count() -> int:
@@ -106,6 +118,9 @@ func _physics_process(delta: float) -> void:
 	if _wave_time > wave_duration_s:
 		set_physics_process(false)
 		_despawn_survivors()
+		# Board is clear → signal the run host to heal + advance the wave (AC4). The full
+		# wave-end FSM (reward/shop/replay) is Story 1.8; this is the minimal clear→signal.
+		EventBus.wave_cleared.emit(_wave_n)
 
 
 func _despawn_survivors() -> void:
@@ -155,7 +170,13 @@ func _scene_for(id: StringName) -> PackedScene:
 
 
 func _on_enemy_died(score_value: int) -> void:
-	# Score is run-cumulative; publish via EventBus (D8 — score_changed is global game-flow,
-	# the ONLY signal enemies/waves put on the bus).
-	_run_score += score_value
-	EventBus.score_changed.emit(_run_score)
+	# Score is run-cumulative on RunState; the spawner ROUTES it, never owns it (AR2/FR49).
+	# D8: score_changed is the ONLY global signal enemies/waves put on the bus. Fail-safe if
+	# Arena hasn't wired run_state yet (AR11) — log once, degrade, never crash.
+	if run_state == null:
+		if not _logged_missing_run_state:
+			_logged_missing_run_state = true
+			Log.err("spawner", "enemy died but run_state is null — score not recorded (Arena injects run_state before begin_wave)")
+		return
+	run_state.add_score(score_value)
+	EventBus.score_changed.emit(run_state.score)

@@ -16,3 +16,6 @@ const LAYER_PICKUP: int = 16           # bit 4
 const BASE_SHIPS: int = 3
 const MAX_SHIPS: int = 5
 const BASE_HP: int = 3
+# HP cap (GDD decision-log 58 — grows via build in E3's +HP-cap power-up; encoded now,
+# exercised at 3 in E1). Deferred-work item from the 1.1 code review.
+const MAX_HP: int = 3
