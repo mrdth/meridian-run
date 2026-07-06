@@ -24,6 +24,9 @@ signal died(score_value: int)  # direct local signal (D8) — the spawner connec
 @onready var _muzzle: Marker2D = $Muzzle
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var _visual: Polygon2D = $Visual
+# Story 1.7 — OPTIONAL on-enemy HP bar (Shielder/Bomber only; grunts have no HealthBar child ⇒ null).
+# get_node_or_null so the shared base script tolerates scenes that omit it.
+@onready var _health_bar: HealthBar = get_node_or_null("HealthBar")
 @onready var _enter_state: State = $StateMachine/EnterState
 @onready var _formation_state: State = $StateMachine/FormationState
 @onready var _dive_state: State = $StateMachine/DiveState
@@ -92,6 +95,12 @@ func activate(p_formation_def: FormationDefinition, p_slot_index: int, p_rng: Ra
 	if _fire != null:
 		_fire.arm(definition, rng, false)
 	visible = true
+	# Story 1.7 — re-bind the on-enemy HP bar each spawn (Shielder/Bomber only; grunts have no
+	# HealthBar child ⇒ _health_bar is null). bind() is idempotent (guarded connect) + re-syncs the
+	# segments from the just-reset_to_full() HP. hide_when_full (set on the enemy scenes) hides it
+	# until the enemy is damaged (UX H6).
+	if _health_bar != null:
+		_health_bar.bind(_health)
 	# Reset the StateMachine to EnterState — re-entry exits whatever state we were in at
 	# release (e.g. DiveState) and enters EnterState with the fresh per-spawn data above.
 	_state_machine.transition_to(_enter_state)

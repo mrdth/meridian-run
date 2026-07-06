@@ -17,6 +17,7 @@ extends Node2D
 @onready var _spawner: FormationSpawner = $FormationSpawner
 @onready var _player: Player = $Player
 @onready var _run_state: RunState = RunState.new()
+@onready var _hud: Hud = $HUD
 
 var _wave_num: int = 1
 
@@ -30,6 +31,10 @@ func _ready() -> void:
 	# player.ship_depleted (LOCAL, D8) → run-scope decision. wave_cleared → heal + next wave.
 	_player.ship_depleted.connect(_on_player_ship_depleted)
 	EventBus.wave_cleared.connect(_on_wave_cleared)
+	# Story 1.7 — inject the player ref into the HUD so its focus/fade model can read hp_ratio. The
+	# HUD subscribes to the player's HealthComponent.health_changed (read-only, D8-clean). Done before
+	# begin_wave so the HUD is bound when wave_started fires.
+	_hud.set_player(_player)
 	_spawner.begin_wave(_wave_num)
 
 

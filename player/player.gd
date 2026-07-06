@@ -16,6 +16,7 @@ extends CharacterBody2D
 @onready var _fire_system: FireSystem = $FireSystem
 @onready var _muzzle: Marker2D = $Muzzle
 @onready var _visual: Polygon2D = $Visual
+@onready var _health_bar: HealthBar = $HealthBar
 
 # Player → Arena: "I lost a ship (HP hit 0 within the wave)." NO payload — the run host
 # owns the count and decides respawn vs game-over (D8: intra-entity→parent, direct).
@@ -51,6 +52,10 @@ func _ready() -> void:
 	# re-connect concern across the run). died is a LOCAL HealthComponent signal (D8).
 	if not _health.died.is_connected(_on_ship_depleted):
 		_health.died.connect(_on_ship_depleted)
+	# Story 1.7 — bind the on-ship segmented HP bar to this entity's own HealthComponent (intra-entity,
+	# D8 — HP is never on EventBus). hide_when_full=false here ⇒ the primary read is always visible.
+	if _health_bar != null:
+		_health_bar.bind(_health)
 	# Wire FireSystem's world-space projectile container to our parent (the Arena).
 	# Projectiles parent there — NOT under the Player — so they don't inherit the
 	# ship's transform (Decision #8). FireSystem._ready ran before ours (children

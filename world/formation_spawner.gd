@@ -72,6 +72,11 @@ func begin_wave(n: int) -> void:
 	_slot_cursor = 0
 	_logged_missing_run_state = false  # a new wave is a fresh chance for Arena to wire run_state
 	set_physics_process(true)
+	# Story 1.7 — broadcast wave start (symmetric with the wave_cleared emit at wave-end). Carries
+	# BOTH the wave number (HUD wave-modifier-readout) and the countdown duration (HUD wave-timer).
+	# Emitted HERE (not Arena) because the spawner owns wave timing in E1; the HUD + future systems
+	# subscribe. Additive — existing tests ignore it.
+	EventBus.wave_started.emit(_wave_n, wave_duration_s)
 	Log.info("spawner", "wave %d: escalating drip every %.1fs for %.1fs (per_tick=%d, cap %d)" %
 		[n, drip_interval_s, wave_duration_s, per_tick(_wave_n), max_per_tick])
 

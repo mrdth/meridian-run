@@ -1,0 +1,19 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://ui/hud/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://components/state_machine/state_machine.gd" id="2_fsm"]
+[ext_resource type="Script" path="res://ui/hud/states/standard_state.gd" id="3_standard"]
+[ext_resource type="Script" path="res://ui/hud/states/focus_fade_state.gd" id="4_focusfade"]
+
+[node name="HUD" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_hud")
+
+[node name="FocusFSM" type="Node" parent="."]
+script = ExtResource("2_fsm")
+
+[node name="StandardState" type="Node" parent="FocusFSM"]
+script = ExtResource("3_standard")
+
+[node name="FocusFadeState" type="Node" parent="FocusFSM"]
+script = ExtResource("4_focusfade")

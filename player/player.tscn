@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_tuning.tres" id="2_tuning"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://components/faction_component.gd" id="4_faction"]
 [ext_resource type="Script" path="res://player/fire_system.gd" id="5_fire"]
 [ext_resource type="PackedScene" path="res://player/projectile.tscn" id="6_projectile_scene"]
+[ext_resource type="PackedScene" path="res://components/health_bar.tscn" id="7_health_bar"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.0
@@ -36,3 +37,6 @@ position = Vector2(0, -20)
 script = ExtResource("5_fire")
 tuning = ExtResource("2_tuning")
 projectile_scene = ExtResource("6_projectile_scene")
+
+[node name="HealthBar" parent="." instance=ExtResource("7_health_bar")]
+hide_when_full = false
