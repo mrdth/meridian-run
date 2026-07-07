@@ -61,13 +61,18 @@ func test_losing_last_ship_emits_game_over() -> void:
 	assert_eq(arena._run_state.ships, 0)
 
 
-func test_wave_cleared_heals_player_and_advances_wave() -> void:
-	# AC4: on wave_cleared, per-wave HP resets to full + the minimal next-wave loop advances.
+func test_wave_controller_heals_and_advances_on_timer_expiry() -> void:
+	# AC2 (integration): the WaveController (wired by Arena in _ready) owns the wave lifecycle now —
+	# on its timer expiry it full-heals the player and advances the wave (was Arena._on_wave_cleared
+	# in 1.5). Drives the controller's FSM directly; the spawner is halted by _make() for determinism.
 	var arena := _make()
 	_clear_iframes(arena)
 	arena._player._health.take_damage(2)  # 3 -> 1 (sub-lethal, observable heal target)
 	assert_eq(arena._player._health.current_hp, 1)
-	var wave_before: int = arena._wave_num
-	EventBus.wave_cleared.emit(arena._wave_num)  # the spawner's timer-expiry signal
-	assert_eq(arena._player._health.current_hp, arena._player._health.max_hp)  # full heal
-	assert_eq(arena._wave_num, wave_before + 1)  # next wave began
+	var wc: WaveController = arena._wave_controller
+	var wave_before: int = wc.wave_num
+	# Step the controller's FSM past wave_duration_s in one delta (the controller default is 60s;
+	# one big step fires exactly one completion — the deferred-#1 footgun guard).
+	wc._state_machine._physics_process(wc.wave_duration_s + 0.1)
+	assert_eq(arena._player._health.current_hp, arena._player._health.max_hp)  # AC2 full heal
+	assert_eq(wc.wave_num, wave_before + 1)  # advanced to the next wave

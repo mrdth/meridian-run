@@ -6,6 +6,26 @@ Items deferred during code reviews and story creation — to be revisited when t
 
 ---
 
+## Resolved by Story 1.8 — Authored Wave Assembly & Feel Gate (2026-07-06)
+
+Story 1.8 closed these five 1.8-owned items. (Original deferral notes preserved below for provenance.)
+
+- ✅ **`FormationSpawner.set_active(true)` re-fire footgun** [from 1.5 review] — CLOSED BY CONSTRUCTION: wave timing + `set_active`/`stop` moved to `world/wave_controller.gd` (the run/wave lifecycle FSM). The controller is the sole owner of wave-end; its FSM can't re-enter Active except via Intro (which resets `_wave_time`), so a stale timer can never double-fire `wave_cleared` / double-advance. Regression test: `tests/world/test_wave_controller.gd::test_no_double_fire_on_huge_delta`.
+- ✅ **Silent shake clamp (`shake_player_hit_amount 6.0 × shake_heavy_mul 1.5 = 9.0 > MAX_SHAKE_PX 8.0`)** [from 1.6 review] — `juice/juice_coordinator.gd::_on_shake_requested` now `Log.warn`s when `amount > MAX_SHAKE_PX`; `resources/juice_tuning.tres` retuned `shake_player_hit_amount` 6.0 → **5.0** (5×1.5=7.5 < 8.0) so the clamp is a safety net, not the norm. Tests: `tests/juice/test_juice_coordinator.gd::test_shake_warns_when_exceeds_cap` + `test_retuned_heavy_player_hit_stays_under_shake_cap`.
+- ✅ **Global `HitFlash` ≤3 Hz gate suppresses dense-combat flashes** [from 1.6 review] — REVIEWED, NO CODE CHANGE: the global gate is the spec-mandated photosensitive-safety invariant (1.6 Key Decision #7) and stays NON-NEGOTIABLE. `flash_duration` (0.08s) retained as the starting feel value for Mrdth to tune during the AC4 playtest. The gate is NOT weakened (any change would be a separate safety review).
+- ✅ **Wave-duration drift (spawner 30s vs UX/GDD 60s)** [from 1.7 review] — reconciled: `wave_duration_s` now lives on `WaveController` (default **60.0**, matching UX T1/H3 + GDD "60s survive-to-end"). It's the primary playtest dial going forward (GDD line 165). The HUD reads it from `wave_started`.
+- ✅ **Grunt HP 30 vs "1-hit" AC wording** [from 1.7 review] — reconciled: `resources/enemies/enemy_grunt.tres max_hp` stays **30** (FR43 authoritative; the grunt fast-kills as build damage compounds in E3 — the intended arc). The 1.7 AC wording relaxes to "absent on low-HP grunts"; the grunt `HealthBar` stays absent. (Drop-HP was the alternative; not taken.)
+
+---
+
+## Deferred from: code review of 1-8-authored-wave-assembly-and-feel-gate (2026-07-07)
+
+- `_toggle_hitboxes()` only affects `CollisionShape2D` nodes present at toggle time [systems/debug.gd] — snapshot via `find_children`, not a live watch; enemies/projectiles spawned after the toggle won't reflect it. Revisit if a dedicated debug-tooling polish story lands.
+- `Debug` reaches the arena via `wave_controller.get_parent()` instead of an injected ref [systems/debug.gd `_toggle_hitboxes`/`_toggle_monochrome`] — works only because `bind_arena`'s single call site always binds `wave_controller` alongside `player`/`spawner`. Revisit if that binding contract ever changes.
+- `WaveController.to_intro/to_active/to_completed/to_failed` are unguarded public transition methods [world/wave_controller.gd] — no centralized transition-table validates call order. All current call sites are correct; revisit if the FSM grows more entry points.
+
+---
+
 ## Deferred from: code review of 1-1-project-scaffolding-and-core-systems (2026-07-02)
 
 - `arena.tscn` missing `uid=` line [world/arena.tscn:1] — Godot auto-assigns UID on first editor open; no action needed unless UID churn in git becomes a nuisance

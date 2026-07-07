@@ -66,6 +66,30 @@ func clear() -> void:
 	_node_paths.clear()
 
 
+func get_pooled_count() -> int:
+	# Total IDLE pooled nodes (across all pools) — currently released, NOT in play. Read-only
+	# (Story 1.8 / FR50: the debug overlay reads this). _pools maps resource_path → Array of idle nodes.
+	# Skips stale entries (a node freed out-of-band instead of via release() — same defensive
+	# case acquire() already guards against) so the overlay's count can't silently drift upward.
+	var total: int = 0
+	for pool: Array[Node] in _pools.values():
+		for node: Node in pool:
+			if is_instance_valid(node):
+				total += 1
+	return total
+
+
+func get_active_count() -> int:
+	# Outstanding ACQUIRED nodes (in play, not yet released). Read-only (Story 1.8 / FR50).
+	# _node_paths maps each live acquired node's instance_id → its resource_path; counts only
+	# instance_ids still resolvable to a live node (see get_pooled_count() for the same guard).
+	var total: int = 0
+	for instance_id: int in _node_paths.keys():
+		if is_instance_id_valid(instance_id):
+			total += 1
+	return total
+
+
 func _deactivate(node: Node) -> void:
 	# D7 gap from 1.1: stop processing + hide so pooled nodes cost nothing while idle.
 	# set_process/set_physics_process are Node methods; `visible` is CanvasItem-only

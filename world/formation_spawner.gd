@@ -1,20 +1,24 @@
 class_name FormationSpawner
 extends Node
-# Escalating pulsed-formation spawner — [Wave-2] (correct-course 2026-07-03). Emits a
-# formation pulse every drip_interval_s for the whole wave duration; each pulse spawns
-# per_tick(wave) enemies (wave-scaled, HARD-CAPPED per tick — the performance guardrail).
-# NO on-screen concurrency cap: enemies enter → form → dive → re-enter and cycle until killed
-# (the dive-loop), so pressure ESCALATES as pulses accumulate (timer-terminated waves require
-# replenishment — a fixed batch clears-fast-then-waits). Worst-case entities =
-# (wave_duration / drip_interval) × max_per_tick, verified at the perf gate.
-# The full wave_intro→active→completed→reward→next_wave FSM + the real timer-end is Story 1.8;
-# this spawner covers 1.4's scope (drip for wave_duration, then stop — survivors keep cycling).
+# Escalating pulsed-formation DRIP emitter — [Wave-2] (correct-course 2026-07-03). Emits a
+# formation pulse every drip_interval_s; each pulse spawns per_tick(wave) enemies (wave-scaled,
+# HARD-CAPPED per tick — the performance guardrail). NO on-screen concurrency cap: enemies enter
+# → form → dive → re-enter and cycle until killed (the dive-loop), so pressure ESCALATES as pulses
+# accumulate. Worst-case entities = (wave_duration / drip_interval) × max_per_tick, verified at the
+# perf gate.
+#
+# Story 1.8 — WAVE TIMING HAS MOVED to world/wave_controller.gd (the run/wave lifecycle FSM).
+# This spawner is now a PURE drip emitter: begin_wave(n) starts dripping for wave n, stop() halts
+# it (+ despawns survivors for a clean board). It no longer owns wave_duration, no longer self-
+# terminates, and no longer emits wave_started/wave_cleared — the WaveController does, and drives
+# this spawner's begin_wave/stop at the right lifecycle transitions. (Closes the 1.5-deferred
+# set_active-while-expired footgun by construction: the spawner can't re-fire a cleared wave
+# because it no longer clears waves — the controller owns that, gated by its FSM state.)
 
 @export var grunt_scene: PackedScene
 @export var shielder_scene: PackedScene
 @export var bomber_scene: PackedScene
 @export var formation_id: StringName = &"standard"
-@export var wave_duration_s: float = 30.0      # how long the spawner drips (the [Wave-1] timer).
 @export var drip_interval_s: float = 10.0       # time between formation pulses.
 @export var per_tick_base: int = 3              # per_tick(wave) = base + floor(wave × growth).
 @export var per_tick_growth: float = 0.5
@@ -22,8 +26,8 @@ extends Node
 
 # Injected (by arena.gd or a test) player ref for dive aim — NOT a cross-domain ../../Player.
 var player: Node2D
-# Injected by Arena in _ready BEFORE begin_wave: the run-scope state the spawner routes
-# score through (AR2/FR49 — score is run-cumulative on RunState, never spawner-owned).
+# Injected by Arena/WaveController in _ready BEFORE begin_wave: the run-scope state the spawner
+# routes score through (AR2/FR49 — score is run-cumulative on RunState, never spawner-owned).
 var run_state: RunState
 var _logged_missing_run_state: bool = false  # fail-safe log spam guard (AR11)
 
@@ -40,7 +44,7 @@ var _container: Node2D
 var _formation_def: FormationDefinition
 var _rng: RandomNumberGenerator
 var _wave_n: int = 0
-var _wave_time: float = 0.0
+var _wave_time: float = 0.0       # drip-scheduling clock only (no longer compared to a duration).
 var _next_pulse_time: float = 0.0
 var _spawned: int = 0
 var _slot_cursor: int = 0  # cycles formation slots across pulses
@@ -62,29 +66,42 @@ func _ready() -> void:
 
 
 func begin_wave(n: int) -> void:
-	# Begin escalating drip for wave n. RESTARTABLE — Arena's wave loop calls this again on
-	# wave_cleared (Task 4.2), so it must fully reset per-wave state (idempotent). First pulse
-	# fires immediately (t=0); subsequent pulses every drip_interval_s until wave_duration_s.
+	# Begin escalating drip for wave n. RESTARTABLE — WaveController calls this each wave, so it
+	# must fully reset per-wave state (idempotent). First pulse fires immediately (t=0); subsequent
+	# pulses every drip_interval_s until stop() is called (the WaveController owns wave-end timing).
 	_wave_n = n
 	_wave_time = 0.0
 	_next_pulse_time = 0.0
 	_spawned = 0
 	_slot_cursor = 0
-	_logged_missing_run_state = false  # a new wave is a fresh chance for Arena to wire run_state
+	_logged_missing_run_state = false  # a new wave is a fresh chance to wire run_state
 	set_physics_process(true)
-	# Story 1.7 — broadcast wave start (symmetric with the wave_cleared emit at wave-end). Carries
-	# BOTH the wave number (HUD wave-modifier-readout) and the countdown duration (HUD wave-timer).
-	# Emitted HERE (not Arena) because the spawner owns wave timing in E1; the HUD + future systems
-	# subscribe. Additive — existing tests ignore it.
-	EventBus.wave_started.emit(_wave_n, wave_duration_s)
-	Log.info("spawner", "wave %d: escalating drip every %.1fs for %.1fs (per_tick=%d, cap %d)" %
-		[n, drip_interval_s, wave_duration_s, per_tick(_wave_n), max_per_tick])
+	Log.info("spawner", "wave %d: escalating drip every %.1fs (per_tick=%d, cap %d) — until stop()" %
+		[n, drip_interval_s, per_tick(_wave_n), max_per_tick])
+
+
+func stop() -> void:
+	# Clean wave-end halt (Story 1.8): stop dripping AND collect survivors so the next wave starts
+	# on a clear board. Called by WaveController's Completed/Failed states. Synchronous release is
+	# safe here — this runs from the controller's FSM step (transitioned out of Active.physics_process),
+	# NOT from within a body_entered/area_entered callback (the deferred-release hazard).
+	set_physics_process(false)
+	_despawn_survivors()
 
 
 func set_active(active: bool) -> void:
-	# Arena stops spawning on game-over. Maps to physics toggling (drives both the drip timer
-	# and the wave-duration check). Story 1.8's wave_controller owns richer run control.
+	# Thin alias retained for backward compatibility (tests / legacy callers). Prefer stop() for a
+	# real wave-end (which also despawns survivors). This only toggles the physics drip.
 	set_physics_process(active)
+
+
+func debug_spawn_pulse() -> void:
+	# Debug seam (Story 1.8 / FR50 "spawn enemy" cheat). Spawns ONE formation pulse at the current
+	# wave's per_tick budget. Clearly named debug_* so it reads as a debug-only affordance; the
+	# Debug autoload calls this (is_debug_build()-gated). No-op if the formation def is missing.
+	if _formation_def == null or _formation_def.slots.is_empty():
+		return
+	_spawn_pulse(per_tick(_wave_n))
 
 
 func per_tick(wave: int) -> int:
@@ -109,30 +126,22 @@ func get_active_count() -> int:
 
 func _physics_process(delta: float) -> void:
 	_wave_time += delta
-	# Fire every pulse whose time has come, while still inside the wave duration. Interval is
-	# floored (review fix: drip_interval_s <= 0 would never advance _next_pulse_time — hang) and
-	# pulses-per-frame is bounded (review fix: a delta spike must not catch up unbounded pulses).
+	# Fire every pulse whose time has come. Interval is floored (review fix: drip_interval_s <= 0
+	# would never advance _next_pulse_time — hang) and pulses-per-frame is bounded (review fix: a
+	# delta spike must not catch up unbounded pulses). No duration gate — drips until stop().
 	var interval: float = maxf(drip_interval_s, _MIN_DRIP_INTERVAL_S)
 	var pulses_fired: int = 0
-	while _wave_time >= _next_pulse_time and _next_pulse_time <= wave_duration_s and pulses_fired < _MAX_PULSES_PER_FRAME:
+	while _wave_time >= _next_pulse_time and pulses_fired < _MAX_PULSES_PER_FRAME:
 		_spawn_pulse(per_tick(_wave_n))
 		_next_pulse_time += interval
 		pulses_fired += 1
-	# Wave duration elapsed → stop spawning and collect any survivors (minimal Task 5.2 — the
-	# full wave-end FSM with reward/next_wave is Story 1.8).
-	if _wave_time > wave_duration_s:
-		set_physics_process(false)
-		_despawn_survivors()
-		# Board is clear → signal the run host to heal + advance the wave (AC4). The full
-		# wave-end FSM (reward/shop/replay) is Story 1.8; this is the minimal clear→signal.
-		EventBus.wave_cleared.emit(_wave_n)
 
 
 func _despawn_survivors() -> void:
-	# Minimal wave-end collection (Task 5.2): survivors are not kills (no score) — just returned
-	# to the Pool so they don't keep cycling past the wave's authored duration. get_children()
-	# returns a snapshot Array (not a live view), so releasing (which reparents out of
-	# _container) mid-loop is safe — not the splice-during-iteration hazard.
+	# Wave-end collection: survivors are not kills (no score) — just returned to the Pool so they
+	# don't carry across the wave boundary. get_children() returns a snapshot Array (not a live
+	# view), so releasing (which reparents out of _container) mid-loop is safe — not the
+	# splice-during-iteration hazard.
 	for enemy in _container.get_children():
 		(enemy as Enemy).despawn()
 

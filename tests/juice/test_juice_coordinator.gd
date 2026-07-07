@@ -36,6 +36,23 @@ func _make_coordinator() -> JuiceCoordinator:
 	return coord
 
 
+func test_shake_warns_when_exceeds_cap() -> void:
+	# Story 1.8 / deferred #2: a screen_shake_requested exceeding MAX_SHAKE_PX is clamped AND now
+	# logs a warning (the clamp was previously silent). assert_push_warning also consumes it so GUT
+	# doesn't flag it as an unexpected warning.
+	var coord := _make_coordinator()
+	EventBus.screen_shake_requested.emit(Constants.MAX_SHAKE_PX + 5.0, 0.1)
+	assert_push_warning("exceeds MAX_SHAKE_PX")
+
+
+func test_retuned_heavy_player_hit_stays_under_shake_cap() -> void:
+	# Deferred #2 retune: shake_player_hit_amount (5.0) × shake_heavy_mul (1.5) = 7.5 < MAX_SHAKE_PX
+	# (8.0), so the clamp is a safety net, not the norm — the heavy player-hit never clamps in play.
+	var coord := _make_coordinator()
+	var heavy: float = coord.tuning.shake_player_hit_amount * coord.tuning.shake_heavy_mul
+	assert_lt(heavy, Constants.MAX_SHAKE_PX)
+
+
 func test_arena_scene_has_wired_coordinator_with_tuning() -> void:
 	# Task 10: the arena scene includes a JuiceCoordinator with the camera/shake/flash children and
 	# the tuning .tres assigned (verifies arena.tscn integration, not just the hand-built version).

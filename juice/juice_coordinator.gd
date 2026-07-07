@@ -18,6 +18,7 @@ const PARTICLE_SCENE := preload("res://juice/particle_burst.tscn")
 @onready var _flash: HitFlash = $HitFlash
 
 var _motion_scale: float = 1.0  # accessibility dampen (1.0 full / tuning.motion_scale_reduced)
+var _logged_shake_clamp: bool = false  # fail-safe log spam guard (AR11) — mirrors spawner's pattern
 # ONE reused burst-config dict (NFR3 — no per-event Dictionary.new(); mutated in place). The base
 # profile is read from tuning (read-only); we copy the fields here and apply the per-event size scale.
 var _profile_out: Dictionary = {}
@@ -43,6 +44,17 @@ func _ready() -> void:
 
 func _on_shake_requested(amount: float, duration: float) -> void:
 	# Clamp incoming amplitude to MAX_SHAKE_PX (immutable safety cap) before handing to the shake.
+	# (Story 1.8 / deferred #2: warn when clamped so a miscalibrated tuning/_motion_scale is visible
+	# in logs — matches the fail-safe-logging discipline of every other path. With the 1.8 retune the
+	# normal player-hit shake stays under the cap, so this is silent in normal play — a genuine
+	# tuning signal only when something exceeds it. Logged once per coordinator lifetime — same
+	# spam guard as FormationSpawner._logged_missing_run_state — so a future mistuned multiplier
+	# can't flood the log every frame it fires.)
+	if amount > Constants.MAX_SHAKE_PX:
+		if not _logged_shake_clamp:
+			_logged_shake_clamp = true
+			Log.warn("juice", "screen_shake_requested %.1f px exceeds MAX_SHAKE_PX %.1f — clamped" %
+				[amount, Constants.MAX_SHAKE_PX])
 	_shake.request(clampf(amount, 0.0, Constants.MAX_SHAKE_PX), duration)
 
 

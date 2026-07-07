@@ -1,0 +1,31 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://world/wave_controller.gd" id="1_wc"]
+[ext_resource type="Script" path="res://components/state_machine/state_machine.gd" id="2_sm"]
+[ext_resource type="Script" path="res://world/states/wave_idle_state.gd" id="3_idle"]
+[ext_resource type="Script" path="res://world/states/wave_intro_state.gd" id="4_intro"]
+[ext_resource type="Script" path="res://world/states/wave_active_state.gd" id="5_active"]
+[ext_resource type="Script" path="res://world/states/wave_completed_state.gd" id="6_completed"]
+[ext_resource type="Script" path="res://world/states/wave_failed_state.gd" id="7_failed"]
+
+[node name="WaveController" type="Node2D"]
+script = ExtResource("1_wc")
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("2_sm")
+initial_state = NodePath("WaveIdleState")
+
+[node name="WaveIdleState" type="Node" parent="StateMachine"]
+script = ExtResource("3_idle")
+
+[node name="WaveIntroState" type="Node" parent="StateMachine"]
+script = ExtResource("4_intro")
+
+[node name="WaveActiveState" type="Node" parent="StateMachine"]
+script = ExtResource("5_active")
+
+[node name="WaveCompletedState" type="Node" parent="StateMachine"]
+script = ExtResource("6_completed")
+
+[node name="WaveFailedState" type="Node" parent="StateMachine"]
+script = ExtResource("7_failed")

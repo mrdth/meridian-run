@@ -1,5 +1,5 @@
 # generated: 2026-06-30
-# last_updated: 2026-07-05
+# last_updated: 2026-07-07
 # project: meridian-run
 # project_key: NOKEY
 # tracking_system: file-system
@@ -62,7 +62,7 @@ development_status:
   1-5-life-and-health-economy: done
   1-6-hit-feedback-and-juice: done
   1-7-basic-hud: done
-  1-8-authored-wave-assembly-and-feel-gate: backlog
+  1-8-authored-wave-assembly-and-feel-gate: done
   epic-1-retrospective: optional
 
   # === Epic 2 — The Gamble  (v0.1) ===

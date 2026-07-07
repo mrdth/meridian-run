@@ -6,7 +6,7 @@
 script = ExtResource("1_tuning")
 shake_enemy_hit_amount = 2.0
 shake_enemy_hit_dur = 0.1
-shake_player_hit_amount = 6.0
+shake_player_hit_amount = 5.0
 shake_player_hit_dur = 0.2
 shake_kill_amount = 4.0
 shake_kill_dur = 0.15

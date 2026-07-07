@@ -1,13 +1,13 @@
 class_name Arena
 extends Node2D
 # The E1 run host (Story 1.5). Owns the RunState spine (ships + score), wires it into the
-# spawner + player, and orchestrates RUN-SCOPE decisions: ship loss (respawn vs game-over),
-# the wave-clear heal + minimal next-wave loop, and the E1 loss→replay placeholder.
+# WaveController + spawner + player, and orchestrates RUN-SCOPE decisions: ship loss (respawn vs
+# game-over) and the E1 loss→replay placeholder.
 #
-# Per-ship mechanics are the PLAYER's (wave scope); run-scope decisions are HERE (AR2).
-# The full wave-lifecycle FSM (intro/reward/shop/replay, authored feel-gate assembly) and
-# the real game-over screen/menu flow are Story 1.8 / 8.4 — this is the minimal precursor
-# that makes the ship economy testable end-to-end across multiple waves.
+# The wave lifecycle (spawn → active → completed/failed, heal-on-clear, replay) is OWNED by
+# WaveController as of Story 1.8 — Arena no longer drives begin_wave/wave_cleared/advance directly.
+# Per-ship mechanics are the PLAYER's (wave scope); run-scope decisions are HERE (AR2). The real
+# game-over/menu/restart flow is Story 8.4.
 
 # E1 placeholder: on loss, auto-replay the scene for a fresh run (ships→3, score→0). The
 # real game-over/menu/restart flow is Story 8.4 (which replaces this toggle). Default true
@@ -18,24 +18,33 @@ extends Node2D
 @onready var _player: Player = $Player
 @onready var _run_state: RunState = RunState.new()
 @onready var _hud: Hud = $HUD
-
-var _wave_num: int = 1
+@onready var _wave_controller: WaveController = $WaveController
 
 
 func _ready() -> void:
 	_run_state.begin_run()  # ships = BASE_SHIPS (3), score = 0
-	# Inject refs BEFORE begin_wave: children's _ready fired before ours (bottom-up), so
-	# _spawner/_player exist. Wire run_state + the player for dive aim, then start wave 1.
+	# Inject refs BEFORE start_run: children's _ready fired before ours (bottom-up), so
+	# _spawner/_player/_wave_controller exist. Wire run_state + the player for dive aim.
 	_spawner.player = _player
 	_spawner.run_state = _run_state
-	# player.ship_depleted (LOCAL, D8) → run-scope decision. wave_cleared → heal + next wave.
+	# player.ship_depleted (LOCAL, D8) → run-scope decision. WaveController separately subscribes
+	# to EventBus.game_over to Fail the active wave (it owns the wave lifecycle now).
 	_player.ship_depleted.connect(_on_player_ship_depleted)
-	EventBus.wave_cleared.connect(_on_wave_cleared)
 	# Story 1.7 — inject the player ref into the HUD so its focus/fade model can read hp_ratio. The
-	# HUD subscribes to the player's HealthComponent.health_changed (read-only, D8-clean). Done before
-	# begin_wave so the HUD is bound when wave_started fires.
+	# HUD subscribes to the player's HealthComponent.health_changed (read-only, D8-clean).
 	_hud.set_player(_player)
-	_spawner.begin_wave(_wave_num)
+	# Story 1.8 — WaveController owns the wave lifecycle FSM. Inject its refs + start the run: it
+	# emits wave_started/wave_cleared (the HUD consumes both), drives the spawner's begin_wave/stop,
+	# full-heals the player on wave clear (AC2), and replays the authored wave. This replaces the
+	# 1.5 direct _spawner.begin_wave + Arena._on_wave_cleared heal+advance loop.
+	_wave_controller.player = _player
+	_wave_controller.spawner = _spawner
+	_wave_controller.run_state = _run_state
+	_wave_controller.start_run()
+	# Story 1.8 / FR50 — bind gameplay refs into the Debug autoload so the overlay + cheats can reach
+	# them. Debug-build only (the autoload is a no-op in release). Mirrors the HUD injection pattern.
+	if OS.is_debug_build():
+		Debug.bind_arena(_player, _spawner, _wave_controller)
 
 
 func _on_player_ship_depleted() -> void:
@@ -50,32 +59,27 @@ func _on_player_ship_depleted() -> void:
 
 
 func _on_run_lost() -> void:
-	# Last ship spent → run over. Emit game_over (safe to fire synchronously — D8 global
-	# flow), freeze spawning, then defer the replay. The reload + Pool.clear MUST defer:
-	# this handler runs synchronously inside the physics step (enemy_projectile._on_body_entered
-	# → take_damage → died → ship_depleted → here, all during _physics_process); freeing the
-	# tree / mutating the Pool mid-collision would corrupt the step (same gotcha as Story 1.4's
-	# deferred Pool.release). call_deferred lands it at idle, outside the physics callback.
+	# Last ship spent → run over. Emit game_over (WaveController hears it → WaveFailedState +
+	# spawner.stop(); safe to fire synchronously — D8 global flow), then defer the replay. The reload
+	# + Pool.clear MUST defer: this handler runs synchronously inside the physics step (enemy_projectile
+	# ._on_body_entered → take_damage → died → ship_depleted → here, all during _physics_process);
+	# freeing the tree / mutating the Pool mid-collision would corrupt the step (same gotcha as Story
+	# 1.4's deferred Pool.release). call_deferred lands it at idle, outside the physics callback.
 	EventBus.game_over.emit()
-	_spawner.set_active(false)
 	if auto_replay_on_loss:
 		_end_run.call_deferred()
 
 
 func _end_run() -> void:
-	# E1 placeholder fresh-run: empty the Pool (so it stops referencing nodes the scene
-	# reload is about to free) then reload. The new Arena._ready constructs a fresh RunState
-	# (ships back to 3, score 0). The real restart flow is Story 8.4.
+	# E1 placeholder fresh-run: empty the Pool (so it stops referencing nodes the scene reload is
+	# about to free) then reload. The new Arena._ready constructs a fresh RunState (ships back to 3,
+	# score 0) + a fresh WaveController (wave 1). The real restart flow is Story 8.4.
+	# Debug-build only: clear cheat/toggle state (and restore any mutated PlayerTuning baseline)
+	# so a debug session's cheats don't leak into the next run (Debug is an autoload — it outlives
+	# the reload).
+	if OS.is_debug_build():
+		Debug.reset_debug_state()
 	Pool.clear()
 	var err: Error = get_tree().reload_current_scene()
 	if err != OK:
 		Log.err("arena", "reload_current_scene failed (%d) — run did not restart" % err)
-
-
-func _on_wave_cleared(_wave: int) -> void:
-	# AC4: full HP before the next wave (AR2 — the wave host resets per-wave HP). Then advance
-	# the minimal next-wave loop. Strict subset of Story 1.8's full lifecycle FSM (no intro /
-	# reward / shop / replay interlude here).
-	_player._health.reset_to_full()
-	_wave_num += 1
-	_spawner.begin_wave(_wave_num)

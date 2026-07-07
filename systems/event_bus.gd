@@ -10,17 +10,17 @@ extends Node
 # are NOT game-flow events and MUST stay imperative-request shaped.
 #
 # Story 1.7 (Basic HUD) adds `wave_started` (game-flow) + `arc_t_changed` (derived
-# theming state). `wave_started(wave, duration_s)` is emitted by FormationSpawner
-# at the top of begin_wave() — symmetric with wave_cleared at wave-end — so the HUD
-# gets BOTH the wave number and the countdown seed in one signal (D8: the spawner
-# is the E1 wave-timing owner). `arc_t_changed(t)` is a derived, READ-ONLY theming
+# theming state). `wave_started(wave, duration_s)` is emitted by WaveController (moved
+# from FormationSpawner.begin_wave() in Story 1.8, which now owns wave timing) — symmetric
+# with wave_cleared at wave-end — so the HUD gets BOTH the wave number and the countdown
+# seed in one signal. `arc_t_changed(t)` is a derived, READ-ONLY theming
 # broadcast (arch D13/line 420): consumers (HUD, health_bar, future world surfaces)
 # never emit it. It has NO EMITTER in E1 — PaletteArcCoordinator (Story 3.9) emits
 # it once the build engine exists; until then t stays ~0 (calm Vector Standard).
 
 # --- Global game-flow events (past-tense, D8) ---
 signal run_started
-signal wave_started(wave: int, duration_s: float)  # Story 1.7 — spawner emits in begin_wave()
+signal wave_started(wave: int, duration_s: float)  # Story 1.8 — WaveController emits on Intro enter
 signal wave_cleared(wave: int)
 signal ship_lost(ships_remaining: int)
 signal build_changed
