@@ -15,7 +15,7 @@ extends CharacterBody2D
 @onready var _faction: FactionComponent = $FactionComponent
 @onready var _fire_system: FireSystem = $FireSystem
 @onready var _muzzle: Marker2D = $Muzzle
-@onready var _visual: Polygon2D = $Visual
+@onready var _visual: Node2D = $Visual
 @onready var _health_bar: HealthBar = $HealthBar
 
 # Player → Arena: "I lost a ship (HP hit 0 within the wave)." NO payload — the run host

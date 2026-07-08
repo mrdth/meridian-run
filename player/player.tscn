@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_tuning.tres" id="2_tuning"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://player/fire_system.gd" id="5_fire"]
 [ext_resource type="PackedScene" path="res://player/projectile.tscn" id="6_projectile_scene"]
 [ext_resource type="PackedScene" path="res://components/health_bar.tscn" id="7_health_bar"]
+[ext_resource type="CanvasItemMaterial" path="res://assets/materials/neon_glow_add.tres" id="8_glow_mat"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.0
@@ -17,9 +18,26 @@ collision_mask = 0
 script = ExtResource("1_player")
 tuning = ExtResource("2_tuning")
 
-[node name="Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, -17, -15, 14, 15, 14)
-color = Color(0, 0.898, 1, 1)
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="GlowOutline" type="Line2D" parent="Visual"]
+points = PackedVector2Array(0, -17, -15, 10, -8, 14, 0, 10, 8, 14, 15, 10)
+closed = true
+width = 7.0
+joint_mode = 2
+default_color = Color(0, 0.898, 1, 0.18)
+material = ExtResource("8_glow_mat")
+
+[node name="Core" type="Polygon2D" parent="Visual"]
+polygon = PackedVector2Array(0, -17, -15, 10, -8, 14, 0, 10, 8, 14, 15, 10)
+color = Color(0.902, 0.945, 1, 1)
+
+[node name="Outline" type="Line2D" parent="Visual"]
+points = PackedVector2Array(0, -17, -15, 10, -8, 14, 0, 10, 8, 14, 15, 10)
+closed = true
+width = 2.0
+joint_mode = 2
+default_color = Color(0, 0.898, 1, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1")
