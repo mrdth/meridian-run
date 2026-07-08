@@ -16,9 +16,10 @@ point_count = 10
 
 [resource]
 script = ExtResource("1_cekrc")
-slots = Array[Vector2]([Vector2(430, 130), Vector2(570, 130), Vector2(710, 130), Vector2(850, 130), Vector2(430, 210), Vector2(570, 210), Vector2(710, 210), Vector2(850, 210)])
+slots = Array[Vector2]([Vector2(150, 130), Vector2(470, 130), Vector2(810, 130), Vector2(1130, 130), Vector2(150, 210), Vector2(470, 210), Vector2(810, 210), Vector2(1130, 210)])
 entry_curve = SubResource("Curve2D_c7gog")
 dive_curve = SubResource("Curve2D_mlh2x")
 formation_hold_s = 2.5
-side_drift_amplitude_px = 22.0
-side_drift_period_s = 2.4
+dive_aim_track_factor = 0.7
+side_drift_amplitude_px = 130.0
+side_drift_period_s = 2.6

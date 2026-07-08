@@ -36,7 +36,7 @@ var formation_def: FormationDefinition
 var slot_index: int = 0
 var rng: RandomNumberGenerator
 var slot_world_pos: Vector2
-var player_target: Node2D  # injected by the spawner; DiveState reads .global_position.x once.
+var player_target: Node2D  # injected by the spawner; DiveState reads .global_position.x on each physics frame.
 
 
 func _ready() -> void:

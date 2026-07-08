@@ -16,6 +16,14 @@ extends Resource
 @export var entry_curve: Curve2D  # relative: off-screen-above the slot → slot origin (0,0).
 @export var dive_curve: Curve2D   # relative: slot origin (0,0) → off-screen-below (+y).
 
+@export_group("Dive")
+# 0 = classic Galaga: aim captured ONCE at dive-start (bends toward where the player was).
+# 1 = continuously re-aim at the player's LIVE x each frame (a diver follows a player who
+# relocates to / camps a screen edge after dive-start). Blended between the two per-frame.
+# Anti-camp lever: the core coverage fix is formation fire (slots + drift); this makes dives
+# feel responsive rather than dumb against a moving target.
+@export var dive_aim_track_factor: float = 0.0
+
 @export_group("Timing")
 @export var entry_duration_s: float = 1.5  # fly-in duration (curve traversal budget).
 @export var dive_duration_s: float = 2.0   # dive duration.

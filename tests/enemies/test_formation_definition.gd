@@ -46,6 +46,19 @@ func test_dive_curve_goes_downward_off_screen() -> void:
 	assert_gt(end.y, 720.0)  # exits below the 720-tall field
 
 
+func test_dive_aim_track_factor_default_is_capture_once() -> void:
+	# Schema default 0.0 = classic aim captured once at dive-start (preserves prior behavior
+	# for any formation that doesn't opt into live tracking).
+	var f := FormationDefinition.new()
+	assert_eq(f.dive_aim_track_factor, 0.0)
+
+
+func test_dive_aim_track_factor_authored() -> void:
+	# standard.tres opts into continuous dive aim tracking (anti-camp: divers follow a player
+	# who relocates to a screen edge after dive-start, instead of missing on a stale aim).
+	assert_almost_eq(_FORM.dive_aim_track_factor, 0.7, 0.001)
+
+
 func test_registry_returns_standard_formation() -> void:
 	# AR8 — the spawner fetches formations through ContentRegistry, not load().
 	var f: FormationDefinition = ContentRegistry.get_formation_def(&"standard")

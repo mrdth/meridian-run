@@ -182,6 +182,30 @@ func test_dive_loops_re_enters_does_not_release() -> void:
 	assert_true(re_entered, "crossed the bottom but didn't re-enter from the top (released instead of looping?)")
 
 
+func test_dive_tracks_player_x_when_factor_set() -> void:
+	# dive_aim_track_factor (standard.tres = 0.7) blends the once-captured dive aim toward the
+	# player's LIVE x. Anti-camp: a player who relocates to / camps a screen edge AFTER dive-start
+	# is still pursued, instead of the diver sailing past on a stale capture-once aim.
+	var e: Enemy = _make(GruntScene)  # slot 0 → slot_world_pos.x ≈ 150
+	var sm: StateMachine = e.get_node("StateMachine")
+	var dive: State = e.get_node("StateMachine/DiveState")
+	# Fake player parked at the slot's x at dive-start → captured aim ≈ 0.
+	var player := Node2D.new()
+	add_child_autofree(player)
+	player.global_position = Vector2(150.0, 680.0)
+	e.player_target = player
+	# Jump straight into DiveState (skip entry/formation timing).
+	sm.transition_to(dive)
+	# NOW move the player far right. With capture-once (factor 0) the diver would stay on-curve
+	# (slot.x + curve_x ≤ ~265); only live tracking bends it rightward toward the moved player.
+	player.global_position.x = 1250.0
+	for _i in 40:
+		sm._physics_process(1.0 / 60.0)
+	assert_gt(e.global_position.x, 400.0, "dive did not track the relocated player")
+	# Sanity: the diver hasn't crossed the bottom (no re-entry) within this short window.
+	assert_lt(e.global_position.y, Constants.BASE_RESOLUTION.y)
+
+
 func _step(sm: StateMachine, frames: int) -> void:
 	for _i in frames:
 		sm._physics_process(1.0 / 60.0)
