@@ -85,6 +85,34 @@ func test_bomber_spawns_heavy_two_damage_shot() -> void:
 	assert_almost_eq(vis.color.g, 0.62, 0.02)
 
 
+func test_sweep_mode_fires_at_tight_cadence() -> void:
+	# SweepState arms SWEEP mode (decision-log [Sweep-state]) → the tight sweep_fire_interval_s
+	# cadence (0.4 s) instead of the stock 1.2–2.4 s band, so a strafing run rakes dense fire.
+	# Park the enemy high so spawned projectiles don't leave-screen during the window
+	# (child_count then == shots fired, not shots still in flight).
+	var fire: EnemyFireSystem = _make(GruntScene)
+	var def: EnemyDefinition = (fire.get_parent() as Enemy).definition
+	(fire.get_parent() as Enemy).global_position = Vector2(0.0, -1000.0)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	fire.arm(def, rng, true, true)  # SWEEP mode
+	for _i in 300:  # 5 s
+		fire._physics_process(1.0 / 60.0)
+	var sweep_shots: int = fire.projectile_parent.get_child_count()
+
+	var fire2: EnemyFireSystem = _make(GruntScene)
+	(fire2.get_parent() as Enemy).global_position = Vector2(0.0, -1000.0)
+	var rng2 := RandomNumberGenerator.new()
+	rng2.seed = 7
+	fire2.arm(def, rng2, true)  # normal mode (same seed for a fair compare)
+	for _i in 300:
+		fire2._physics_process(1.0 / 60.0)
+	var normal_shots: int = fire2.projectile_parent.get_child_count()
+
+	# Sweep (0.4 s → ~12 shots / 5 s) far exceeds normal (1.2–2.4 s → ≤4 shots / 5 s).
+	assert_gt(sweep_shots, normal_shots * 2, "sweep mode did not fire at a tighter cadence than normal")
+
+
 func test_physics_process_makes_no_per_frame_allocations() -> void:
 	# Runtime check (review fix — a source-text grep proved nothing about actual allocation and
 	# was trivially defeated by reformatting). Drives the cooldown-accumulator hot path — the

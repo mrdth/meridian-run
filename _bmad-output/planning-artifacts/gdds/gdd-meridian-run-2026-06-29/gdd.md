@@ -105,7 +105,7 @@ Two layered resources with clean, separate roles:
 - **Ships (lives)** — the **run economy** and the discrete unit the Gamble (P2) trades. Start **3**, cap **5**; run ends at 0. Ships enter only from external sources (tier-cap floor, shop/upgrades) — the capture/rescue loop is ship-neutral (keep) or ship-negative (sacrifice/absorb/failed-rescue). Ships are never farmed, only spent or bet.
 - **HP (per-ship buffer)** — the **wave-survival** resource for the Test (P3); chip damage from fire-columns. Base **3**, grows via defensive build. **Fully heals between every wave**, so HP is a within-wave resource — run tension lives in ship attrition, not HP attrition.
 
-**Damage model:** standard fire **1 dmg** (flat across all tiers — pressure scales, not lethality); heavy/elite shots **2 dmg** (rare, telegraphed). i-frames **1 s** after each hit.
+**Damage model:** standard fire **1 dmg** (flat across all tiers — pressure scales, not lethality); heavy/elite shots **2 dmg** (rare, telegraphed); **enemy-body contact 1 dmg** (e.g. a diver crossing the player — decision-log [Contact-damage]). i-frames **1 s** after each hit.
 
 **Capture:** costs **1 ship**, bypasses HP; next ship respawns at full HP. **Once per wave, clean-only** — a captor can only tractor a ship with no docked ship present (special/modifier waves excepted). **Max one docked ship at a time** (one capture/rescue/dock per wave) — multiple docked ships are not supported.
 
@@ -248,7 +248,7 @@ Prototype baselines (retuned per tier in v1.0):
 original 60/50/80 baseline (ratios preserved) so formation entry/dive reads as fast and snappy
 rather than sluggish. See decision-log `[Speed-tuning]`.
 
-- **Formation + dive AI** (*Galaga*-lineage); wave N = 4+N enemies, cap 12; variant mix scales by tier.
+- **Formation + dive + sweep AI** (*Galaga*-lineage); escalating pulsed formations with **no concurrency cap** (see `[Wave-2]`); variant mix scales by tier. After the formation hold an enemy dives OR — per `sweep_chance` — performs an **edge sweep**: a full-width strafing run that rakes straight-down fire across both screen corners to deny edge-camping (see `[Sweep-state]`).
 - 🚧 **Captor variety at higher tiers** — open run-variety question (decoupled from the meta model after the mainframe-hack clarification).
 
 ### Arena and Level Design

@@ -232,14 +232,14 @@ The architectural heart. **Approach:** data-driven `StatBlock` + `Modifier`/`Beh
 
 **Composition over inheritance.** Entities are scenes composed of reusable component child-nodes:
 
-- Shared components: `HealthComponent`, `HitboxComponent`/`HurtboxComponent` (Area2D-based), `FactionComponent`, `StatBlock` holder, `StateMachine`.
-- Player = movement + fire + health + docked-ship-slot + statblock. Enemies = health + hitbox + AI. Projectiles = lightweight pooled nodes (damage payload + faction).
+- Shared components: `HealthComponent`, `HitboxComponent`/`HurtboxComponent` (Area2D-based; **`HurtboxComponent` now implemented** — player contact-damage receiver, decision-log [Contact-damage]), `FactionComponent`, `StatBlock` holder, `StateMachine`.
+- Player = movement + fire + health + **hurtbox** (contact-damage receiver) + docked-ship-slot + statblock. Enemies = health + hitbox + AI. Projectiles = lightweight pooled nodes (damage payload + faction).
 - **Collision layers (strict):** `player / enemy / player_projectile / enemy_projectile / pickup`.
 - *Rejected:* deep inheritance (brittle across the fleet roster).
 
 ### AI (D6)
 
-**FSMs** via a reusable `StateMachine`/`State` node pattern (template in `project-context.md` lineage). Grunt/Shielder/Bomber = small FSMs / scripted formation+dive patterns; **Captor = the 5-state timed FSM** (`enter → formation → telegraph 0.7s → capture 0.4s → dive 1.6s`) straight from the GDD. No behavior trees / GOAP / LimboAI (overkill; available if later complexity demands).
+**FSMs** via a reusable `StateMachine`/`State` node pattern (template in `project-context.md` lineage). Grunt/Shielder/Bomber = a **4-state FSM** (`enter → formation → {dive | sweep}`) — dive swoops at the player; **sweep** = a full-width edge-raking strafing run that denies edge-camping (`[Sweep-state]`); **Captor = the 5-state timed FSM** (`enter → formation → telegraph 0.7s → capture 0.4s → dive 1.6s`) straight from the GDD. No behavior trees / GOAP / LimboAI (overkill; available if later complexity demands).
 
 ### Object Pooling (D7)
 
@@ -481,8 +481,9 @@ res://
 │   ├── enemy.tscn / enemy.gd         # base (composes components)
 │   ├── grunt.tscn, shielder.tscn, bomber.tscn
 │   ├── enemy_definition.gd           # EnemyDefinition schema
+│   ├── states/ (enter/formation/dive/sweep — the grunt FSM; sweep = edge-raking run `[Sweep-state]`)
 │   ├── captor/ (captor.tscn + states/: enter/formation/telegraph/capture/dive)
-│   ├── formation_definition.gd       # entry/dive pattern schema
+│   ├── formation_definition.gd       # entry/dive/sweep pattern schema
 │   └── art/
 │
 ├── world/                            # WORLD domain

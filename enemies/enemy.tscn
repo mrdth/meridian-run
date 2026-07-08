@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://enemies/enemy.gd" id="1_enemy"]
 [ext_resource type="Resource" path="res://resources/enemies/enemy_grunt.tres" id="2_def"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://enemies/states/enter_state.gd" id="6_enter"]
 [ext_resource type="Script" path="res://enemies/states/formation_state.gd" id="7_form"]
 [ext_resource type="Script" path="res://enemies/states/dive_state.gd" id="8_dive"]
+[ext_resource type="Script" path="res://enemies/states/sweep_state.gd" id="11_sweep"]
 [ext_resource type="Script" path="res://enemies/enemy_fire_system.gd" id="9_fire"]
 [ext_resource type="PackedScene" path="res://enemies/enemy_projectile.tscn" id="10_proj"]
 
@@ -48,6 +49,9 @@ script = ExtResource("7_form")
 
 [node name="DiveState" type="Node" parent="StateMachine"]
 script = ExtResource("8_dive")
+
+[node name="SweepState" type="Node" parent="StateMachine"]
+script = ExtResource("11_sweep")
 
 [node name="EnemyFireSystem" type="Node" parent="."]
 script = ExtResource("9_fire")

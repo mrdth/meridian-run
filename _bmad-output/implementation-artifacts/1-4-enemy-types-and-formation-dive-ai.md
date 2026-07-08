@@ -501,3 +501,28 @@ pre-existing `test_pool`/`test_projectile` orphans; not a regression.
   bounded; spawner RNG seeded; `ContentRegistry` warns on duplicate ids; `collision_mask == 0`
   now asserted, not just commented; the fake allocation-grep test replaced with a real
   `Performance.get_monitor(OBJECT_COUNT)` check. 92/92 GUT tests pass; headless launch clean.
+- 2026-07-08: **Edge-sweep attack state added [Sweep-state]** (post-1.8 feel-gate change; this
+  story owns the enemy FSM code). A 4th FSM state — `SweepState` — strafes a full-width path
+  toward the far screen edge at `sweep_y`, firing straight down at a tight cadence so each run
+  rakes dense fire across both corners. Triggered from FormationState: `sweep_chance` (schema
+  default 0.0; `standard.tres` 0.3) replaces a dive that fraction of the time. Motivation:
+  stationary edge-camping survived multiple waves untouched (straight-down fire only hits a
+  corner camper while an enemy is directly overhead — luck-dependent). Sweeper exits the side →
+  re-enters from the top (Galaga loop; death still the only release). Files: new
+  `enemies/states/sweep_state.gd`; `formation_state.gd` (branch), `enemy.gd`
+  (`_sweep_state`/`to_sweep()`/`arm_sweep_fire()`), `enemy.tscn` (node), `enemy_fire_system.gd`
+  (sweep cadence mode), `formation_definition.gd` + `standard.tres` (`sweep_chance`/`sweep_y`),
+  `enemy_definition.gd` + grunt/shielder/bomber `.tres`
+  (`sweep_speed_multiplier`/`sweep_fire_interval_s`); new tests in `tests/enemies/`. 215/215
+  GUT pass. See decision-log `[Sweep-state]`.
+- 2026-07-08: **Enemy-body contact damage + dive-aim fix [Contact-damage]** (post-1.8 playtest
+  change). Root cause of "clear wave 1 without moving": enemy bodies dealt zero damage (Key
+  Decision #1) AND dive fire missed a stationary player (aim applied as `aim*u`, reaching player.x
+  only off-screen). Fixes: (a) new `components/hurtbox_component.gd` — a player Area2D masking
+  LAYER_ENEMY that routes `body_entered` to the owner HealthComponent (reverses the DAMAGE half of
+  Key Decision #1; movement half — `collision_mask=0` — stays; reuses the infra the Captor needs);
+  wired into `player/player.tscn`. (b) `dive_state.gd` aim now converges to player.x BY the lane
+  (Y-progress blend) so contact + fire land on a stationary player. `enemy.gd` Key Decision #1
+  header wording updated. Tests: `tests/player/test_player_health.gd` (contact + i-frame gating),
+  `tests/enemies/test_enemy.gd` (dive crosses player.x at the lane). 218/218 GUT pass. See
+  decision-log `[Contact-damage]`.

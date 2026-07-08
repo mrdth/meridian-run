@@ -57,6 +57,22 @@ func test_bomber_stats_match_gdd_baselines() -> void:
 	assert_eq(b.move_speed, 280.0)  # playtest-tuned (GDD baseline 80)
 
 
+func test_sweep_movement_fields_default() -> void:
+	# Schema defaults for SweepState (decision-log [Sweep-state]).
+	var f := EnemyDefinition.new()
+	assert_eq(f.sweep_speed_multiplier, 2.5)
+	assert_eq(f.sweep_fire_interval_s, 0.4)
+
+
+func test_sweep_movement_fields_authored() -> void:
+	# Grunt/Shielder sweep at 2.5× speed / 0.4 s cadence; Bomber's stream is slightly slower (0.5 s)
+	# so its dense raking fire stays fair.
+	assert_eq(_GRUNT.sweep_speed_multiplier, 2.5)
+	assert_eq(_GRUNT.sweep_fire_interval_s, 0.4)
+	assert_eq(_SHIELDER.sweep_fire_interval_s, 0.4)
+	assert_eq(_BOMBER.sweep_fire_interval_s, 0.5)
+
+
 func test_projectile_speed_dodgeable_vs_player() -> void:
 	# Task 4.3 — enemy projectile (280) must be slower than the player bullet (620).
 	for d in [_GRUNT, _SHIELDER, _BOMBER]:

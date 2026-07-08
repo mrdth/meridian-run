@@ -32,3 +32,11 @@ extends Resource
 @export_group("Drift")
 @export var side_drift_amplitude_px: float = 24.0  # side-to-side drift magnitude (Galaga-lineage).
 @export var side_drift_period_s: float = 3.0       # drift oscillation period.
+
+@export_group("Sweep")
+# Edge-sweep attack (SweepState) — a periodic full-width strafing run that rakes straight-down
+# fire across BOTH screen corners, denying edge-camping. Straight-down formation fire alone is
+# luck-dependent at the edges (a corner camper is hit only while an enemy is directly overhead),
+# so sweeps guarantee corner coverage every run. See decision-log [Sweep-state].
+@export var sweep_chance: float = 0.0  # P(a formation-hold expiry triggers a sweep instead of a dive). 0 = dives-only (legacy).
+@export var sweep_y: float = 430.0     # world Y the sweeper holds while traversing (above the player lane at y=680).

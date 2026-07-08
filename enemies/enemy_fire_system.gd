@@ -23,25 +23,37 @@ var projectile_parent: Node2D
 var _definition: EnemyDefinition
 var _rng: RandomNumberGenerator
 var _armed: bool = false
+var _sweep_armed: bool = false  # SweepState: fire at the tight sweep_fire_interval_s cadence (dense raking stream).
 var _cooldown: float = 0.0
 var _windup_remaining: float = -1.0  # >= 0 while telegraphing a heavy shot (review fix).
 
 
-func arm(definition: EnemyDefinition, rng: RandomNumberGenerator, active: bool) -> void:
-	# Enable/disable firing per AI state (fire only in Formation/Dive, not Enter). Sets the
-	# per-spawn definition + rng. First shot is delayed by a random interval so an enemy
-	# doesn't fire the instant it reaches formation.
+func arm(definition: EnemyDefinition, rng: RandomNumberGenerator, active: bool, sweep: bool = false) -> void:
+	# Enable/disable firing per AI state (fire only in Formation/Dive/Sweep, not Enter). Sets the
+	# per-spawn definition + rng. First shot is delayed by an interval so an enemy doesn't fire the
+	# instant it reaches formation. `sweep` (SweepState) fires at the tight sweep_fire_interval_s
+	# cadence so a strafing run rakes dense fire across the lane (decision-log [Sweep-state]).
 	_definition = definition
 	_rng = rng
 	_armed = active
+	_sweep_armed = active and sweep
 	_windup_remaining = -1.0
 	if _armed and _definition != null and _rng != null:
-		_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
+		_cooldown = _next_interval()
+
+
+func _next_interval() -> float:
+	# Sweep mode = tight fixed cadence (dense raking stream); otherwise the per-definition random band.
+	if _sweep_armed:
+		return _definition.sweep_fire_interval_s
+	return _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
 
 
 func _physics_process(delta: float) -> void:
 	if _definition == null or _rng == null:
 		return
+	# Sweep mode = standard raking fire: no heavy telegraph (decision-log [Sweep-state]).
+	var heavy_eligible: bool = not _sweep_armed and _definition.shot_kind == EnemyDefinition.ShotKind.HEAVY and _definition.heavy_windup_s > 0.0
 	# Mid-windup: hold fire until the telegraph elapses, then actually spawn (review fix —
 	# heavy_windup_s was previously stored but never delayed the shot).
 	if _windup_remaining >= 0.0:
@@ -49,16 +61,16 @@ func _physics_process(delta: float) -> void:
 		if _windup_remaining <= 0.0:
 			_windup_remaining = -1.0
 			_spawn()
-			_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
+			_cooldown = _next_interval()
 		return
 	# Cooldown accumulator; clamp at 0 to avoid unbounded-negative drift (1.3 review).
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	if _armed and _cooldown <= 0.0:
-		if _definition.shot_kind == EnemyDefinition.ShotKind.HEAVY and _definition.heavy_windup_s > 0.0:
+		if heavy_eligible:
 			_windup_remaining = _definition.heavy_windup_s
 		else:
 			_spawn()
-			_cooldown = _rng.randf_range(_definition.fire_interval_min_s, _definition.fire_interval_max_s)
+			_cooldown = _next_interval()
 
 
 func _spawn() -> void:
@@ -66,7 +78,8 @@ func _spawn() -> void:
 		return
 	# HEAVY shot_kind (Bomber) → use the dedicated heavy scene if provided, else the standard
 	# scene with heavy=true (the projectile recolors/scales for the telegraphed silhouette).
-	var heavy: bool = _definition.shot_kind == EnemyDefinition.ShotKind.HEAVY
+	# Sweep mode forces STANDARD fire — a strafing run rakes standard shots, not telegraphed heavies.
+	var heavy: bool = not _sweep_armed and _definition.shot_kind == EnemyDefinition.ShotKind.HEAVY
 	var scene: PackedScene = projectile_scene
 	if heavy and heavy_projectile_scene != null:
 		scene = heavy_projectile_scene

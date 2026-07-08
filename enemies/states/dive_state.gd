@@ -1,7 +1,8 @@
 class_name DiveState
 extends State
 # Dives from the slot toward the bottom of the screen along dive_curve (RELATIVE to the slot),
-# bending toward the player's x. The aim is captured ONCE at dive-start (classic Galaga) and
+# converging on the player's X BY the lane (so contact + straight-down fire land on a stationary
+# player — decision-log [Contact-damage]). The aim is captured ONCE at dive-start (classic Galaga) and
 # then blended toward the player's LIVE x by FormationDefinition.dive_aim_track_factor (0 =
 # pure capture-once, 1 = continuous tracking) — read from the injected player_target, no
 # cross-domain node-path reach. Speed-based traversal at move_speed * dive_speed_multiplier +
@@ -33,6 +34,7 @@ func enter(_msg: Dictionary = {}) -> void:
 	# Capture the player's x ONCE at dive-start (injected player_target ref) — the classic
 	# Galaga dive aim. dive_aim_track_factor (physics_process) blends this toward the player's
 	# LIVE x so a player who relocates to / camps a screen edge after dive-start is still pursued.
+	# (SweepState is the deeper anti-camp fix for STATIONARY edge campers — decision-log [Sweep-state].)
 	if _enemy.player_target != null:
 		_captured_aim = _enemy.player_target.global_position.x - _enemy.slot_world_pos.x
 	# Fire stays armed from FormationState unless this enemy doesn't fire during dives.
@@ -57,15 +59,25 @@ func physics_process(delta: float) -> void:
 	_t += (speed * delta) / _baked_length
 	var u: float = minf(_t, 1.0)
 	var sampled: Vector2 = curve.sample_baked(u * _baked_length)
-	# Bend toward the player gradually (offset scales with u): leaves the slot cleanly and aims
-	# at the player by the bottom. dive_aim_track_factor blends the once-captured aim toward the
-	# player's LIVE x (0 = capture-once classic, 1 = continuous tracking). Per-enemy offset —
-	# the shared curve is untouched. Falls back to the captured aim with no injected player_target.
-	var live_aim: float = _captured_aim
+	# Converge on the player's X BY THE LANE (not off-screen). yb ramps 0→1 as the diver descends
+	# from the slot to the player's lane Y, then clamps. At yb=1 (the lane): target.x = slot.x +
+	# aim = player.x for a stationary player → the diver crosses the player's X at the lane (contact
+	# + straight-down fire both land). Early (yb≈0) it follows the swoop curve. dive_aim_track_factor
+	# still blends the once-captured aim vs the LIVE x for movers. The shared curve is untouched.
+	var target: Vector2
 	if _enemy.player_target != null:
-		live_aim = _enemy.player_target.global_position.x - _enemy.slot_world_pos.x
-	var aim: float = lerp(_captured_aim, live_aim, clampf(form.dive_aim_track_factor, 0.0, 1.0))
-	var target: Vector2 = _enemy.slot_world_pos + sampled + Vector2(aim * u, 0.0)
+		var player_y: float = _enemy.player_target.global_position.y
+		var denom: float = player_y - _enemy.slot_world_pos.y
+		# Guard denom<=0 (player at/above the slot — impossible in play; a misconfigured test could):
+		# yb→1 immediately. clampf is load-bearing — sampled.y can exceed denom → raw ratio > 1.
+		var yb: float = 1.0 if denom <= 0.0 else clampf(sampled.y / denom, 0.0, 1.0)
+		var live_aim: float = _enemy.player_target.global_position.x - _enemy.slot_world_pos.x
+		var aim: float = lerp(_captured_aim, live_aim, clampf(form.dive_aim_track_factor, 0.0, 1.0))
+		target = Vector2(_enemy.slot_world_pos.x + sampled.x * (1.0 - yb) + aim * yb,
+				_enemy.slot_world_pos.y + sampled.y)
+	else:
+		# No player injected (some tests / defensive): pure curve-follow, as before this fix.
+		target = _enemy.slot_world_pos + sampled
 	_enemy.velocity = (target - _enemy.global_position) / delta
 	_enemy.move_and_slide()
 	# Off-screen bottom → re-enter from the top (Galaga loop). NOT a release. Death is the only

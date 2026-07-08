@@ -18,5 +18,7 @@ heavy_windup_s = 0.5
 fires_during_dive = true
 move_speed = 280.0
 dive_speed_multiplier = 2.5
+sweep_speed_multiplier = 2.5
+sweep_fire_interval_s = 0.5
 silhouette_color = Color(1, 0.62, 0.24, 1)
 silhouette_scale = 1.65

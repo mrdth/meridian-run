@@ -73,3 +73,54 @@ func test_iframes_block_lethal_hit_during_respawn_window() -> void:
 	p._health.take_damage(3)  # within the respawn i-frame window — blocked
 	assert_eq(p._health.current_hp, p._health.max_hp)  # HP unchanged
 	assert_signal_emit_count(p, "ship_depleted", 0)
+
+
+func _make_enemy_body(pos: Vector2) -> CharacterBody2D:
+	# Dummy enemy body on LAYER_ENEMY (what the player's HurtboxComponent detects). Mirrors
+	# test_enemy_projectile.gd::_make_player_fixture, inverted to the enemy faction. mask 0 so it
+	# doesn't physically collide with the player body (irrelevant to damage — the Area2D detects it).
+	var body := CharacterBody2D.new()
+	body.collision_layer = Constants.LAYER_ENEMY
+	body.collision_mask = 0
+	var cs := CollisionShape2D.new()
+	var circ := CircleShape2D.new()
+	circ.radius = 16.0
+	cs.shape = circ
+	body.add_child(cs)
+	body.global_position = pos
+	add_child_autofree(body)
+	return body
+
+
+func test_enemy_body_contact_damages_player() -> void:
+	# An enemy body overlapping the player's HurtboxComponent deals contact_damage (decision-log
+	# [Contact-damage]). body_entered can't be raised by a manual _physics_process step — await
+	# real physics frames for the engine overlap.
+	var p := _make()
+	var hp_before := p._health.current_hp  # 3
+	_make_enemy_body(p.global_position)  # fully overlapping the player
+	for _i in 12:
+		await get_tree().physics_frame
+	assert_eq(p._health.current_hp, hp_before - 1)  # contact_damage defaults to 1
+
+
+func test_contact_respects_iframes() -> void:
+	# After a contact grants the i-frame window, a second overlapping body during it deals no
+	# further damage; after the window expires, a new contact damages again (no double-loss from
+	# one window). The i-frame timer ticks in HealthComponent._process (not _physics_process).
+	var p := _make()
+	var body := _make_enemy_body(p.global_position)
+	for _i in 12:
+		await get_tree().physics_frame
+	assert_eq(p._health.current_hp, 2)  # first contact landed
+	assert_true(p._health.is_invulnerable())  # i-frame window active
+	body.queue_free()
+	_make_enemy_body(p.global_position)  # fresh overlap — still within i-frames
+	for _i in 12:
+		await get_tree().physics_frame
+	assert_eq(p._health.current_hp, 2)  # i-framed — no further damage
+	p._health.set_invuln(0.0)  # expire the window
+	_make_enemy_body(p.global_position)
+	for _i in 12:
+		await get_tree().physics_frame
+	assert_eq(p._health.current_hp, 1)  # window expired — damage applies again

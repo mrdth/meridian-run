@@ -1,8 +1,10 @@
 class_name Enemy
 extends CharacterBody2D
-# Pooled Grunt/Shielder/Bomber enemy (1.4). CharacterBody2D with collision_mask = 0 (Key
-# Decision #1): the existing player-projectile body_entered hit path works UNCHANGED
-# (Story 1.3); damage flows only via projectiles, never body contact. Movement is driven
+# Pooled Grunt/Shielder/Bomber enemy (1.4). CharacterBody2D with collision_mask = 0: the enemy
+# passes through everything (exact-tracking needs this — Key Decision #1, MOVEMENT half). Damage
+# is dealt BOTH by projectiles (player-projectile body_entered, unchanged since Story 1.3) AND by
+# enemy-body CONTACT via the player's HurtboxComponent (decision-log [Contact-damage] — reverses
+# the old "projectile-only" damage half of Key Decision #1). Movement is driven
 # by the reusable StateMachine child (Enter/Formation/Dive states set velocity + call
 # move_and_slide). This script does NOT define its own _physics_process — the StateMachine
 # owns the tick (avoids double move_and_slide + parent/child processing-order hazards).
@@ -30,6 +32,7 @@ signal died(score_value: int)  # direct local signal (D8) — the spawner connec
 @onready var _enter_state: State = $StateMachine/EnterState
 @onready var _formation_state: State = $StateMachine/FormationState
 @onready var _dive_state: State = $StateMachine/DiveState
+@onready var _sweep_state: State = $StateMachine/SweepState
 
 # Per-spawn state (set in activate, read by the AI states via the owner reference).
 var formation_def: FormationDefinition
@@ -42,8 +45,9 @@ var player_target: Node2D  # injected by the spawner; DiveState reads .global_po
 func _ready() -> void:
 	# One-time setup (pool contract: runs ONCE, never re-fires for re-acquired nodes).
 	assert(definition != null, "Enemy: definition not assigned")
-	# collision_layer from FactionComponent (single source of truth); mask 0 — no physical
-	# collision (Key Decision #1). Damage is projectile-only in 1.4.
+	# collision_layer from FactionComponent (single source of truth; LAYER_ENEMY — what the
+	# player's HurtboxComponent detects for contact damage). mask 0 — no physical collision
+	# (exact-tracking; Key Decision #1 MOVEMENT half). See decision-log [Contact-damage].
 	collision_layer = _faction.get_collision_layer()  # LAYER_ENEMY
 	collision_mask = 0
 	# CircleShape2D radius from EnemyDefinition (data-driven). duplicate() so per-variant
@@ -122,6 +126,10 @@ func to_dive() -> void:
 	_state_machine.transition_to(_dive_state)
 
 
+func to_sweep() -> void:
+	_state_machine.transition_to(_sweep_state)
+
+
 func arm_fire() -> void:
 	if _fire != null:
 		_fire.arm(definition, rng, true)
@@ -130,6 +138,13 @@ func arm_fire() -> void:
 func disarm_fire() -> void:
 	if _fire != null:
 		_fire.arm(definition, rng, false)
+
+
+func arm_sweep_fire() -> void:
+	# SweepState: arm fire in SWEEP mode (tight sweep_fire_interval_s cadence — a dense raking
+	# stream while strafing). See decision-log [Sweep-state].
+	if _fire != null:
+		_fire.arm(definition, rng, true, true)
 
 
 func despawn() -> void:

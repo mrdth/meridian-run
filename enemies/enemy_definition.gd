@@ -30,6 +30,8 @@ enum ShotKind { STANDARD, HEAVY }  # HEAVY = telegraphed, Bomber-only.
 @export_group("Movement")
 @export var move_speed: float = 60.0          # Grunt 220 / Shielder 180 / Bomber 280 (FR43, retuned 2026-07-03 — see decision-log [Speed-tuning]).
 @export var dive_speed_multiplier: float = 2.0  # multiplies move_speed during dive (data-tunable).
+@export var sweep_speed_multiplier: float = 2.5  # multiplies move_speed during a SweepState strafing run (decision-log [Sweep-state]).
+@export var sweep_fire_interval_s: float = 0.4   # tight fire cadence while sweeping — a dense raking stream (vs the luck-dependent stock cadence).
 
 @export_group("Visual")
 @export var silhouette_color: Color = Color(1.0, 0.24, 0.35)  # hazard calm #FF3D5A default.

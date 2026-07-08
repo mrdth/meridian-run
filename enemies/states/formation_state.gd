@@ -38,4 +38,10 @@ func physics_process(delta: float) -> void:
 	_enemy.velocity = (target - _enemy.global_position) / delta
 	_enemy.move_and_slide()
 	if _hold_t >= _hold_duration:
-		_enemy.to_dive()
+		# Post-hold attack: a SWEEP (full-width edge-raking run, decision-log [Sweep-state]) or a
+		# dive. sweep_chance gates it (0 = dives-only legacy). The sweep REPLACES — does not add to
+		# — the dive, so total attack rate stays ~constant; it diversifies WHERE pressure lands.
+		if form.sweep_chance > 0.0 and _enemy.rng != null and _enemy.rng.randf() < form.sweep_chance:
+			_enemy.to_sweep()
+		else:
+			_enemy.to_dive()
