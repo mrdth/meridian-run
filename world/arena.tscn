@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://dj3d8yqj3v6b"]
+[gd_scene load_steps=14 format=3 uid="uid://dj3d8yqj3v6b"]
 
 [ext_resource type="Script" path="res://world/arena.gd" id="1_arena"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://enemies/grunt.tscn" id="4_grunt"]
 [ext_resource type="PackedScene" path="res://enemies/shielder.tscn" id="5_shielder"]
 [ext_resource type="PackedScene" path="res://enemies/bomber.tscn" id="6_bomber"]
+[ext_resource type="PackedScene" path="res://enemies/captor/captor.tscn" id="13_captor"]
 [ext_resource type="Script" uid="uid://dvf0jy2n7jcp8" path="res://juice/juice_coordinator.gd" id="7_juice"]
 [ext_resource type="Script" uid="uid://dyix8p2omq8ld" path="res://juice/screen_shake.gd" id="8_shake"]
 [ext_resource type="Script" uid="uid://hm8ifr5xexfr" path="res://juice/hit_flash.gd" id="9_flash"]
@@ -23,6 +24,7 @@ script = ExtResource("3_spawner")
 grunt_scene = ExtResource("4_grunt")
 shielder_scene = ExtResource("5_shielder")
 bomber_scene = ExtResource("6_bomber")
+captor_scene = ExtResource("13_captor")
 
 [node name="WaveController" parent="." instance=ExtResource("12_wave")]
 

@@ -6,10 +6,11 @@ extends Node
 # Cheats + visual toggles are Input Map actions (debug_*), so no hardcoded keys in logic. Arena
 # injects gameplay refs via bind_arena(); cheats/overlay no-op safely when unbound (AR11 fail-safe).
 #
-# 1.8 ships the E1-relevant subset of FR50: overlay + the three named cheats (set move-speed, spawn
-# enemy, invincibility) + hitboxes/formation-rows/monochrome visual toggles. The E2–E4 cheats (spawn
-# captor / force wave / give currency / set seed) are OUT of scope — they need systems that don't
-# exist yet (arch: "for Epic-3 hypothesis testing").
+# 1.8 shipped the E1-relevant subset of FR50: overlay + the three named cheats (set move-speed, spawn
+# enemy, invincibility) + hitboxes/formation-rows/monochrome visual toggles. Story 2.1 adds the
+# spawn-captor cheat (F8) — the ONLY captor spawn path in 2.1. The remaining E3–E4 cheats (force wave
+# / give currency / set seed) are still OUT of scope — they need systems that don't exist yet (arch:
+# "for Epic-3 hypothesis testing").
 
 # Overlay refresh throttle — ~4 Hz. Avoids per-frame string format/alloc (NFR3).
 const _OVERLAY_UPDATE_INTERVAL_S: float = 0.25
@@ -102,6 +103,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cheat_move_speed()
 	elif event.is_action_pressed("debug_cheat_spawn"):
 		_cheat_spawn()
+	elif event.is_action_pressed("debug_cheat_spawn_captor"):
+		_cheat_spawn_captor()
 	elif event.is_action_pressed("debug_cheat_invuln"):
 		_cheat_invuln()
 	elif event.is_action_pressed("debug_toggle_hitboxes"):
@@ -164,6 +167,22 @@ func _cheat_spawn() -> void:
 		return
 	spawner.debug_spawn_pulse()
 	Log.info("debug", "cheat: spawned one formation pulse")
+
+
+func _cheat_spawn_captor() -> void:
+	# Story 2.1 / FR50 "spawn captor" cheat — the ONLY captor spawn path in 2.1 (captor-presence in
+	# the wave drip is Story 2.8). Spawns a captor off-screen above the player; EnterState descends it
+	# onto the player's column. Guarded to the Active wave (mirrors _cheat_spawn) so it can't inject a
+	# captor onto the clean board WaveCompletedState assumes at wave-end, or after a run-loss.
+	if spawner == null or player == null:
+		return
+	if wave_controller != null and wave_controller.get_state_name() != "WaveActiveState":
+		Log.info("debug", "cheat: spawn captor ignored — wave is not Active (%s)" % wave_controller.get_state_name())
+		return
+	# One screen-height above the player → off-screen-top spawn (EnterState descends from here).
+	var pos := Vector2(player.global_position.x, player.global_position.y - Constants.BASE_RESOLUTION.y)
+	spawner.spawn_captor_at(pos)
+	Log.info("debug", "cheat: spawned captor above the player")
 
 
 func _cheat_invuln() -> void:

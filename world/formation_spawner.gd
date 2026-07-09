@@ -18,6 +18,7 @@ extends Node
 @export var grunt_scene: PackedScene
 @export var shielder_scene: PackedScene
 @export var bomber_scene: PackedScene
+@export var captor_scene: PackedScene  # Story 2.1 — the ONLY captor spawn path in 2.1 is the debug cheat.
 @export var formation_id: StringName = &"standard"
 @export var drip_interval_s: float = 10.0       # time between formation pulses.
 @export var per_tick_base: int = 3              # per_tick(wave) = base + floor(wave × growth).
@@ -104,6 +105,26 @@ func debug_spawn_pulse() -> void:
 	_spawn_pulse(per_tick(_wave_n))
 
 
+func spawn_captor_at(pos: Vector2) -> void:
+	# Story 2.1 — spawn one captor at a world position (the ONLY captor spawn path in 2.1 is the
+	# debug "spawn captor" cheat; captor-presence in the wave drip is Story 2.8). Mirrors _spawn_enemy
+	# verbatim in shape: acquire → add_child → activate (load-bearing order so @onready refs are valid
+	# in activate), inject the player_target for telegraph/dive aim, connect died ONCE. The captor is
+	# its own entity (NOT an Enemy variant), so it's typed Captor — it composes the same components.
+	if captor_scene == null:
+		Log.err("spawner", "spawn_captor_at: captor_scene unassigned — spawn ignored")
+		return
+	var captor: Captor = Pool.acquire(captor_scene) as Captor
+	assert(captor != null, "FormationSpawner: acquired node is not a Captor — wrong scene?")
+	# acquire → add_child → activate (so @onready refs are valid in the captor's activate).
+	_container.add_child(captor)
+	captor.activate(player, pos, _rng)  # player_target injected here, NOT via node-path
+	# Connect death ONCE per instance (idempotent across pool reuse — never stack duplicates). The
+	# handler is the seam for 2.3 rescue; in 2.1 a captor kill gives no score + no rescue.
+	if not captor.died.is_connected(_on_captor_died):
+		captor.died.connect(_on_captor_died)
+
+
 func per_tick(wave: int) -> int:
 	# per-tick spawn count: wave-scaled, HARD-capped. This bounds spawn RATE (perf), not the
 	# on-screen count (there is no concurrency cap).
@@ -120,8 +141,14 @@ func get_run_score() -> int:
 
 
 func get_active_count() -> int:
-	# Live enemies in the container (not yet released on death). Useful for perf/debug.
-	return _container.get_child_count()
+	# Live enemies in the container (not yet released on death). Useful for perf/debug. Counts only
+	# Enemy/Captor children — a captor's held CaptureColumn is also parented here (telegraph/capture)
+	# but is not itself an enemy, so it's excluded to keep this an accurate enemy count.
+	var count: int = 0
+	for child in _container.get_children():
+		if child is Enemy or child is Captor:
+			count += 1
+	return count
 
 
 func _physics_process(delta: float) -> void:
@@ -141,9 +168,12 @@ func _despawn_survivors() -> void:
 	# Wave-end collection: survivors are not kills (no score) — just returned to the Pool so they
 	# don't carry across the wave boundary. get_children() returns a snapshot Array (not a live
 	# view), so releasing (which reparents out of _container) mid-loop is safe — not the
-	# splice-during-iteration hazard.
-	for enemy in _container.get_children():
-		(enemy as Enemy).despawn()
+	# splice-during-iteration hazard. Both Enemy and Captor live in _container (2.1 spawns captors
+	# via the debug cheat) — duck-typed despawn() so a surviving captor is collected cleanly (it also
+	# drops any held capture column).
+	for child in _container.get_children():
+		if child.has_method("despawn"):
+			child.despawn()
 
 
 func _spawn_pulse(count: int) -> void:
@@ -194,3 +224,12 @@ func _on_enemy_died(score_value: int) -> void:
 		return
 	run_state.add_score(score_value)
 	EventBus.score_changed.emit(run_state.score)
+
+
+func _on_captor_died(_score_value: int) -> void:
+	# Story 2.1 seam for Story 2.3 (rescue / failed-rescue). A captor kill in 2.1 gives NO score
+	# (score_value is 0 — GDD: captor score is "—") and NO rescue resolution yet. 2.3 will read the
+	# captor's current_state_name here: killed in `dive` → rescue (freed ship docks); killed in
+	# `formation`/else → failed-rescue (ship turns enemy). Do NOT route a captor count to the HUD
+	# (deferred to a captor-integration follow-up — not a 2.1 AC).
+	pass

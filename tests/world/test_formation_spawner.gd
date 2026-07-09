@@ -8,6 +8,7 @@ extends GutTest
 const GruntScene := preload("res://enemies/grunt.tscn")
 const ShielderScene := preload("res://enemies/shielder.tscn")
 const BomberScene := preload("res://enemies/bomber.tscn")
+const CaptorScene := preload("res://enemies/captor/captor.tscn")
 
 
 func before_each() -> void:
@@ -163,3 +164,84 @@ func test_enemy_death_without_run_state_degrades_safely() -> void:
 	assert_push_error("run_state is null")  # consume the expected degradation error
 	assert_signal_emit_count(EventBus, "score_changed", 0)  # no broadcast without run_state
 	await get_tree().physics_frame
+
+
+func test_spawn_captor_at_activates_and_connects_died() -> void:
+	# Story 2.1: spawn_captor_at acquires a captor, parents it to the enemy container, activates it
+	# (player_target injected + FSM reset to "enter"), and connects died ONCE. The captor is its OWN
+	# entity (Captor, not an Enemy variant). A captor kill routes NO score in 2.1 (score_value 0;
+	# _on_captor_died is the seam for 2.3 rescue).
+	var s: FormationSpawner = _make()
+	s.captor_scene = CaptorScene
+	s.spawn_captor_at(Vector2(640.0, -80.0))
+	assert_eq(s._container.get_child_count(), 1)
+	var captor: Captor = s._container.get_child(0) as Captor
+	assert_not_null(captor, "acquired child is not a Captor")
+	assert_eq(captor.current_state_name, &"enter")  # activate reset the FSM
+	assert_eq(captor.player_target, s.player)        # player_target injected (not via node-path)
+	assert_eq(captor.died.get_connections().size(), 1)  # died → _on_captor_died, once
+	# A captor kill gives no score + no score_changed broadcast in 2.1.
+	watch_signals(EventBus)
+	captor.get_node("HealthComponent").take_damage(60)  # 60 hp → 0 → died(0) → _on_captor_died (no-op)
+	assert_signal_emit_count(EventBus, "score_changed", 0)
+	await get_tree().physics_frame  # let the deferred death-release land before teardown
+
+
+func test_stop_despawns_a_surviving_captor() -> void:
+	# Story 2.1 wave-end cleanup: a surviving captor in the enemy container must despawn cleanly via
+	# the duck-typed despawn() — NOT crash on the old `(child as Enemy).despawn()` cast (Captor does
+	# not extend Enemy). Mirrors test_stop_halts_dripping_and_despawns_survivors for the captor case.
+	var s: FormationSpawner = _make()
+	s.captor_scene = CaptorScene
+	s.spawn_captor_at(Vector2(640.0, -80.0))
+	assert_eq(s.get_active_count(), 1)
+	s.stop()  # _despawn_survivors → captor.despawn() (drops any column + Pool.release)
+	assert_eq(s.get_active_count(), 0)  # collected — clean board
+
+
+func _fast_captor_tuning() -> CaptorTuning:
+	# Tiny durations (mirrors test_captor_fsm.gd's _test_tuning) so telegraph is reached in a few
+	# frames instead of the slow GDD durations baked into the scene's captor_tuning.tres.
+	var t := CaptorTuning.new()
+	t.enter_duration_s = 0.05
+	t.formation_duration_min_s = 0.05
+	t.formation_duration_max_s = 0.05
+	t.telegraph_duration_s = 0.05
+	t.capture_duration_s = 0.05
+	t.dive_duration_s = 0.05
+	t.formation_row_y = 150.0
+	t.side_drift_amplitude_px = 130.0
+	t.side_drift_period_s = 3.0
+	t.dive_aim_track_factor = 0.3
+	t.dive_offscreen_margin_px = 48.0
+	t.capture_column_width_px = 60.0
+	return t
+
+
+func test_stop_releases_a_held_capture_column_when_despawned_mid_telegraph() -> void:
+	# Review fix (2.1): a captor despawned at wave-end must also drop any CaptureColumn it's holding
+	# (telegraph/capture), not just release itself — otherwise the column visual would dangle
+	# on-screen past wave-end. Drives the captor's FSM by hand (mirrors test_captor_fsm.gd's idiom) to
+	# reach telegraph (column acquired + visible), then stops the wave mid-window.
+	var s: FormationSpawner = _make()
+	s.captor_scene = CaptorScene
+	s.spawn_captor_at(Vector2(640.0, -80.0))
+	var captor: Captor = s._container.get_child(0) as Captor
+	captor.tuning = _fast_captor_tuning()  # swap BEFORE any physics tick — no engine tick has run yet
+	var sm: StateMachine = captor.get_node("StateMachine")
+	var tele: State = captor.get_node("StateMachine/TelegraphState")
+	for _i in 100:
+		sm._physics_process(1.0 / 60.0)
+		if sm.current_state == tele:
+			break
+	assert_eq(sm.current_state, tele, "did not reach telegraph")
+	var column: CaptureColumn = captor.capture_column
+	assert_not_null(column, "no capture column acquired on telegraph")
+	assert_true(column.visible)
+	s.stop()  # _despawn_survivors → captor.despawn() → _release_capture_column() + Pool.release(self)
+	assert_eq(s.get_active_count(), 0)  # captor collected — clean board
+	assert_null(captor.get_parent(), "captor was not synchronously released")
+	assert_false(column.visible, "capture column was left visible after despawn")
+	await get_tree().physics_frame  # let the column's deferred _release_to_pool land
+	await get_tree().physics_frame
+	assert_null(column.get_parent(), "capture column was not returned to the pool")

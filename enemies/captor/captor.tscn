@@ -1,0 +1,66 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://enemies/captor/captor.gd" id="1_captor"]
+[ext_resource type="Resource" path="res://resources/enemies/enemy_captor.tres" id="2_def"]
+[ext_resource type="Resource" path="res://resources/captor_tuning.tres" id="3_tuning"]
+[ext_resource type="PackedScene" path="res://world/capture_column.tscn" id="4_column"]
+[ext_resource type="Script" path="res://components/health_component.gd" id="5_health"]
+[ext_resource type="Script" path="res://components/faction_component.gd" id="6_faction"]
+[ext_resource type="Script" path="res://components/state_machine/state_machine.gd" id="7_sm"]
+[ext_resource type="Script" path="res://enemies/captor/states/enter_state.gd" id="8_enter"]
+[ext_resource type="Script" path="res://enemies/captor/states/formation_state.gd" id="9_form"]
+[ext_resource type="Script" path="res://enemies/captor/states/telegraph_state.gd" id="10_telegraph"]
+[ext_resource type="Script" path="res://enemies/captor/states/capture_state.gd" id="11_capture"]
+[ext_resource type="Script" path="res://enemies/captor/states/dive_state.gd" id="12_dive"]
+[ext_resource type="Script" path="res://enemies/enemy_fire_system.gd" id="13_fire"]
+[ext_resource type="PackedScene" path="res://enemies/enemy_projectile.tscn" id="14_proj"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 18.0
+
+[node name="Captor" type="CharacterBody2D"]
+collision_mask = 0
+script = ExtResource("1_captor")
+definition = ExtResource("2_def")
+tuning = ExtResource("3_tuning")
+capture_column_scene = ExtResource("4_column")
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, -4, 0, 14, -14, -4)
+color = Color(0.72, 0.38, 1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("5_health")
+
+[node name="FactionComponent" type="Node" parent="."]
+script = ExtResource("6_faction")
+faction = 1
+
+[node name="Muzzle" type="Marker2D" parent="."]
+position = Vector2(0, 18)
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("7_sm")
+initial_state = NodePath("EnterState")
+
+[node name="EnterState" type="Node" parent="StateMachine"]
+script = ExtResource("8_enter")
+
+[node name="FormationState" type="Node" parent="StateMachine"]
+script = ExtResource("9_form")
+
+[node name="TelegraphState" type="Node" parent="StateMachine"]
+script = ExtResource("10_telegraph")
+
+[node name="CaptureState" type="Node" parent="StateMachine"]
+script = ExtResource("11_capture")
+
+[node name="DiveState" type="Node" parent="StateMachine"]
+script = ExtResource("12_dive")
+
+[node name="EnemyFireSystem" type="Node" parent="."]
+script = ExtResource("13_fire")
+projectile_scene = ExtResource("14_proj")

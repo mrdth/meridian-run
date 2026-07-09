@@ -6,6 +6,7 @@ extends GutTest
 const GruntScene := preload("res://enemies/grunt.tscn")
 const ShielderScene := preload("res://enemies/shielder.tscn")
 const BomberScene := preload("res://enemies/bomber.tscn")
+const CaptorScene := preload("res://enemies/captor/captor.tscn")
 const PlayerScene := preload("res://player/player.tscn")
 
 
@@ -117,8 +118,31 @@ func test_cheats_noop_safely_when_unbound() -> void:
 	# toggle must not crash. (This test passing = no crash.)
 	_press("debug_cheat_move_speed")
 	_press("debug_cheat_spawn")
+	_press("debug_cheat_spawn_captor")
 	_press("debug_cheat_invuln")
 	_press("debug_toggle_hitboxes")
 	_press("debug_toggle_formation_rows")
 	_press("debug_toggle_monochrome")
 	assert_true(true)  # reached here without error
+
+
+func test_cheat_spawn_captor_spawns_one_captor_above_player() -> void:
+	# Story 2.1 / FR50 "spawn captor": debug_cheat_spawn_captor calls spawner.spawn_captor_at() at one
+	# screen-height above the player. Bind a real spawner (with captor_scene) + a real player; with no
+	# wave_controller bound, the Active-wave guard is skipped so the cheat fires.
+	var s: FormationSpawner = _make_spawner()
+	s.captor_scene = CaptorScene
+	var host := Node2D.new()
+	add_child(host)
+	var player: Player = PlayerScene.instantiate()
+	host.add_child(player)  # Node2D parent (player._ready assigns fire_system.projectile_parent)
+	player.global_position = Vector2(640.0, 680.0)
+	Debug.bind_arena(player, s, null)  # wave_controller null → Active-guard skipped
+	var before := s.get_active_count()
+	_press("debug_cheat_spawn_captor")
+	assert_eq(s.get_active_count() - before, 1)  # exactly one captor
+	var captor: Captor = s._container.get_child(0) as Captor
+	assert_not_null(captor)
+	# Spawned at the player's x, one screen-height above (off-screen top) for the EnterState descend.
+	assert_almost_eq(captor.global_position.x, 640.0, 0.01)
+	assert_almost_eq(captor.global_position.y, 680.0 - Constants.BASE_RESOLUTION.y, 0.01)

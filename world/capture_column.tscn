@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/capture_column.gd" id="1_col"]
+
+[node name="CaptureColumn" type="Node2D"]
+script = ExtResource("1_col")
+
+[node name="BarLeft" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-2.5, -360, 2.5, -360, 2.5, 360, -2.5, 360)
+color = Color(0.78, 0.45, 1, 0.45)
+
+[node name="BarRight" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-2.5, -360, 2.5, -360, 2.5, 360, -2.5, 360)
+color = Color(0.78, 0.45, 1, 0.45)

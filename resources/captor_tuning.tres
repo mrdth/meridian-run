@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CaptorTuning" format=3]
+
+[ext_resource type="Script" path="res://enemies/captor/captor_tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+enter_duration_s = 1.0
+formation_duration_min_s = 3.5
+formation_duration_max_s = 5.5
+telegraph_duration_s = 0.7
+capture_duration_s = 0.4
+dive_duration_s = 1.6
+formation_row_y = 150.0
+side_drift_amplitude_px = 130.0
+side_drift_period_s = 3.0
+dive_aim_track_factor = 0.3
+dive_offscreen_margin_px = 48.0
+capture_column_width_px = 60.0
