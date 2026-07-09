@@ -50,6 +50,16 @@ extends Resource
 @export var muzzle_scale: float = 0.45
 @export var muzzle_color: Color = Color(0.7, 1.0, 1.0)
 
+@export_subgroup("Score Popup")
+# Kill-juice floating "+N". Duration is NOT here — the coordinator sources it from `explosion_lifetime`
+# so the popup literally matches the death blast's fade (the "same speed as the explosion" intent is
+# structural, not a coincidental default). The coordinator dampens scale range + drift by
+# `_motion_scale` under reduced motion (D14); duration/fade are left alone.
+@export var score_popup_color: Color = Color("#FFE066")    # reward amber (= HudPalette.SCORE) — gold read
+@export var score_popup_scale_from: float = 0.4   # tiny/distant start (zoom-toward-viewer)
+@export var score_popup_scale_to: float = 5.0     # dramatic in-your-face peak — retune LIVE via the .tres (the runtime source of truth)
+@export var score_popup_drift_px: float = 24.0    # random x/y offset radius over the popup's life
+
 # --- Motion (accessibility — D14) ---
 @export_group("Motion")
 # Dampen factor applied to shake/flash/particle AMPLITUDE when reduced_motion is on (dampen,

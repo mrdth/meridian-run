@@ -219,3 +219,54 @@ func test_particles_requested_acquires_activates_and_releases() -> void:
 	var lifetime: float = coord.tuning.get_effect_profile(&"hit_spark")[&"lifetime"]
 	await get_tree().create_timer(lifetime + 0.3).timeout
 	assert_eq(burst.get_parent(), null)  # released ⇒ detached
+
+
+func test_score_popup_requested_spawns_popup_with_plus_value() -> void:
+	# Kill-juice score popup: score_popup_requested(at, N) ⇒ a pooled ScorePopup is acquired under the
+	# coordinator at `at`, its label reads "+N", and it self-releases after explosion_lifetime.
+	var coord := _make_coordinator()
+	EventBus.score_popup_requested.emit(Vector2(100.0, 200.0), 150)
+	# The handler runs synchronously during emit ⇒ the popup exists NOW at `at`, BEFORE the drift
+	# tween steps. Assert spawn position/text immediately (no await) — the popup tweens its OWN
+	# position, so after even one frame it has already drifted off the spawn point.
+	var popup: ScorePopup = null
+	for c in coord.get_children():
+		if c is ScorePopup:
+			popup = c
+			break
+	assert_not_null(popup)
+	assert_almost_eq(popup.global_position.x, 100.0, 0.5)
+	assert_eq((popup.get_node("Label") as Label).text, "+150")
+	# duration = explosion_lifetime (0.55) + margin (0.15) = 0.7s; await past it ⇒ the Timer self-releases.
+	var pop_lifetime: float = coord.tuning.explosion_lifetime
+	await get_tree().create_timer(pop_lifetime + 0.3).timeout
+	assert_eq(popup.get_parent(), null)  # released ⇒ detached
+
+
+func test_reduced_motion_dampens_score_popup_scale_range() -> void:
+	# D14 — reduced_motion dampens the popup's motion AMPLITUDE (scale range + drift), not the
+	# duration/fade. Compare the configured scale_to (the ScorePopup._scale_to cache) with motion on
+	# vs. off: reduced ⇒ smaller scale_to, but still above scale_from (dampen, not remove).
+	var coord := _make_coordinator()
+	EventBus.score_popup_requested.emit(Vector2.ZERO, 100)
+	await get_tree().physics_frame
+	var full: ScorePopup = null
+	for c in coord.get_children():
+		if c is ScorePopup:
+			full = c
+			break
+	assert_not_null(full)
+	var full_scale_to: float = full._scale_to
+
+	Settings.set_reduced_motion(true)  # _motion_scale → 0.3 ⇒ coordinator shrinks the scale range
+	EventBus.score_popup_requested.emit(Vector2.ZERO, 100)
+	await get_tree().physics_frame
+	var reduced: ScorePopup = null
+	for c in coord.get_children():
+		if c is ScorePopup and c != full:
+			reduced = c
+			break
+	assert_not_null(reduced)
+	assert_true(reduced._scale_to < full_scale_to, "reduced motion must dampen the popup scale range")
+	assert_true(reduced._scale_to > coord.tuning.score_popup_scale_from,
+		"reduced motion must dampen, not remove, the popup")

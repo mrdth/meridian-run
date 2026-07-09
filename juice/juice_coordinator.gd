@@ -10,6 +10,7 @@ extends Node2D
 # feel values (JuiceTuning) into its children and clamps incoming requests to those caps.
 
 const PARTICLE_SCENE := preload("res://juice/particle_burst.tscn")
+const SCORE_POPUP_SCENE := preload("res://juice/score_popup.tscn")
 
 @export var tuning: JuiceTuning
 
@@ -39,6 +40,7 @@ func _ready() -> void:
 	EventBus.screen_shake_requested.connect(_on_shake_requested)
 	EventBus.hit_flash_requested.connect(_on_flash_requested)
 	EventBus.particles_requested.connect(_on_particles_requested)
+	EventBus.score_popup_requested.connect(_on_score_popup_requested)
 	Settings.setting_changed.connect(_on_setting_changed)
 
 
@@ -85,6 +87,37 @@ func _on_particles_requested(effect: StringName, at: Vector2, color: Color, scal
 		return
 	add_child(burst)  # host directly under the coordinator (at arena origin)
 	burst.activate(effect, at, color, _profile_out)
+
+
+func _on_score_popup_requested(at: Vector2, score_value: int) -> void:
+	# Build the popup profile from tuning: `duration` = explosion_lifetime (literally "same speed as
+	# the explosion"), and the scale RANGE + drift are dampened by _motion_scale (D14 — dampen motion
+	# AMPLITUDE, never the duration/fade). A random drift vector within the drift radius gives the
+	# "small directional shift on x & y". Pool.acquire + add_child + activate are all additive ⇒ safe
+	# even though this handler can run inside a physics callback (mirrors _on_particles_requested).
+	var scale_from: float = tuning.score_popup_scale_from
+	var scale_range: float = (tuning.score_popup_scale_to - scale_from) * _motion_scale
+	var profile: Dictionary = {
+		&"duration": tuning.explosion_lifetime,
+		&"scale_from": scale_from,
+		&"scale_to": scale_from + scale_range,
+		&"drift": _rand_drift(tuning.score_popup_drift_px * _motion_scale),
+	}
+	var popup: ScorePopup = Pool.acquire(SCORE_POPUP_SCENE) as ScorePopup
+	if popup == null:
+		Log.err("juice", "JuiceCoordinator: acquired node is not a ScorePopup — wrong scene?")
+		return
+	add_child(popup)  # host directly under the coordinator (at arena origin ⇒ child position == world)
+	# "%+d" forces the sign: "+100" for a gain, and "-50" (not "+-50") if a negative ever reaches here.
+	popup.activate("%+d" % score_value, at, tuning.score_popup_color, profile)
+
+
+func _rand_drift(radius: float) -> Vector2:
+	# Random point within `radius` (uniform-in-disc). Pure cosmetic — juice is NOT gameplay-deterministic
+	# (ParticleBurst already uses non-deterministic GPU randomness), so the global randf is on-pattern
+	# here, not a SeedManager sub-stream (those are for reproducible gameplay outcomes only).
+	var angle: float = randf() * TAU
+	return Vector2(cos(angle), sin(angle)) * (randf() * radius)
 
 
 func _on_setting_changed(key: StringName, value: Variant) -> void:

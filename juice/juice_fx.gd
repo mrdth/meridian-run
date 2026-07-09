@@ -34,11 +34,13 @@ static func player_hit(at: Vector2, body: Node2D, heavy: bool) -> void:
 	AudioManager.play_hit(heavy)
 
 
-static func enemy_killed(at: Vector2, faction_color: Color, size_scale: float) -> void:
+static func enemy_killed(at: Vector2, faction_color: Color, size_scale: float, score_value: int) -> void:
 	# Real enemy death (Enemy._on_died). Bigger explosion in the enemy's faction color (Bomber =
-	# bigger via silhouette_scale), kill shake, kill sting. Called on _on_died ONLY — never despawn().
+	# bigger via silhouette_scale), kill shake, kill sting, and the Llamasoft score-value popup
+	# (zoom-toward-viewer +N that fades with the blast). Called on _on_died ONLY — never despawn().
 	EventBus.particles_requested.emit(&"explosion", at, faction_color, size_scale)
 	EventBus.screen_shake_requested.emit(_TUNING.shake_kill_amount, _TUNING.shake_kill_dur)
+	EventBus.score_popup_requested.emit(at, score_value)
 	AudioManager.play_kill()
 
 

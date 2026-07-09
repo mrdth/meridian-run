@@ -45,3 +45,8 @@ signal hit_flash_requested(target: Node2D, color: Color)
 # profile (&"hit_spark" / &"explosion" / &"muzzle"); `scale` multiplies the
 # burst size (heavy/Bomber/death = bigger).
 signal particles_requested(effect: StringName, at: Vector2, color: Color, scale: float)
+# Spawn a pooled score-value popup at a world position (kill juice — a Llamasoft-style "+N" that
+# zooms toward the viewer, drifts a small x/y offset, and fades over the explosion's lifetime).
+# `score_value` is the points gained; the popup's color/duration/motion are fixed in JuiceTuning
+# and sourced by the coordinator — only the position + value vary per event.
+signal score_popup_requested(at: Vector2, score_value: int)
