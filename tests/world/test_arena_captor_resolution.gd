@@ -123,3 +123,75 @@ func test_failed_rescue_enemy_died_connected_to_on_enemy_died() -> void:
 	arena._spawner.captor_resolved.emit(false, Vector2(500.0, 200.0))
 	var enemy: Enemy = arena._spawner._container.get_child(arena._spawner._container.get_child_count() - 1) as Enemy
 	assert_true(enemy.died.is_connected(arena._spawner._on_enemy_died))
+
+
+# --- Story 2.4 — the WING track permanence invariant (AC#2 / NP1, architecture line 757) ---
+# The headline of this story: the docked fighter's WING track is PERMANENT — it survives both consume
+# paths (absorb + wave-clear). The consume paths live on the Player, which has NO RunState reference
+# (AR2), so they structurally CANNOT clear the track. These tests pin that invariant end-to-end via the
+# Arena (the run host that owns RunState + writes the WING track on rescue).
+
+func test_rescue_grows_wing_track() -> void:
+	# AC#2: a successful rescue dock earns the WING track (NP1 permanent identity). Arena writes it
+	# (record_rescue) inside the successful-dock block; a blocked/no-op dock earns nothing.
+	var arena := _make()
+	assert_eq(arena._run_state.build_state.wing_level, 0, "precondition: wing track starts flat")
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)
+	assert_eq(arena._run_state.build_state.wing_level, 1, "a rescue dock should grow the WING track by 1")
+
+
+func test_blocked_dock_earns_no_wing_track() -> void:
+	# A no-op dock (FR14 one-docked guard blocks a 2nd dock) must NOT earn a 2nd WING level — the
+	# record_rescue call is inside the `if try_dock_ship():` block, mirroring the rescue-juice gate.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # 1st dock → wing_level 1
+	assert_eq(arena._run_state.build_state.wing_level, 1)
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # 2nd dock blocked (FR14)
+	assert_eq(arena._run_state.build_state.wing_level, 1, "a blocked (no-op) dock must NOT earn a 2nd WING level")
+
+
+func test_absorb_does_not_clear_wing_track() -> void:
+	# AC#2 / NP1 — the ABSORB consume path: the docked fighter dies on the first hit (HP spared), but the
+	# WING track is UNCHANGED. The consume path (Player._consume_docked_ship) has no RunState ref (AR2) →
+	# it structurally cannot reach build_state. This is the headline permanence assertion.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock via rescue → wing_level 1
+	assert_eq(arena._run_state.build_state.wing_level, 1, "precondition: rescue earned the WING track")
+	assert_true(arena._player.is_docked(), "precondition: player is docked")
+	# Drive the absorber: a hit while docked consumes the fighter (HP spared), undocks the player.
+	arena._player.apply_hit(2, arena._player.global_position, arena._player, false)
+	assert_false(arena._player.is_docked(), "the absorber should have consumed the fighter (undocked)")
+	assert_eq(arena._run_state.build_state.wing_level, 1, "absorb must NOT clear the WING track (NP1)")
+	await get_tree().physics_frame  # let the deferred queue_free of the fighter land before teardown.
+
+
+func test_wave_clear_does_not_clear_wing_track() -> void:
+	# AC#2 / NP1 — the WAVE-CLEAR consume path: wave-end detaches the fighter node (wave-scope cleanup),
+	# but the WING track is UNCHANGED. The keep path (Player._on_wave_cleared) has no RunState ref (AR2).
+	# wave_cleared's only other subscriber is the HUD (cosmetic) — the WaveController emits but does not
+	# listen, so a manual emit here drives only the player's detach.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock via rescue → wing_level 1
+	assert_eq(arena._run_state.build_state.wing_level, 1, "precondition: rescue earned the WING track")
+	assert_true(arena._player.is_docked(), "precondition: player is docked")
+	# Wave-clear detaches the fighter (Player._on_wave_cleared → _detach_docked_ship). set_docked(false) is
+	# synchronous, so is_docked() flips immediately; the node free is deferred.
+	EventBus.wave_cleared.emit(1)
+	assert_false(arena._player.is_docked(), "wave-clear should have detached the fighter (undocked)")
+	assert_eq(arena._run_state.build_state.wing_level, 1, "wave-clear must NOT clear the WING track (NP1)")
+	await get_tree().physics_frame  # let the deferred detach (queue_free) land before teardown.
+
+
+func test_wing_track_survives_absorb_then_wave_clear() -> void:
+	# Combined path: rescue → absorb (fighter consumed) → a 2nd rescue re-docks → wave-clear detaches.
+	# The WING track only ever GROWS via rescue; neither consume path touches it. wing_level ends at 2.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock → wing_level 1
+	arena._player.apply_hit(2, arena._player.global_position, arena._player, false)  # absorb → undocked, wing_level still 1
+	assert_eq(arena._run_state.build_state.wing_level, 1, "wing track survives the absorb")
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # 2nd rescue re-docks → wing_level 2
+	assert_eq(arena._run_state.build_state.wing_level, 2, "a 2nd rescue grows the WING track again")
+	assert_true(arena._player.is_docked(), "precondition: re-docked before wave-clear")
+	EventBus.wave_cleared.emit(1)  # wave-clear detaches the 2nd fighter
+	assert_eq(arena._run_state.build_state.wing_level, 2, "wave-clear must NOT clear the accumulated WING track")
+	await get_tree().physics_frame

@@ -70,7 +70,7 @@ development_status:
   2-1-captor-enemy-and-5-state-fsm: done
   2-2-capture-mechanic-clean-only-once-wave: done
   2-3-rescue-and-failed-rescue: done
-  2-4-docked-ship-dual-nature-and-clean-docked-tradeoff: ready-for-dev
+  2-4-docked-ship-dual-nature-and-clean-docked-tradeoff: done
   2-5-docked-ship-resolution-four-outcomes: backlog
   2-6-sacrifice-burst-threat-relative: backlog
   2-7-safe-play-vs-rescue-bonus-economy: backlog

@@ -146,3 +146,26 @@ func test_cheat_spawn_captor_spawns_one_captor_above_player() -> void:
 	# Spawned at the player's x, one screen-height above (off-screen top) for the EnterState descend.
 	assert_almost_eq(captor.global_position.x, 640.0, 0.01)
 	assert_almost_eq(captor.global_position.y, 680.0 - Constants.BASE_RESOLUTION.y, 0.01)
+
+
+func test_build_row_surfaces_wing_track() -> void:
+	# Story 2.4 — the BUILD row surfaces the WING track (the docked fighter's permanent identity) so the
+	# permanence invariant is watchable in a playtest. Bind a RunState, grow its wing_level, refresh the
+	# overlay, assert the label shows both ladders. Debug only READS run_state (AR2 — Arena is the writer).
+	var rs := RunState.new()
+	rs.begin_run()
+	rs.build_state.record_rescue()
+	rs.build_state.record_rescue()  # wing_level 2; main_level stays 0 (no investment source in E2)
+	Debug.bind_arena(null, null, null, rs)
+	Debug._refresh_overlay()
+	assert_eq(Debug._build_label.text, "BUILD: WING 2 / MAIN 0",
+		"the BUILD row should surface the WING track for the playtest permanence check")
+
+
+func test_build_row_shows_dash_when_unbound() -> void:
+	# AR11 fail-safe: with no run_state bound (e.g. a menu scene), the BUILD row shows a placeholder, not
+	# a crash. (run_state defaults null in bind_arena.)
+	Debug.bind_arena(null, null, null, null)
+	Debug._refresh_overlay()
+	assert_eq(Debug._build_label.text, "BUILD: --",
+		"unbound BUILD row should read '--' (no run_state)")

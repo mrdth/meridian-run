@@ -24,8 +24,9 @@ var projectile_parent: Node2D
 @onready var _muzzle: Marker2D = get_parent().get_node_or_null("Muzzle")
 # Story 2.3 — the Player (FireSystem's parent). Read once via @onready. review fix: untyped Node +
 # duck-call (has_method/call/get), not a hard `as Player` cast — mirrors the duck-call pattern used
-# by hurtbox_component.gd/enemy_projectile.gd elsewhere in this diff (avoids hard Player coupling;
-# the FireSystem's own 2.4 seam anticipates a non-Player parent — a DockedShip-owned FireSystem).
+# by hurtbox_component.gd/enemy_projectile.gd elsewhere in this diff (avoids hard Player coupling; a
+# DockedShip-owned FireSystem refactor is deferred to Story 2.6 — NP1 seam; the player's FireSystem
+# spawns both streams for now).
 @onready var _player: Node = get_parent()
 
 # FR7 / GDD weapon table — the parallel bullet stream's +28 px x-offset when docked (AC#3 +firepower).
@@ -65,7 +66,8 @@ func _spawn() -> void:
 	# Story 2.3 — the parallel bullet stream when docked (AC#3 +firepower, FR7). A 2nd bullet at the
 	# docked tuning's offset, sharing the cooldown (synced cadence — FR7 "matches the player's fire
 	# cadence"). Open Question H default: the player's FireSystem spawns both (simpler + auto-synced);
-	# 2.4 may refactor to a DockedShip-owned FireSystem for the build track.
+	# a DockedShip-owned FireSystem refactor is deferred to Story 2.6 (the player's FireSystem spawns
+	# both streams in 2.3/2.4).
 	if _player != null and _player.has_method("is_docked") and _player.call("is_docked"):
 		var dt: DockedShipTuning = _player.get("docked_ship_tuning") as DockedShipTuning
 		var offset_x: float = dt.stream_offset_x if dt != null else _FALLBACK_STREAM_OFFSET_X

@@ -2,8 +2,10 @@ class_name RunState
 extends Resource
 # Run-scope state spine (AR2/D1): ships + score live here (run scope); per-wave HP
 # stays on HealthComponent (reset each wave). This is the THIN E1 slice — the full
-# RunState (seed/currency/build-ladders) is Epic 4 (Story 4-6); ships+score are
-# load-bearing for E1's ship-economy gate (AC1/AC3/AC5), so the spine lands now.
+# RunState (seed/currency) is Epic 4 (Story 4-6); ships+score are load-bearing for E1's
+# ship-economy gate (AC1/AC3/AC5), so the spine lands now. Story 2.4 adds build_state — the
+# dual-ladder build spine (MAIN + WING): run-scope, permanent across consume (the docked
+# fighter's WING track survives absorb/wave-clear — NP1), reset only on a new run (begin_run).
 #
 # Runtime-only — NO `.tres` (it is per-run mutable state, never persisted — D5/ADR-3
 # "no resume"). Owned by the Arena (the E1 run host), passed explicitly to the spawner;
@@ -16,13 +18,28 @@ extends Resource
 
 var ships: int = 0   # current lives (run economy). Set in begin_run().
 var score: int = 0   # cumulative, display-only (FR49). Set in begin_run().
+# Story 2.4 — the dual-ladder build spine (MAIN + WING), run-scope. Its WING track is the docked
+# fighter's PERMANENT identity (NP1): survives consume, reset only on a new run. A sub-object so the
+# Arena (run host) can write it while the Player never touches RunState (AR2 — the structural
+# permanence guarantee: the consume paths live on the Player, which has no RunState ref).
+var build_state: BuildState
+
+
+func _init() -> void:
+	# Story 2.4 — construct the build spine up front so build_state is NEVER null (callers can read it
+	# immediately after RunState.new(), before begin_run()). begin_run() resets it for a fresh run;
+	# _init just guarantees the ref exists.
+	build_state = BuildState.new()
 
 
 func begin_run() -> void:
 	# The E1 run host (Arena) calls this on start/replay. Ships from the immutable
-	# baseline; score always starts at 0 (never carried over — runs are independent).
+	# baseline; score always starts at 0 (never carried over — runs are independent). build_state resets
+	# so a fresh run starts flat on both ladders (MAIN + WING) — the ONLY legitimate clearer (NP1: consume
+	# never clears the track; only a new run does).
 	ships = Constants.BASE_SHIPS  # 3
 	score = 0
+	build_state.reset()  # Story 2.4 — fresh run: both tracks flat.
 
 
 func spend_ship() -> int:

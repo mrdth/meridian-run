@@ -48,8 +48,9 @@ func _ready() -> void:
 	_wave_controller.start_run()
 	# Story 1.8 / FR50 — bind gameplay refs into the Debug autoload so the overlay + cheats can reach
 	# them. Debug-build only (the autoload is a no-op in release). Mirrors the HUD injection pattern.
+	# Story 2.4 — also pass _run_state so the overlay's BUILD row can surface the WING track (read-only).
 	if OS.is_debug_build():
-		Debug.bind_arena(_player, _spawner, _wave_controller)
+		Debug.bind_arena(_player, _spawner, _wave_controller, _run_state)
 
 
 func _on_player_ship_depleted() -> void:
@@ -80,6 +81,14 @@ func _on_captor_resolved(rescue: bool, at: Vector2) -> void:
 		# review fix: gate the rescue juice on an actual dock (try_dock_ship returns false if FR14's
 		# one-docked guard blocks it — no misleading reward cue for a no-op dock).
 		if _player.try_dock_ship():  # the rescue EFFECT entry — docks a fighter, no ship-count change.
+			# Story 2.4 — earn the WING track (NP1 permanent identity). Arena owns RunState (AR2); the Player
+			# never touches it, so the consume paths (absorb/wave-clear, which live on the Player) structurally
+			# cannot clear this track. Inside the dock block so a blocked/no-op dock earns nothing (mirrors the
+			# rescue-juice gate above). NO ship-count change — the docked fighter is a ship-in-escrow.
+			_run_state.build_state.record_rescue()
+			# The WING track changed → a build change. build_changed had no emitter before 2.4; this is its
+			# first (forward-compat for the between-wave build-summary rail). Still inside the dock block.
+			EventBus.build_changed.emit()
 			JuiceFx.rescue(_player.global_position)  # pickup-style: a dock-color burst at the player + a positive SFX.
 	else:
 		# review fix: gate the failed-rescue juice on an actual spawn (spawn_enemy_at returns false if

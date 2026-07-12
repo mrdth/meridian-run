@@ -21,9 +21,12 @@ const _MOVE_SPEED_STEPS: Array[float] = [0.5, 1.0, 1.5, 2.0]
 const _MONOCHROME_MODULATE: Color = Color(0.6, 0.6, 0.6)
 
 # Injected by Arena._ready under is_debug_build() (mirrors the 1.7 HUD injection). Null until bound.
+# run_state is READ-ONLY here (AR2 — the Arena is the sole writer); Debug only surfaces build_state in
+# the overlay's BUILD row (Story 2.4 — makes the WING-track permanence watchable in a playtest).
 var player: Player
 var spawner: FormationSpawner
 var wave_controller: WaveController
+var run_state: RunState
 
 var _overlay: CanvasLayer
 var _fps_label: Label
@@ -83,11 +86,13 @@ func _make_row(parent: Control, label: String) -> Label:
 	return row
 
 
-func bind_arena(p_player: Player, p_spawner: FormationSpawner, p_wave_controller: WaveController) -> void:
-	# Injected by Arena._ready under is_debug_build(). Cheats/overlay no-op safely if unbound.
+func bind_arena(p_player: Player, p_spawner: FormationSpawner, p_wave_controller: WaveController, p_run_state: RunState = null) -> void:
+	# Injected by Arena._ready under is_debug_build(). Cheats/overlay no-op safely if unbound. p_run_state
+	# defaults null so existing 3-arg callers (tests) still compile; Arena passes it explicitly. Read-only.
 	player = p_player
 	spawner = p_spawner
 	wave_controller = p_wave_controller
+	run_state = p_run_state
 
 
 func _on_wave_started(wave: int, _duration: float) -> void:
@@ -140,7 +145,14 @@ func _refresh_overlay() -> void:
 	_wave_label.text = "WAVE: %d" % _cached_wave
 	# E1 has no SeedManager run stream (the spawner uses a local seeded RNG); real seeds land in E4.
 	_seed_label.text = "SEED: authored"
-	_build_label.text = "BUILD: n/a (E3)"   # no build engine until Epic 3
+	# Story 2.4 — surface the WING track (the docked fighter's permanent identity) so the permanence
+	# invariant is watchable in a playtest (toggle the overlay, rescue, absorb → watch WING stay put).
+	# wing_level grows on rescue + survives consume (NP1); main_level stays 0 until E3 (no investment
+	# source yet). The full readout matures in E3 (StatBlock + modifiers). Debug only READS build_state.
+	if run_state != null and run_state.build_state != null:
+		_build_label.text = "BUILD: WING %d / MAIN %d" % [run_state.build_state.wing_level, run_state.build_state.main_level]
+	else:
+		_build_label.text = "BUILD: --"
 
 
 func _cheat_move_speed() -> void:
@@ -239,6 +251,7 @@ func reset_debug_state() -> void:
 	player = null
 	spawner = null
 	wave_controller = null
+	run_state = null
 	_debug_invuln = false
 	_monochrome_on = false
 	_hitboxes_visible = false

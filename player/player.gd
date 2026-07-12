@@ -117,9 +117,11 @@ func _on_ship_depleted() -> void:
 
 
 func is_capture_immune() -> bool:
-	# Story 2.3 — retired the 2.2 stub. Docked ⇒ capture-immune (FR16). The guard is real + now wired to
-	# the docked state (try_capture checks it). 2.4 deepens set_docked to the formal [Risk-12] tradeoff +
-	# persists the wing_track; 2.3 flips _docked + grows the hitbox (the +hitbox, AC#3).
+	# Story 2.3 — retired the 2.2 stub. Docked ⇒ capture-immune (FR16). The guard is real + wired to the
+	# docked state (try_capture checks it). Story 2.4 formalized set_docked as the [Risk-12] clean/docked
+	# tradeoff (capture-immunity + a bigger hitbox = the self-balancing cost of the dual fighter). The
+	# wing_track is NOT persisted here — the Player owns only the TRANSIENT combat side; the PERMANENT
+	# track lives on RunState.BuildState, written by the Arena (AR2 — the Player never touches RunState).
 	return _docked
 
 
@@ -131,18 +133,21 @@ func is_docked() -> bool:
 
 func set_docked(on: bool) -> void:
 	# The architecture-named write-side (architecture.md:616 `set_docked(true) # capture-immune + bigger
-	# hitbox`). 2.3: flips _docked (capture-immune via is_capture_immune) AND grows/shrinks the player's
-	# hitbox (the +hitbox, AC#3). 2.4 deepens this to the formal [Risk-12] tradeoff + persists the
-	# wing_track. Called by try_dock_ship / _consume_docked_ship / _on_wave_cleared.
+	# hitbox`). Flips _docked (capture-immune via is_capture_immune) AND grows/shrinks the player's hitbox
+	# (the +hitbox) — together the [Risk-12] clean/docked tradeoff: the dual fighter's combat perks cost a
+	# bigger target (self-balancing). Story 2.4 formalized this; the wing_track is NOT touched here (the
+	# Player owns only the transient combat side — the PERMANENT track is Arena-owned, AR2). Called by
+	# try_dock_ship / _consume_docked_ship / _on_wave_cleared.
 	_docked = on
 	_resize_hitbox(on)
 
 
 func _resize_hitbox(docked: bool) -> void:
-	# The +hitbox (AC#3 / [Risk-12]): the player's hitbox grows when docked (a bigger target — the
-	# docked ship makes you easier to hit). Swap the body CollisionShape2D (projectiles body_enter this)
-	# + the HurtboxComponent's CollisionShape2D (enemy-body contact) between the clean radius (11) and
-	# the docked radius (DockedShipTuning). collision_mask = 0 ⇒ growing the body shape only affects what
+	# The +hitbox (AC#3 / [Risk-12] — the self-balancing cost of the dual fighter): the player's hitbox
+	# grows when docked (a bigger target — the docked ship makes you easier to hit). Story 2.4 formalized
+	# this clean(11)↔docked(18) tradeoff. Swap the body CollisionShape2D (projectiles body_enter this) +
+	# the HurtboxComponent's CollisionShape2D (enemy-body contact) between the clean radius (11) and the
+	# docked radius (DockedShipTuning). collision_mask = 0 ⇒ growing the body shape only affects what
 	# body_enters it (projectiles) — NO move_and_slide / physics impact.
 	var radius: float = _CLEAN_HITBOX_RADIUS
 	if docked and docked_ship_tuning != null:

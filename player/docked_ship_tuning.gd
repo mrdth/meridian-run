@@ -24,7 +24,8 @@ extends Resource
 @export_group("Hitbox")
 # AC#3 / [Risk-12] — the +hitbox: the PLAYER's own hitbox grows when docked (the docked ship makes you a
 # bigger target). This is the radius the player's body CollisionShape2D + HurtboxComponent shape swap to
-# on dock (clean radius = 11, the player.tscn base). 2.4 formalizes the clean/docked tradeoff.
+# on dock (clean radius = 11, the player.tscn base). Story 2.4 formalized this clean(11)↔docked(18)
+# tradeoff as the [Risk-12] self-balancing cost (the dual fighter's combat perks cost a bigger target).
 @export var docked_hitbox_radius: float = 18.0
 
 @export_group("Visual")

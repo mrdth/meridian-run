@@ -3,6 +3,11 @@ extends Node2D
 # The transient rescue wingman (Story 2.3 / NP1) — VISUAL-ONLY. Parented to the Player (a child), it
 # rides the player's transform at the dock offset; it does NOT move independently (no _physics_process).
 #
+# NP1 DUAL NATURE: this node is the TRANSIENT combat fighter (WAVE scope — consumed on absorb, detached
+# at wave-clear). The docked ship's PERMANENT identity (the WING build track) does NOT live here — it
+# lives on RunState.BuildState.wing_track (RUN scope, never cleared by consume; written by the Arena on
+# rescue, Story 2.4). This node carries no run-scope state.
+#
 # NO hitbox: a separate docked-ship Area2D + the player's HurtboxComponent would BOTH detect the same
 # enemy body → apply_hit fires twice → double-trigger bug. The +hitbox is the PLAYER's own hitbox
 # growing via Player.set_docked; the +firepower is the player's parallel FireSystem stream; the
@@ -32,7 +37,8 @@ func _ready() -> void:
 
 func setup(player: Player) -> void:
 	# Cache the owning player (called by Player.try_dock_ship BEFORE attach). The docked ship rides the
-	# player's transform, so it doesn't strictly need the ref in 2.3 — kept for NP1's docked_ship_controller.
+	# player's transform, so it doesn't strictly need the ref in 2.3/2.4 — kept for the docked_ship_controller
+	# refactor (deferred to Story 2.6 — NP1 seam; this node is visual-only for now).
 	_player = player
 
 

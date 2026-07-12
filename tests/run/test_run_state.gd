@@ -92,3 +92,43 @@ func test_reset_restores_baselines() -> void:
 	rs.reset()
 	assert_eq(rs.ships, Constants.BASE_SHIPS)  # 3
 	assert_eq(rs.score, 0)
+
+
+# --- Story 2.4 — build_state (the dual-ladder MAIN+WING spine, AC#2) ---
+
+func test_build_state_non_null_after_new() -> void:
+	# _init() constructs build_state so it is NEVER null — even before begin_run() runs (callers can
+	# read run_state.build_state immediately after RunState.new()).
+	var rs := _make()
+	assert_not_null(rs.build_state, "build_state must be constructed in _init (never null)")
+
+
+func test_build_state_non_null_after_begin_run() -> void:
+	var rs := _make()
+	rs.begin_run()
+	assert_not_null(rs.build_state, "build_state must be non-null after begin_run")
+
+
+func test_begin_run_resets_build_state_wing_track() -> void:
+	# The replay path: a run that earned a WING track, then begin_run() again (a fresh run), starts
+	# flat. begin_run() calls build_state.reset() — the ONLY legitimate clearer (NP1: consume never
+	# clears the track; only a new run does).
+	var rs := _make()
+	rs.begin_run()
+	rs.build_state.record_rescue()
+	rs.build_state.record_rescue()
+	assert_eq(rs.build_state.wing_level, 2, "precondition: a run earned a WING track")
+	rs.begin_run()  # fresh run → build_state.reset()
+	assert_eq(rs.build_state.wing_level, 0, "begin_run must reset the WING track for a fresh run")
+	assert_eq(rs.build_state.main_level, 0, "begin_run must reset the MAIN track for a fresh run")
+
+
+func test_reset_resets_build_state_wing_track() -> void:
+	# reset() aliases begin_run() — same flat-on-replay guarantee via the reset() entry point.
+	var rs := _make()
+	rs.begin_run()
+	rs.build_state.record_rescue()
+	assert_eq(rs.build_state.wing_level, 1)
+	rs.reset()
+	assert_eq(rs.build_state.wing_level, 0, "reset() must clear the WING track (aliases begin_run)")
+	assert_eq(rs.build_state.main_level, 0, "reset() must clear the MAIN track (aliases begin_run)")

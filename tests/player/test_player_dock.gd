@@ -120,3 +120,16 @@ func test_dock_grows_player_hitbox() -> void:
 	# Docked: both shapes grown to the docked radius (the +hitbox — a bigger target, [Risk-12]).
 	assert_almost_eq((body_shape.shape as CircleShape2D).radius, docked_radius, 0.01, "body shape should grow to the docked radius")
 	assert_almost_eq((hurtbox_shape.shape as CircleShape2D).radius, docked_radius, 0.01, "hurtbox shape should grow to the docked radius")
+
+
+# --- Story 2.4 (Task 5.1) — the +28 px single-source desync guard ---
+
+func test_stream_and_dock_offset_are_single_sourced() -> void:
+	# Desync guard (AC#1): the parallel bullet's x-offset (stream_offset_x) and the wingman visual's
+	# station (dock_offset_x) are intentionally the SAME value — the stream fires FROM the wingman's
+	# position, so the bullet origin and the visual must never drift apart via retuning. Pin them equal
+	# against the runtime .tres (loaded via player.tscn) so a future retune that changes only one is
+	# caught. Do NOT split them into two unrelated constants (the +28 px is single-sourced).
+	var p := _make()
+	assert_almost_eq(p.docked_ship_tuning.stream_offset_x, p.docked_ship_tuning.dock_offset_x, 0.001,
+		"stream_offset_x and dock_offset_x must stay in sync (the stream fires from the wingman's station)")

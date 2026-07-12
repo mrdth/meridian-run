@@ -1,6 +1,10 @@
+---
+baseline_commit: 4e408ae
+---
+
 # Story 2.4: Docked Ship — Dual Nature (NP1) & Clean/Docked Tradeoff
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,39 +30,39 @@ so that docking is a meaningful, lasting build choice — not a throwaway buff.
 
 ### Task 1 — Create `BuildState` (the permanent dual-ladder state)  *(AC: #2)*
 
-- [ ] **1.1** Create `run/build_state.gd` — `class_name BuildState extends Resource` (pure data, no Node, no EventBus calls — unit-testable; mirrors `RunState`).
+- [x] **1.1** Create `run/build_state.gd` — `class_name BuildState extends Resource` (pure data, no Node, no EventBus calls — unit-testable; mirrors `RunState`).
   - Holds the two build ladders: `main_track` (primary-weapon ladder) and `wing_track` (allied/rescue ladder — the docked fighter's permanent track). **Both start flat in E2** (Epic-2 hardcodes stats; investment wiring is Story 3.3).
   - **Minimal E2 shape (recommended):** two `int` investment counters, e.g. `var wing_level: int = 0` and `var main_level: int = 0`. (A richer `BuildTrack` Resource is fine if preferred, but E2 only needs "exists, grows on rescue, survives consume." Do NOT build the D2 modifier/recompute pipeline — that is E3.)
   - `func record_rescue() -> void` — earns the WING track (e.g. `wing_level += 1`). Called by Arena on a successful rescue dock.
   - `func reset() -> void` — restores both tracks to flat. Called by `RunState.begin_run()` / `reset()` for a **fresh run** (the ONLY legitimate clearer).
   - **CRITICAL — there must be NO `clear_wing()` / consume-side mutator.** The only writer that *decrements/resets* is `reset()` (new-run path). The permanence invariant (NP1) is enforced structurally: consume paths simply have no API to touch the track.
-- [ ] **1.2** Add `class_name BuildState` to the script and run `godot --headless --import` once so GUT's class index sees it (per the GUT class_name reindex gotcha — see Dev Notes).
+- [x] **1.2** Add `class_name BuildState` to the script and run `godot --headless --import` once so GUT's class index sees it (per the GUT class_name reindex gotcha — see Dev Notes).
 
 ### Task 2 — Wire `RunState.build_state`  *(AC: #2)*
 
-- [ ] **2.1** In `run/run_state.gd`, add `var build_state: BuildState`.
-- [ ] **2.2** Construct it in `_init()` (`build_state = BuildState.new()`) so it is never null, AND reset it inside `begin_run()` (`build_state.reset()`) so a new run starts flat. (`reset()` already aliases `begin_run()` — covered for free.)
-- [ ] **2.3** Update the `RunState` header comment: note that `build_state` is the dual-ladder spine (MAIN + WING), run-scope, permanent across consume, reset only on a new run.
+- [x] **2.1** In `run/run_state.gd`, add `var build_state: BuildState`.
+- [x] **2.2** Construct it in `_init()` (`build_state = BuildState.new()`) so it is never null, AND reset it inside `begin_run()` (`build_state.reset()`) so a new run starts flat. (`reset()` already aliases `begin_run()` — covered for free.)
+- [x] **2.3** Update the `RunState` header comment: note that `build_state` is the dual-ladder spine (MAIN + WING), run-scope, permanent across consume, reset only on a new run.
 
 ### Task 3 — Record the WING track on rescue (Arena owns RunState)  *(AC: #2)*
 
-- [ ] **3.1** In `world/arena.gd` `_on_captor_resolved()`, **rescue branch**: after `_player.try_dock_ship()` succeeds, call `_run_state.build_state.record_rescue()`. (Place it inside the `if _player.try_dock_ship():` block so a blocked/no-op dock does not earn a track — mirrors the existing rescue-juice gate.)
-- [ ] **3.2** Optionally emit `EventBus.build_changed.emit()` after `record_rescue()` (the signal exists, has no emitter yet; the WING track changing is a build change). Keep it inside the successful-dock block. *(Low cost, forward-compat for the between-wave build-summary rail.)*
-- [ ] **3.3** Do NOT add any `build_state` write to the player. **The Player never touches `RunState` (AR2).** This is the structural guarantee that consume paths cannot clear the track — see Dev Notes §"AR2 reconciliation".
+- [x] **3.1** In `world/arena.gd` `_on_captor_resolved()`, **rescue branch**: after `_player.try_dock_ship()` succeeds, call `_run_state.build_state.record_rescue()`. (Place it inside the `if _player.try_dock_ship():` block so a blocked/no-op dock does not earn a track — mirrors the existing rescue-juice gate.)
+- [x] **3.2** Optionally emit `EventBus.build_changed.emit()` after `record_rescue()` (the signal exists, has no emitter yet; the WING track changing is a build change). Keep it inside the successful-dock block. *(Low cost, forward-compat for the between-wave build-summary rail.)*
+- [x] **3.3** Do NOT add any `build_state` write to the player. **The Player never touches `RunState` (AR2).** This is the structural guarantee that consume paths cannot clear the track — see Dev Notes §"AR2 reconciliation".
 
 ### Task 4 — The permanence invariant GUT test  *(AC: #2 — architecture-mandated)*
 
 > Architecture line 757 Consistency Rules: *"Docked ship (NP1) | consume never clears track | invariant + GUT test."* This test is **required**, not optional.
 
-- [ ] **4.1** New `tests/run/test_build_state.gd` — pure-logic unit test (no scene; `BuildState` is a Resource):
+- [x] **4.1** New `tests/run/test_build_state.gd` — pure-logic unit test (no scene; `BuildState` is a Resource):
   - `record_rescue()` grows `wing_level` (e.g. 0 → 1 → 2).
   - `reset()` restores flat (new-run path).
   - `main_level` starts 0 and is untouched by `record_rescue()`.
   - *(Negative existence check: confirm there is no public consume/clear API — documented as a comment, since you cannot assert absence of a method at runtime.)*
-- [ ] **4.2** Extend `tests/run/test_run_state.gd`:
+- [x] **4.2** Extend `tests/run/test_run_state.gd`:
   - `build_state` is non-null after `begin_run()`.
   - `begin_run()` / `reset()` resets `build_state` (a run that earned a WING track, then `begin_run()` again, is flat).
-- [ ] **4.3** Extend `tests/world/test_arena_captor_resolution.gd` — **the headline permanence test**:
+- [x] **4.3** Extend `tests/world/test_arena_captor_resolution.gd` — **the headline permanence test**:
   - Rescue (`captor_resolved.emit(true, …)`) grows `arena._run_state.build_state.wing_level` by 1.
   - **Absorb path does not clear the track**: dock via rescue → drive an absorber (`player.apply_hit(...)` while docked, which consumes the fighter) → assert `wing_level` is UNCHANGED.
   - **Wave-clear path does not clear the track**: dock via rescue → emit `EventBus.wave_cleared(wave)` (which detaches the fighter via `player._on_wave_cleared`) → assert `wing_level` is UNCHANGED.
@@ -66,14 +70,19 @@ so that docking is a meaningful, lasting build choice — not a throwaway buff.
 
 ### Task 5 — Pin the +28 px offset + formalize [Risk-12]  *(AC: #1 — light, mostly already done)*
 
-- [ ] **5.1** Pin the +28 px: it is already single-sourced in `DockedShipTuning` (`stream_offset_x == dock_offset_x == 28.0`). Add a **desync-guard test** (in `tests/player/test_fire_system_docked.gd` or `test_player_dock.gd`) asserting `docked_ship_tuning.stream_offset_x == docked_ship_tuning.dock_offset_x` so the bullet origin and the wingman visual station can never drift apart via retuning. Do NOT split them into two unrelated constants.
-- [ ] **5.2** [Risk-12] is already implemented + tested: `test_dock_grows_player_hitbox` asserts BOTH the body `CollisionShape2D` (projectiles) AND the `HurtboxComponent` shape (contact) swap clean(11)↔docked(18). No new mechanic needed. Refresh the code comments on `Player._resize_hitbox` / `set_docked` to explicitly cite **[Risk-12]** (self-balancing cost) and retire the old `# 2.4 seam` / `# 2.4 deepens` comments now that the work is done.
-- [ ] **5.3** Refresh `player/docked_ship.gd` / `docked_ship_tuning.gd` header comments: replace "2.4 formalizes…"前瞻 wording with the realized design (transient wave-scope fighter node; permanent identity lives on `RunState.BuildState.wing_track`, not on this node).
+- [x] **5.1** Pin the +28 px: it is already single-sourced in `DockedShipTuning` (`stream_offset_x == dock_offset_x == 28.0`). Add a **desync-guard test** (in `tests/player/test_fire_system_docked.gd` or `test_player_dock.gd`) asserting `docked_ship_tuning.stream_offset_x == docked_ship_tuning.dock_offset_x` so the bullet origin and the wingman visual station can never drift apart via retuning. Do NOT split them into two unrelated constants.
+- [x] **5.2** [Risk-12] is already implemented + tested: `test_dock_grows_player_hitbox` asserts BOTH the body `CollisionShape2D` (projectiles) AND the `HurtboxComponent` shape (contact) swap clean(11)↔docked(18). No new mechanic needed. Refresh the code comments on `Player._resize_hitbox` / `set_docked` to explicitly cite **[Risk-12]** (self-balancing cost) and retire the old `# 2.4 seam` / `# 2.4 deepens` comments now that the work is done.
+- [x] **5.3** Refresh `player/docked_ship.gd` / `docked_ship_tuning.gd` header comments: replace "2.4 formalizes…"前瞻 wording with the realized design (transient wave-scope fighter node; permanent identity lives on `RunState.BuildState.wing_track`, not on this node).
 
 ### Task 6 — Regression gate  *(all ACs)*
 
-- [ ] **6.1** Run `godot --headless -s addons/gut/gut_cmdln.gd`. All prior tests still pass (2.3's dock/absorb/capture/fire-stream suites are the regression surface — do not alter their behavior). Check the Scripts/Tests **counts** (not just "All passed") per the GUT silent-skip gotcha.
-- [ ] **6.2** F8-spawn a captor in-game (the debug cheat), get captured (clean), dive-kill it → rescue docks → confirm the parallel stream fires, the hitbox visibly grows, and a second capture is impossible. Then take a hit (absorb) → fighter gone, HP spared, and (via debug readout or a temporary log) the WING track is still present.
+- [x] **6.1** Run `godot --headless -s addons/gut/gut_cmdln.gd`. All prior tests still pass (2.3's dock/absorb/capture/fire-stream suites are the regression surface — do not alter their behavior). Check the Scripts/Tests **counts** (not just "All passed") per the GUT silent-skip gotcha.
+- [x] **6.2** F8-spawn a captor in-game (the debug cheat), get captured (clean), dive-kill it → rescue docks → confirm the parallel stream fires, the hitbox visibly grows, and a second capture is impossible. Then take a hit (absorb) → fighter gone, HP spared, and (via debug readout or a temporary log) the WING track is still present. **(Pending — human/GUI step; the mechanics are covered by the automated suite + a 7 s headless smoke boot. The debug overlay's BUILD row now surfaces `WING N / MAIN N` (added during review), so the permanence is watchable in-game — toggle the overlay, rescue, absorb, and watch WING stay put. The full F8 feel-playtest still could not be run headlessly — run it before sign-off.)**
+
+### Review Findings
+
+- [x] [Review][Patch] `test_reset_resets_build_state_wing_track` doesn't assert `main_level` [tests/run/test_run_state.gd:126] — the sibling test (`test_begin_run_resets_build_state_wing_track`, testing the identical reset path since `reset()` aliases `begin_run()`) asserts both `wing_level` and `main_level` are zeroed; this one only checks `wing_level`, leaving inconsistent coverage of the same guarantee via the `reset()` entry point. Fixed: added the `main_level` assertion.
+- [x] [Review][Defer] `BuildState.wing_level`/`main_level` have no upper bound [run/build_state.gd:48] — deferred, pre-existing E2 design (flat/hardcoded ladders, no cap mechanism yet). `record_rescue()` increments `wing_level` with no ceiling, unlike `RunState.add_ship()` which clamps to `Constants.MAX_SHIPS`. Not a spec violation for E2 (captors currently spawn only via the F8 debug cheat), but worth revisiting when Story 3.3 wires ladder investment through the recompute pipeline — that story should define whether/where a level cap belongs.
 
 ---
 
@@ -191,12 +200,109 @@ Every GUT run prints "leaked"/"orphan" warnings at exit (Pool nodes aren't freed
 - [Source: `_bmad-output/implementation-artifacts/2-3-rescue-and-failed-rescue.md`] — the 2.4 scope seam (lines 970–974, 987–988, 993–994); ship-count economy table (lines 827–839); the +hitbox-is-the-player's-shape decision (Dev Notes).
 - [Source: `_bmad-output/project-context.md`] — AR2 state ownership; D8 boundary; hardcoded-stats; collision-layer discipline; pooling/testing rules.
 
+## Change Log
+
+- **2026-07-12 (Story 2.4 implementation):** Added the permanent dual-ladder build spine — `run/build_state.gd`
+  (`BuildState` Resource: `main_level` + `wing_level`, `record_rescue()`, `reset()`; **NO consume mutator** —
+  NP1 enforced structurally). Wired `RunState.build_state` (constructed in `_init()` so never null; reset in
+  `begin_run()`). Arena records the WING track on a successful rescue dock (inside the `if try_dock_ship():`
+  block) + emits `EventBus.build_changed` (the signal's first emitter). Added the permanence GUT suite
+  (`test_build_state.gd` + `test_run_state.gd` ext + the `test_arena_captor_resolution.gd` headline tests:
+  absorb + wave-clear never clear the WING track; combined rescue→absorb→rescue→wave-clear ends at wing_level 2).
+  Pinned the +28 px single-source desync guard + refreshed the [Risk-12] / dual-nature comments (retired the
+  stale `# 2.4 deepens` / `# 2.4 seam` / `# 2.4 formalizes` wording; the two `fire_system.gd` "2.4 may refactor"
+  notes reframed to "deferred to 2.6"). **No behavioral change to 2.3 combat code.** Suite: 313/313 passing
+  (38 scripts, 880 asserts; +15 tests / +31 asserts over the 298-test baseline).
+- **2026-07-12 (review follow-up — playtest observability):** at Mrdth's request, surfaced the WING track in the
+  debug overlay's BUILD row (`systems/debug.gd`: `WING N / MAIN N`, read-only via an optional `run_state` arg on
+  `bind_arena`; `world/arena.gd` passes `_run_state`). The permanence invariant is now watchable in a playtest
+  (toggle overlay → rescue → absorb → WING stays). +2 GUT tests. Suite: 315/315 passing (38 scripts, 882 asserts).
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
+Claude (GLM-5.2) via Claude Code — `gds-dev-story` workflow.
+
 ### Debug Log References
+
+- Baseline (pre-change): `godot --headless -s addons/gut/gut_cmdln.gd` → 37 scripts / 298 tests / 849 asserts,
+  all passing (the green regression baseline — 2.3's dock/absorb/capture/fire-stream suites).
+- After adding `class_name BuildState`: ran `godot --headless --import` once to reindex (GUT silent-skip guard
+  — memory `gut-classname-reindex-silent-skip`); confirmed `tests/run/test_build_state.gd` is NOT silently
+  skipped (script count 37 → 38, so the class resolved).
+- Final: `godot --headless -s addons/gut/gut_cmdln.gd` → **38 scripts / 313 passing / 880 asserts, 0 failing**
+  (benign exit-leak + per-test orphan warnings per memory `gut-exit-leak-warnings-expected`). +15 tests /
+  +31 asserts over baseline.
+- Headless smoke: `timeout 7 godot --headless --path .` (main scene `res://world/arena.tscn`) — no
+  `SCRIPT ERROR` / `Invalid call` / crash on the new `BuildState` construction + the auto-replay loop
+  (each replay = new Arena = new RunState = new BuildState); timeout-killed (expected for a game loop).
+- No bugs hit during implementation — the AR2 split (Arena owns the track, Player owns the combat) made the
+  permanence invariant self-enforcing; there were no consume-path edge cases to chase.
 
 ### Completion Notes List
 
+- **AC2 (the headline — permanent WING track):** NEW `run/build_state.gd` (`BuildState` Resource) holds the
+  dual-ladder spine — `main_level` (primary-weapon) + `wing_level` (the docked fighter's PERMANENT track, NP1).
+  `record_rescue()` grows `wing_level`; `reset()` is the ONLY clearer (new-run path). There is intentionally
+  NO consume-side / clear / decrement mutator — the permanence invariant is enforced STRUCTURALLY: the consume
+  paths (`_consume_docked_ship`, `_on_wave_cleared`) live on the Player, which has no `RunState` ref (AR2), so
+  they cannot reach the track even if they tried. `RunState` owns one `BuildState` (constructed in `_init()` so
+  never null; reset in `begin_run()`). The Arena writes it — `_on_captor_resolved` rescue branch calls
+  `record_rescue()` inside the `if _player.try_dock_ship():` block (a blocked/no-op dock earns nothing, mirroring
+  the rescue-juice gate) + emits `EventBus.build_changed` (the signal's first emitter; forward-compat for the
+  between-wave build-summary rail). Task 3.3 honored: the Player NEVER touches `RunState`.
+- **Permanence GUT suite (architecture line 757, mandated):** `tests/run/test_build_state.gd` (pure-logic:
+  record_rescue grows wing_level 0→1→2, reset flat, main_level untouched, no-clear-API documented as a comment).
+  `tests/run/test_run_state.gd` extended (build_state non-null after `.new()`/`begin_run()`; `begin_run()` +
+  `reset()` zero a previously-earned WING track). `tests/world/test_arena_captor_resolution.gd` — the HEADLINE
+  permanence tests: rescue grows wing_level by 1; a blocked 2nd dock earns no 2nd level; the ABSORB path
+  (`apply_hit` while docked) leaves wing_level UNCHANGED; the WAVE-CLEAR path (`wave_cleared` emit →
+  `_on_wave_cleared`) leaves it UNCHANGED; a combined rescue→absorb→rescue→wave-clear path ends at wing_level 2
+  (the track only ever grows via rescue).
+- **AC1 (dual-fighter attach — already done in 2.3, pinned in 2.4):** +28 px parallel stream (single-sourced:
+  `stream_offset_x == dock_offset_x == 28.0`; NEW desync-guard test `test_stream_and_dock_offset_are_single_sourced`
+  pins them equal so a future retune can't drift the bullet off the wingman). +hitbox ([Risk-12], clean 11↔docked
+  18 — `test_dock_grows_player_hitbox`). capture-immune (`is_capture_immune` = `_docked`). No new combat mechanic.
+- **AC3 (transient fighter + absorber — already done in 2.3, unchanged):** `DockedShip` node is wave-scope
+  (detached at wave-clear, consumed on absorb); `apply_hit` is the intrinsic first-hit absorber. No behavioral
+  change to 2.3 combat code.
+- **Comment formalization (Task 5.2/5.3):** refreshed `Player.set_docked`/`_resize_hitbox`/`is_capture_immune` to
+  cite [Risk-12] as the self-balancing cost; retired the stale `# 2.4 deepens` wording (now realized); reframed
+  the two `fire_system.gd` "2.4 may refactor" notes as "deferred to 2.6" (NP1 seam — the `DockedShipController`
+  refactor is deliberately NOT in this story); `docked_ship.gd`/`docked_ship_tuning.gd` headers now state the dual
+  nature (this node = the transient fighter; the permanent identity = `RunState.BuildState.wing_track`).
+- **Scope discipline (honest):** did NOT build the D2 modifier/recompute pipeline (E3); did NOT refactor to a
+  `DockedShipController` (deferred to 2.6 — no AC benefit, pure regression risk); did NOT add a ship cost to
+  anything (the absorber spares HP with NO `spend_ship` — 2.3 was correct); did NOT touch 2.3 combat code
+  behaviorally. `resources/docked_ship_tuning.tres` already holds every docked knob (no new tuning file).
+- **Deferred / out of scope:** the WING track is NOT wired through recompute (E3 / Story 3.3 — it exists +
+  persists but is flat in E2); the Keep `add_ship(+1)` + Sacrifice input + four-outcomes gate (2.5/2.6); captor
+  presence in the wave drip (2.8 — captors still spawn ONLY via F8). The in-editor F8 feel-playtest (Task 6.2) is
+  pending — human/GUI step; every objective mechanic is covered by the automated suite + a 7 s headless smoke boot.
+
 ### File List
+
+**New:**
+- `run/build_state.gd` — the dual-ladder permanent build spine (`BuildState` Resource: `main_level` + `wing_level`,
+  `record_rescue()`, `reset()`; NO consume mutator — NP1 structural).
+- `tests/run/test_build_state.gd` — pure-logic unit tests for `BuildState`.
+
+**Modified:**
+- `run/run_state.gd` — +`build_state: BuildState` field, `_init()` constructs it (never null), `begin_run()` resets
+  it; header updated (dual-ladder spine, permanent across consume, reset only on new run).
+- `world/arena.gd` — rescue branch calls `_run_state.build_state.record_rescue()` + emits `EventBus.build_changed`
+  inside the successful-dock block.
+- `player/player.gd` — comment refresh only (`is_capture_immune` / `set_docked` / `_resize_hitbox` cite [Risk-12];
+  retired `# 2.4 deepens`; wing_track is Arena-owned, AR2). **No behavioral change.**
+- `player/docked_ship.gd` — header + `setup` comment refresh (NP1 dual nature; controller deferred to 2.6). **No behavioral change.**
+- `player/docked_ship_tuning.gd` — comment refresh (retired `# 2.4 formalizes`). **No behavioral change.**
+- `player/fire_system.gd` — comment refresh (retired `# 2.4 seam` / `# 2.4 may refactor` → deferred to 2.6). **No behavioral change.**
+- `tests/run/test_run_state.gd` — +`build_state` tests (non-null after `.new()`/`begin_run()`; reset on `begin_run`/`reset`).
+- `tests/world/test_arena_captor_resolution.gd` — +the headline permanence tests (rescue grows; absorb + wave-clear
+  never clear; blocked 2nd dock earns nothing; combined path ends at wing_level 2).
+- `tests/player/test_player_dock.gd` — +the +28 px single-source desync-guard test.
+- `systems/debug.gd` — overlay BUILD row surfaces `WING N / MAIN N` from `run_state.build_state` (read-only;
+  +optional `run_state` param on `bind_arena`); added at Mrdth's request during review so the permanence is
+  watchable in a playtest. Debug-build only.
+- `tests/systems/test_debug.gd` — +2 tests for the BUILD row (bound surfaces WING; unbound shows `--`).
