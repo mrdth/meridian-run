@@ -245,3 +245,58 @@ func test_stop_releases_a_held_capture_column_when_despawned_mid_telegraph() -> 
 	await get_tree().physics_frame  # let the column's deferred _release_to_pool land
 	await get_tree().physics_frame
 	assert_null(column.get_parent(), "capture column was not returned to the pool")
+
+
+# --- Story 2.3: spawn_enemy_at (the failed-rescue "+1 enemy") ---
+
+func test_spawn_enemy_at_spawns_one_enemy_at_position() -> void:
+	# AC#2: spawn_enemy_at(pos) acquires a grunt, parents it to the container, + activates at `pos`
+	# (position-based, no formation slot). Assert one new enemy at pos on LAYER_ENEMY.
+	var s: FormationSpawner = _make()
+	var pos := Vector2(450.0, 220.0)
+	var before: int = s.get_active_count()
+	s.spawn_enemy_at(pos)
+	assert_eq(s.get_active_count(), before + 1, "spawn_enemy_at should spawn exactly one enemy")
+	var enemy: Enemy = s._container.get_child(s._container.get_child_count() - 1) as Enemy
+	assert_not_null(enemy)
+	assert_almost_eq(enemy.global_position.distance_to(pos), 0.0, 0.5, "enemy should spawn AT pos")
+	assert_eq(enemy.collision_layer, Constants.LAYER_ENEMY, "the turned enemy is on LAYER_ENEMY")
+
+
+func test_spawn_enemy_at_connects_died_to_on_enemy_died() -> void:
+	# The turned-enemy's died connects to _on_enemy_died so it gives score when later killed.
+	var s: FormationSpawner = _make()
+	s.spawn_enemy_at(Vector2(450.0, 220.0))
+	var enemy: Enemy = s._container.get_child(s._container.get_child_count() - 1) as Enemy
+	assert_true(enemy.died.is_connected(s._on_enemy_died))
+
+
+func test_spawn_enemy_at_applies_turned_ship_visual() -> void:
+	# E — apply_turned_visual: the player arrowhead INVERTED (6-point chevron, not the grunt's 3-point
+	# triangle) + scale.y < 0 (pointing down) + hazard color. Asserted immediately (the visual override
+	# is synchronous; it won't change on later physics frames).
+	var s: FormationSpawner = _make()
+	s.spawn_enemy_at(Vector2(450.0, 220.0))
+	var enemy: Enemy = s._container.get_child(s._container.get_child_count() - 1) as Enemy
+	var visual: Polygon2D = enemy.get_node_or_null("Visual") as Polygon2D
+	assert_not_null(visual)
+	assert_eq(visual.polygon.size(), 6, "turned enemy uses the 6-point arrowhead, not the 3-point grunt triangle")
+	assert_lt(visual.scale.y, 0.0, "turned arrowhead is inverted (points down)")
+
+
+func test_normal_formation_spawn_resets_turned_visual() -> void:
+	# Pool-reuse safety: a grunt acquired NORMALLY (via activate, after a prior failed-rescue spawn
+	# turned it) must restore the base grunt silhouette (3-point triangle, scale.y > 0). Drive one
+	# turned spawn, release it, then a normal formation spawn + assert the base visual is restored.
+	var s: FormationSpawner = _make()
+	s.spawn_enemy_at(Vector2(450.0, 220.0))  # a turned enemy.
+	var turned: Enemy = s._container.get_child(s._container.get_child_count() - 1) as Enemy
+	assert_eq((turned.get_node("Visual") as Polygon2D).polygon.size(), 6)  # turned.
+	turned.despawn()  # return to the pool.
+	# Re-acquire the SAME pooled node via a normal formation spawn + assert the base visual is restored.
+	s.begin_wave(1)
+	s._physics_process(0.01)  # first pulse spawns via _spawn_enemy → activate → _reset_visual.
+	var grunt: Enemy = s._container.get_child(0) as Enemy
+	var visual: Polygon2D = grunt.get_node_or_null("Visual") as Polygon2D
+	assert_eq(visual.polygon.size(), 3, "a normal formation spawn must reset to the 3-point grunt silhouette")
+	assert_gt(visual.scale.y, 0.0, "a normal formation spawn must reset scale.y (no inversion)")

@@ -17,6 +17,20 @@ extends CharacterBody2D
 const _SLOT_JITTER_PX: float = 14.0  # review fix: prevents exact-overlap when a slot is reused
                                       # by a later pulse while the prior occupant is still alive.
 
+# Story 2.3 — the failed-rescue "turned-ship" visual (E): the captured ship gone hostile reuses grunt
+# behavior/stats BUT swaps the silhouette for the PLAYER arrowhead INVERTED (pointing down) + the hazard
+# hue. The arrowhead points are a design constant (the player's Visual/Core polygon, player.tscn); the
+# hazard hue matches the grunt silhouette default (#FF3D5A = HudPalette.HAZARD). The SHAPE + inversion
+# carry the read (a 6-point downward chevron vs the grunt's 3-point downward triangle) — D16/UX color-
+# safety: never hue-alone (the distinct silhouette is the load-bearing CVD defense). Stored as a const
+# Array of Vector2 (a PackedVector2Array isn't a constant expression in GDScript); built into a
+# PackedVector2Array at use time in apply_turned_visual.
+const _TURNED_SHIP_POINTS := [
+	Vector2(0, -17), Vector2(-15, 10), Vector2(-8, 14),
+	Vector2(0, 10), Vector2(8, 14), Vector2(15, 10),
+]
+const _TURNED_HAZARD_COLOR := Color(1.0, 0.24, 0.35, 1.0)
+
 signal died(score_value: int)  # direct local signal (D8) — the spawner connects it directly.
 
 @onready var _health: HealthComponent = $HealthComponent
@@ -40,6 +54,10 @@ var slot_index: int = 0
 var rng: RandomNumberGenerator
 var slot_world_pos: Vector2
 var player_target: Node2D  # injected by the spawner; DiveState reads .global_position.x on each physics frame.
+# Story 2.3 — the scene's base silhouette polygon, cached once in _ready. activate() restores it via
+# _reset_visual() so a prior spawn's apply_turned_visual (the failed-rescue turned-ship) can't leak
+# across pool cycles (pooled nodes re-init via activate, never _ready).
+var _base_polygon: PackedVector2Array
 
 
 func _ready() -> void:
@@ -62,6 +80,10 @@ func _ready() -> void:
 	if _visual != null:
 		_visual.scale = Vector2.ONE * definition.silhouette_scale
 		_visual.color = definition.silhouette_color
+		# Story 2.3 — cache the scene's base silhouette so activate()'s _reset_visual() can restore it
+		# (a prior spawn's apply_turned_visual must not leak across pool cycles). Cached once (first
+		# acquire); _ready does not re-fire on re-acquire, so this persists correctly.
+		_base_polygon = _visual.polygon
 	# The Muzzle is a scene-fixed Marker2D (sibling of Visual), so it does NOT follow
 	# silhouette_scale — scale its offset to match, or big enemies fire from inside themselves.
 	if _muzzle != null:
@@ -105,9 +127,73 @@ func activate(p_formation_def: FormationDefinition, p_slot_index: int, p_rng: Ra
 	# until the enemy is damaged (UX H6).
 	if _health_bar != null:
 		_health_bar.bind(_health)
+	# Story 2.3 — restore the base silhouette: a prior spawn's apply_turned_visual (the failed-rescue
+	# turned-ship) must NOT leak across pool cycles (pooled nodes re-init via activate, never _ready).
+	_reset_visual()
 	# Reset the StateMachine to EnterState — re-entry exits whatever state we were in at
 	# release (e.g. DiveState) and enters EnterState with the fresh per-spawn data above.
 	_state_machine.transition_to(_enter_state)
+
+
+func activate_at(spawn_pos: Vector2, p_rng: RandomNumberGenerator) -> void:
+	# Story 2.3 — position-based activate variant for the failed-rescue "+1 enemy" (the captured ship
+	# turned hostile spawns at the captor's death position mid-wave — no formation slot). Same setup as
+	# activate() (HP, fire disarm, visible) but: formation_def = the standard formation (via the
+	# ContentRegistry — the states read it for drift/hold/dive params + tolerate a real def cleanly),
+	# slot_world_pos = spawn_pos (the drift anchor), and it transitions DIRECTLY to FormationState (the
+	# enemy appears AT the position — no off-screen EnterState descend for a mid-wave appearance). The
+	# full grunt lifecycle (formation drift → fire → dive) reuses unchanged; slot_index is unused by the
+	# states (they read slot_world_pos + formation_def), so it stays default. apply_turned_visual() is
+	# called by the spawner AFTER this to swap the silhouette (E).
+	rng = p_rng
+	formation_def = ContentRegistry.get_formation_def(&"standard")
+	# review fix: assert parity with activate() — a missing/misregistered "standard" FormationDefinition
+	# is a genuine content-config error (ContentRegistry logs it), not a state this enemy can run in.
+	assert(formation_def != null, "Enemy: activate_at without a registered 'standard' FormationDefinition")
+	slot_world_pos = spawn_pos
+	# One-time spawn positioning (AR14; mirrors Captor.activate): FormationState reads slot_world_pos
+	# as the drift ANCHOR but never sets the initial position (EnterState does that for the normal path),
+	# so a mid-wave spawn must place itself at spawn_pos directly — the enemy appears AT the captor's
+	# death position immediately (no off-screen descend).
+	global_position = spawn_pos
+	_health.max_hp = definition.max_hp
+	_health.reset_to_full()
+	if _fire != null:
+		_fire.arm(definition, rng, false)  # disarmed — FormationState.enter arms it on the next transition.
+	visible = true
+	if _health_bar != null:
+		_health_bar.bind(_health)
+	_state_machine.transition_to(_formation_state)
+
+
+func apply_turned_visual() -> void:
+	# Story 2.3 / E — the failed-rescue enemy: a captured ship turned hostile. Swap the grunt silhouette
+	# for the player-ship arrowhead INVERTED (pointing down) + the hazard hue. Behavior/stats are
+	# unchanged (still a grunt — same HP, fire, dive). The Visual is the Polygon2D (_visual) set up in
+	# _ready from definition.silhouette_*; override the polygon points + y-flip + color here. Called by
+	# FormationSpawner.spawn_enemy_at AFTER activate_at. activate()'s _reset_visual() inverts this on the
+	# next normal formation spawn (pool-reuse safety). Collision/faction stay grunt (LAYER_ENEMY via
+	# FactionComponent); the change is cosmetic.
+	if _visual == null:
+		return
+	_visual.polygon = PackedVector2Array(_TURNED_SHIP_POINTS)
+	# Preserve the definition's x-scale (grunt = 1.0); invert y → the upward arrowhead points down.
+	var sx: float = definition.silhouette_scale if definition != null else 1.0
+	_visual.scale = Vector2(sx, -sx)
+	_visual.color = _TURNED_HAZARD_COLOR
+
+
+func _reset_visual() -> void:
+	# Restore the base silhouette (polygon + scale + color) — the inverse of apply_turned_visual. Called
+	# in activate() so a prior failed-rescue spawn's turned-ship look can't leak onto a normal grunt
+	# (pooled nodes re-init via activate, never _ready; _ready cached the base polygon once).
+	if _visual == null:
+		return
+	_visual.polygon = _base_polygon
+	var sx: float = definition.silhouette_scale if definition != null else 1.0
+	_visual.scale = Vector2.ONE * sx
+	if definition != null:
+		_visual.color = definition.silhouette_color
 
 
 # --- state-transition + fire helpers (called by the AI states via the owner reference) ---

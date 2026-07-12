@@ -23,8 +23,10 @@ extends CharacterBody2D
 @export var tuning: CaptorTuning            # = resources/captor_tuning.tres (set in scene — wins at runtime)
 @export var capture_column_scene: PackedScene  # = world/capture_column.tscn (acquired on telegraph)
 
-signal died(score_value: int)               # direct/local (D8) — score_value = 0 (captor score is "—"). Seam for 2.3.
-signal state_changed(state: StringName)     # direct/local (D8) — emitted on every transition; 2.3's rescue branch reads it.
+# 2.3 — `died` carries the COMPUTED rescue flag + the death position. The captor OWNS the rescue
+# condition (dive + captured_player — F + G); the spawner ROUTES the bool, Arena RESOLVES it (AR2).
+signal died(score_value: int, rescue: bool, at: Vector2)
+signal state_changed(state: StringName)     # direct/local (D8) — emitted on every transition.
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _faction: FactionComponent = $FactionComponent
@@ -33,7 +35,9 @@ signal state_changed(state: StringName)     # direct/local (D8) — emitted on e
 @onready var _muzzle: Marker2D = $Muzzle
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var _visual: Polygon2D = $Visual
-# HealthBar is OPTIONAL on the captor (2.1 omits it; get_node_or_null tolerates its absence).
+# HealthBar: present on the captor (added so the player can read hits-left to time the dive-kill
+# rescue). get_node_or_null tolerates its absence defensively (a test/partial scene without it still
+# works). hide_when_full ⇒ the bar appears once the player starts chipping the captor (H6).
 @onready var _health_bar: HealthBar = get_node_or_null("HealthBar")
 @onready var _enter_state: State = $StateMachine/EnterState
 @onready var _formation_state: State = $StateMachine/FormationState
@@ -44,7 +48,8 @@ signal state_changed(state: StringName)     # direct/local (D8) — emitted on e
 # Per-spawn state (set in activate, read by the captor states via the owner reference).
 var player_target: Node2D               # injected by the spawner; TelegraphState/DiveState read .global_position.
 var rng: RandomNumberGenerator          # injected; FormationState rolls the randomized hold.
-var current_state_name: StringName      # updated on each transition — 2.3's death handler reads this (dive → rescue).
+var current_state_name: StringName      # updated on each transition — 2.3's rescue condition reads this (dive + captured).
+var captured_player: bool = false       # F (prior-capture gate): set by CaptureState on a successful try_capture; reset in activate. Rescue requires dive + an actual capture this spawn.
 var capture_column: CaptureColumn       # held during telegraph+capture; null otherwise.
 
 
@@ -94,6 +99,9 @@ func activate(p_player_target: Node2D, p_spawn_pos: Vector2, p_rng: RandomNumber
 	# Defensive: if the prior cycle was interrupted (e.g. wave-end despawn mid-telegraph left a column
 	# held), release it so a re-acquired captor never starts holding a stale column.
 	_release_capture_column()
+	# 2.3 — reset the prior-capture gate (F): a fresh spawn starts un-captured (rescue requires an
+	# actual capture THIS spawn, so a stale captured_player can't grant a free rescue on reuse).
+	captured_player = false
 	# Spawn placement (one-time — AR14 allows one-time spawn positioning, not per-frame .position writes).
 	# The debug cheat spawns the captor off-screen above the player; EnterState descends from here.
 	global_position = p_spawn_pos
@@ -199,11 +207,15 @@ func _release_capture_column() -> void:
 func _on_died() -> void:
 	# Death originates in a physics callback (player projectile body_entered → take_damage → died.emit),
 	# so the captor's self-release is deferred (engine forbids synchronous removal then) — exactly as
-	# enemy.gd. Emits the local died signal carrying score_value = 0 (D8; the spawner's _on_captor_died
-	# seam routes nothing to the HUD in 2.1). Release any held column BEFORE the deferred self-release
-	# so a telegraph/capture kill doesn't leave the column locked on-screen. Death juice (explosion +
-	# score popup) emits BEFORE the release, capturing global_position now.
-	died.emit(definition.score_value)
+	# enemy.gd. 2.3: the captor OWNS the rescue condition (F + G) — rescue = killed during `dive` AND
+	# it actually captured the player this spawn. A dive-kill WITHOUT capture (player dodged) is NOT a
+	# rescue → failed-rescue. Emits the computed bool + the death position (the failed-rescue enemy
+	# spawns at `at`). The captor is STILL VALID here (the deferred release hasn't run) —
+	# current_state_name + captured_player + global_position are authoritative. Release any held column
+	# BEFORE the deferred self-release so a telegraph/capture kill doesn't leave it locked. Death juice
+	# (explosion + score popup) emits BEFORE the release, capturing global_position now.
+	var rescue: bool = current_state_name == &"dive" and captured_player
+	died.emit(definition.score_value, rescue, global_position)
 	_release_capture_column()
 	JuiceFx.enemy_killed(global_position, definition.silhouette_color, definition.silhouette_scale, definition.score_value)
 	# Defer a NO-ARG method on self rather than `Pool.release.call_deferred(self)`: Godot 4.6 fails to

@@ -30,6 +30,11 @@ func _ready() -> void:
 	# player.ship_depleted (LOCAL, D8) → run-scope decision. WaveController separately subscribes
 	# to EventBus.game_over to Fail the active wave (it owns the wave lifecycle now).
 	_player.ship_depleted.connect(_on_player_ship_depleted)
+	# Story 2.3 — the spawner routes captor deaths here for run-scope resolution (rescue dock vs
+	# failed-rescue enemy spawn). LOCAL signal (spawner→Arena, D8 intra-scene). Arena is NOT pooled →
+	# connect ONCE (the is_connected guard is belt-and-braces, mirroring the player's wave_cleared).
+	if not _spawner.captor_resolved.is_connected(_on_captor_resolved):
+		_spawner.captor_resolved.connect(_on_captor_resolved)
 	# Story 1.7 — inject the player ref into the HUD so its focus/fade model can read hp_ratio. The
 	# HUD subscribes to the player's HealthComponent.health_changed (read-only, D8-clean).
 	_hud.set_player(_player)
@@ -56,6 +61,31 @@ func _on_player_ship_depleted() -> void:
 		EventBus.ship_lost.emit(remaining)
 	else:
 		_on_run_lost()
+
+
+func _on_captor_resolved(rescue: bool, at: Vector2) -> void:
+	# Story 2.3 — the captor was killed. Arena owns the run-scope resolution (AR2). Per the Mrdth-confirmed
+	# economy (2026-07-12): the ONLY ship-count changes in the Gamble are capture (−1, 2.2) and keep (+1,
+	# 2.5). Rescue docks a fighter (NO ship change); failed-rescue turns the captive enemy (+1 enemy, NO
+	# ship change — the epics AC2 "−1 ship" is relative-accounting vs the keep +1, NOT a spend). NO
+	# respawn in either branch (the player's ship is fine — they shot the captor, they weren't hit).
+	#
+	# Runs inside the physics step (captor death originates in a body_entered callback). try_dock_ship
+	# (instantiate + add_child) + spawn_enemy_at (Pool.acquire + add_child + activate_at) are both
+	# ADDITIVE mid-physics (same as the drip _spawn_enemy). NO game-over path here — failed-rescue can't
+	# drop ships to 0 (it doesn't spend one); the only ship-count changes are capture (−1, via
+	# ship_depleted above) and keep (+1, 2.5). The JuiceFx helpers source colors/amounts from _TUNING +
+	# the palette (Arena calls them one-line — no EventBus juice emits directly here).
+	if rescue:
+		# review fix: gate the rescue juice on an actual dock (try_dock_ship returns false if FR14's
+		# one-docked guard blocks it — no misleading reward cue for a no-op dock).
+		if _player.try_dock_ship():  # the rescue EFFECT entry — docks a fighter, no ship-count change.
+			JuiceFx.rescue(_player.global_position)  # pickup-style: a dock-color burst at the player + a positive SFX.
+	else:
+		# review fix: gate the failed-rescue juice on an actual spawn (spawn_enemy_at returns false if
+		# the spawner is misconfigured — no hazard sting for an enemy that never appeared).
+		if _spawner.spawn_enemy_at(at):  # +1 enemy at the captor's death position. NO ship-count change, NO respawn.
+			JuiceFx.failed_rescue(at, _player)  # hazard sting: player-body flash + shake + a burst at `at` + a negative SFX.
 
 
 func _on_run_lost() -> void:

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="DockedShipTuning" format=3]
+
+[ext_resource type="Script" path="res://player/docked_ship_tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+stream_offset_x = 28.0
+stream_damage = 10
+absorb_spare_hp = true
+docked_hitbox_radius = 18.0
+dock_offset_x = 28.0
+dock_scale = 0.8
+dock_color = Color(0, 0.898, 1, 1)

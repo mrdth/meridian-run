@@ -60,6 +60,12 @@ extends Resource
 @export var score_popup_scale_to: float = 5.0     # dramatic in-your-face peak — retune LIVE via the .tres (the runtime source of truth)
 @export var score_popup_drift_px: float = 24.0    # random x/y offset radius over the popup's life
 
+# --- Rescue (Story 2.3) ---
+# The rescue pickup burst tint = {colors.dock} — hero neon. Provisional alias of HudPalette.PRIMARY
+# (UX OQ3 — {colors.dock} is unresolved; kept in sync with DockedShipTuning.dock_color). The failed-
+# rescue hazard sting reuses flash_player_color (no new knob); this is the rescue REWARD color only.
+@export var rescue_color: Color = Color(0.0, 0.898, 1.0, 1.0)  # #00E5FF — hero neon (= HudPalette.PRIMARY placeholder).
+
 # --- Motion (accessibility — D14) ---
 @export_group("Motion")
 # Dampen factor applied to shake/flash/particle AMPLITUDE when reduced_motion is on (dampen,

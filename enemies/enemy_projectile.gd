@@ -69,24 +69,27 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
-	# Consume-on-hit (mirror player projectile). Damage the player's conventionally-named
-	# HealthComponent child if present, then release. Deferred release — body_entered fires
-	# DURING the physics step (engine forbids synchronous CollisionObject removal then).
+	# Consume-on-hit (mirror player projectile). Story 2.3 — route through the player's apply_hit
+	# (AC#3 absorber): it gates i-frames → absorber (if docked) → HP damage, and emits the player-hit
+	# juice INSIDE (so the absorber can suppress it on an absorb). Duck-call via call() (the projectile
+	# is player-agnostic, mirrors the hurtbox + the captor's try_capture duck-call). Deferred release —
+	# body_entered fires DURING the physics step (engine forbids synchronous CollisionObject removal then).
 	if _consumed:
 		return
 	_consumed = true
-	var hc: Node = body.get_node_or_null("HealthComponent")
-	# i-frames make take_damage() a full no-op (no damage, no signals) — capture that BEFORE the
-	# call so a phantom hit doesn't burn the shared ≤3Hz hit-flash budget / shake / SFX for damage
-	# that never landed (review fix: a hit during i-frames must not fire juice at all).
-	var was_invulnerable: bool = hc != null and hc.has_method("is_invulnerable") and hc.is_invulnerable()
-	if hc != null and hc.has_method("take_damage"):
-		hc.take_damage(_damage)
-	if not was_invulnerable:
-		# Player-hit juice (Story 1.6 / AC1) — the inverse faction of projectile.gd. `_heavy` is in
-		# scope here, so the heavy (Bomber) variant scales the shake/spark/pitch via JuiceFx. Emits
-		# the impact hit-flash on the player BODY (the JuiceCoordinator tweens it); player.gd
-		# separately keeps the SUSTAINED i-frame pulse. Juice is additive — the damage/i-frame path
-		# is untouched.
-		JuiceFx.player_hit(global_position, body, _heavy)
+	if body.has_method("apply_hit"):
+		body.call("apply_hit", _damage, global_position, body, _heavy)
+	else:
+		# Fallback (defensive — the projectile masks LAYER_PLAYER = the Player, so this is unreachable in
+		# practice; kept for safety + any future non-player LAYER_PLAYER body). Preserves the pre-2.3 path
+		# (review fix: restores parity with hurtbox_component.gd's mirrored fallback, incl. the i-frame
+		# no-juice guard + JuiceFx.player_hit — the two fallbacks must behave the same).
+		var hc: Node = body.get_node_or_null("HealthComponent")
+		if hc != null and hc.has_method("take_damage"):
+			var was_invulnerable: bool = hc.has_method("is_invulnerable") and hc.is_invulnerable()
+			hc.take_damage(_damage)
+			if not was_invulnerable:
+				JuiceFx.player_hit(global_position, body, _heavy)
+	# The i-frame no-juice logic + JuiceFx.player_hit MOVED INTO apply_hit (it gates i-frames → no-op,
+	# no juice; the absorber emits its own juice). Do NOT double-emit juice here.
 	Pool.release.call_deferred(self)

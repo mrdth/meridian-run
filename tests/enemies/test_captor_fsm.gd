@@ -89,6 +89,20 @@ func test_faction_is_enemy() -> void:
 	assert_eq(fc.faction, FactionComponent.Faction.ENEMY)
 
 
+func test_captor_has_healthbar_bound_for_dive_kill_read() -> void:
+	# The captor carries a HealthBar so the player can read hits-left + time the dive-kill rescue. It
+	# binds to the captor's HealthComponent (one segment per player shot: hp_per_segment=10, max_hp=60
+	# ⇒ 6 segments = 6 shots to kill) + hides at full HP (H6 — the read appears once the player chips it).
+	var c := _make()
+	var hb: HealthBar = c.get_node_or_null("HealthBar")
+	assert_not_null(hb, "the captor should have a HealthBar child")
+	assert_eq(hb.hp_per_segment, 10, "one segment per player shot (projectile_damage = 10)")
+	assert_true(hb.hide_when_full, "the captor bar should hide at full HP (H6)")
+	assert_eq(hb._health, c.get_node("HealthComponent"), "the bar should bind to the captor's HealthComponent")
+	assert_eq(hb._seg_total, 6, "60 HP / 10 per segment = 6 segments (6 shots to kill)")
+	assert_false(hb.visible, "the bar should be hidden at full HP (hide_when_full)")
+
+
 # --- the 5-state progression (AC#1–#4) ---
 
 func test_fsm_progresses_through_five_states_in_order() -> void:
@@ -237,8 +251,15 @@ func test_kill_mid_telegraph_carries_zero_score_and_releases() -> void:
 			break
 	assert_not_null(c.capture_column)  # holding the column mid-telegraph
 	var hc: HealthComponent = c.get_node("HealthComponent")
-	hc.take_damage(60)  # 60 hp → 0 → _on_died
-	assert_signal_emitted_with_parameters(c, "died", [0])  # score_value = 0
+	hc.take_damage(60)  # 60 hp → 0 → _on_died → died(0, rescue, at)
+	# Story 2.3 — died now carries (score_value, rescue, at). A telegraph-kill is NOT a rescue
+	# (rescue = dive + captured_player; telegraph is neither) → rescue == false. The position `at`
+	# equals global_position (verified in test_captor_died_signal.gd).
+	assert_signal_emitted(c, "died")
+	var died_params: Array = get_signal_parameters(c, "died")
+	assert_eq(died_params.size(), 3, "died must emit 3 params (score_value, rescue, at)")
+	assert_eq(died_params[0], 0)  # score_value = 0 (captor score is "—")
+	assert_false(died_params[1], "a telegraph-kill must be failed-rescue (rescue == false)")
 	assert_null(c.capture_column, "held column not released on death")
 	# The self-release is deferred — await so it lands.
 	await get_tree().physics_frame

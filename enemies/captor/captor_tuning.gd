@@ -43,4 +43,4 @@ extends Resource
 # deferred from Story 2.1). On a MISS (player dodged out of the column for the whole active window) the
 # captor dives immediately — no hold. AC#5 (Story 2.2). capture_duration_s (the 0.4 s active window)
 # lives in the FSM Durations group above and is unchanged.
-@export var post_capture_delay_s: float = 0.35
+@export var post_capture_delay_s: float = 1.0

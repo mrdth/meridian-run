@@ -33,10 +33,16 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
-	# i-frames make take_damage() a full no-op — capture that BEFORE the call so a phantom contact
-	# doesn't burn the shared hit-flash/shake/SFX budget for damage that never landed (same gating
-	# as enemy_projectile.gd:82). `body` is the enemy CharacterBody2D (passed to JuiceFx for the
-	# hit position/feedback).
+	# Story 2.3 — route contact damage through the owner's apply_hit (AC#3 absorber). The hurtbox's
+	# owner is the Player (the scene root); apply_hit gates i-frames → absorber (if docked) → HP damage,
+	# and emits the player-hit juice INSIDE (so the absorber can suppress it on an absorb). Duck-call via
+	# call() to avoid a hard Player type coupling in the shared HurtboxComponent (mirrors the captor's
+	# player_target.call("try_capture") from 2.2). `body` is the enemy CharacterBody2D (the contact source).
+	if owner != null and owner.has_method("apply_hit"):
+		owner.call("apply_hit", contact_damage, global_position, body, false)
+		return
+	# Fallback (defensive — unreachable today; the hurtbox is player-only). Preserves the pre-2.3 path
+	# for any future non-player owner: take_damage + player-hit juice, with the i-frame no-juice guard.
 	if _health == null:
 		return
 	var was_invulnerable: bool = _health.is_invulnerable()

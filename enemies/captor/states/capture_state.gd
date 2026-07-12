@@ -49,6 +49,7 @@ func physics_process(delta: float) -> void:
 			if p != null and p.has_method("try_capture"):
 				if p.call("try_capture"):  # duck-call — player_target is typed Node2D (no Player cast)
 					_captured = true
+					_captor.captured_player = true  # F — mirror onto the entity for 2.3's rescue gate (dive + captured).
 					_captor.capture_column.set_detection(false)  # stop detecting once captured
 		_t += delta / _captor.tuning.capture_duration_s
 		# Window expired with no capture → MISS: dive IMMEDIATELY (no reel-in hold). The `not _captured`

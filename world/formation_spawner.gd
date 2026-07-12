@@ -25,6 +25,13 @@ extends Node
 @export var per_tick_growth: float = 0.5
 @export var max_per_tick: int = 8               # HARD per-tick cap — the performance guardrail.
 
+# Story 2.3 — LOCAL (spawner→Arena, D8 intra-scene). The captor already computed `rescue` (dive +
+# captured_player — F + G); this signal ROUTES the bool + the death position to Arena, which RESOLVES
+# it (dock for rescue, spawn-enemy for failed-rescue). Mirrors Player.ship_depleted → Arena. Do NOT add
+# an EventBus.captor_killed/rescued (D8: global flow only on the bus; the 2.2 precedent kept
+# ship_depleted local).
+signal captor_resolved(rescue: bool, at: Vector2)
+
 # Injected (by arena.gd or a test) player ref for dive aim — NOT a cross-domain ../../Player.
 var player: Node2D
 # Injected by Arena/WaveController in _ready BEFORE begin_wave: the run-scope state the spawner
@@ -123,6 +130,30 @@ func spawn_captor_at(pos: Vector2) -> void:
 	# handler is the seam for 2.3 rescue; in 2.1 a captor kill gives no score + no rescue.
 	if not captor.died.is_connected(_on_captor_died):
 		captor.died.connect(_on_captor_died)
+
+
+func spawn_enemy_at(pos: Vector2, id: StringName = &"grunt") -> bool:
+	# Story 2.3 — position-based enemy spawn for the failed-rescue "+1 enemy" (the captured ship turns
+	# enemy at the captor's death position, AC#2). Mirrors _spawn_enemy's acquire → add_child → activate
+	# order (load-bearing — @onready refs valid in activate), but spawns at a WORLD position (via
+	# activate_at) instead of a formation slot. The turned-enemy reuses grunt scene/behavior BUT applies
+	# the distinct "turned-ship" visual (E — player arrowhead inverted, hazard color) so it reads as a
+	# captured ship gone hostile, not a stock grunt. Its died connects to _on_enemy_died so it gives
+	# score when later killed. See Dev Notes §"spawn_enemy_at" + §"Turned-ship visual". Returns whether
+	# an enemy was actually spawned (review fix: Arena gates the failed-rescue juice on this).
+	var scene: PackedScene = _scene_for(id)
+	if scene == null:
+		return false
+	var enemy: Enemy = Pool.acquire(scene) as Enemy
+	assert(enemy != null, "FormationSpawner.spawn_enemy_at: acquired node is not an Enemy")
+	_container.add_child(enemy)
+	enemy.player_target = player
+	enemy.activate_at(pos, _rng)     # position-based activate variant (no formation slot).
+	enemy.apply_turned_visual()      # E — the distinct turned-ship visual (inverted player arrowhead + hazard).
+	# The turned-enemy gives score when later killed — route via _on_enemy_died (same as a stock grunt).
+	if not enemy.died.is_connected(_on_enemy_died):
+		enemy.died.connect(_on_enemy_died)
+	return true
 
 
 func per_tick(wave: int) -> int:
@@ -226,10 +257,11 @@ func _on_enemy_died(score_value: int) -> void:
 	EventBus.score_changed.emit(run_state.score)
 
 
-func _on_captor_died(_score_value: int) -> void:
-	# Story 2.1 seam for Story 2.3 (rescue / failed-rescue). A captor kill in 2.1 gives NO score
-	# (score_value is 0 — GDD: captor score is "—") and NO rescue resolution yet. 2.3 will read the
-	# captor's current_state_name here: killed in `dive` → rescue (freed ship docks); killed in
-	# `formation`/else → failed-rescue (ship turns enemy). Do NOT route a captor count to the HUD
-	# (deferred to a captor-integration follow-up — not a 2.1 AC).
-	pass
+func _on_captor_died(_score_value: int, rescue: bool, at: Vector2) -> void:
+	# Story 2.3 — route the captor's death to Arena for resolution. The captor already computed `rescue`
+	# (dive + captured_player — F + G) in its _on_died; the spawner just passes the bool + the death
+	# position through. rescue = the freed ship docks (Arena → player.try_dock_ship); failed-rescue
+	# (everything else) = the captured ship turns enemy (+1 enemy, NO ship-count change — Arena →
+	# spawn_enemy_at). Arena owns the run-scope resolution (AR2); the spawner owns the captor lifecycle
+	# + enemy spawning. Do NOT route a captor count to the HUD (not a 2.3 AC).
+	captor_resolved.emit(rescue, at)

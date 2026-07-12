@@ -36,4 +36,5 @@ score_popup_color = Color(1, 0.878431, 0.4, 1)
 score_popup_scale_from = 0.4
 score_popup_scale_to = 5.0
 score_popup_drift_px = 24.0
+rescue_color = Color(0, 0.898, 1, 1)
 motion_scale_reduced = 0.3

@@ -40,11 +40,13 @@ func test_try_capture_blocked_after_first_in_wave() -> void:
 	assert_signal_emit_count(p, "ship_depleted", 1)  # still exactly one
 
 
-func test_is_capture_immune_returns_false_in_2_2() -> void:
-	# AC2/AC4 stub: the player is ALWAYS clean in 2.2 (no docked ship until 2.4). The guard is real
-	# (try_capture checks it); the docked STATE is deferred. Do NOT claim docked-immunity is exercised.
+func test_is_capture_immune_returns_false_when_clean() -> void:
+	# Story 2.3 — retired the 2.2 stub. is_capture_immune() now returns _docked: a CLEAN player is NOT
+	# immune (capturable — the capture context); a docked player IS immune (FR16, covered in
+	# test_player_dock.gd). The guard is real (try_capture checks it). Replaces the 2.2 "always false"
+	# stub test — now it asserts the clean state specifically.
 	var p := _make()
-	assert_false(p.is_capture_immune())
+	assert_false(p.is_capture_immune(), "a clean player should NOT be capture-immune")
 
 
 func test_wave_started_resets_capture_gate() -> void:

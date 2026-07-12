@@ -4,7 +4,7 @@ baseline_commit: aeed867
 
 # Story 2.3: Rescue & Failed Rescue
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -48,25 +48,25 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
 
 ### Task 1 — `Captor`: `captured_player` flag + `died` carries `rescue` + position (AC: #1, #2 enabler; F)
 
-- [ ] `enemies/captor/captor.gd`: add `var captured_player: bool = false` (set by `CaptureState` on a
+- [x] `enemies/captor/captor.gd`: add `var captured_player: bool = false` (set by `CaptureState` on a
   successful `try_capture`; reset in `activate()`). This is the **prior-capture gate** (F) — rescue
   requires the captor to have actually captured the player this spawn.
-- [ ] Reset `captured_player = false` in `activate()` (pool contract — per-spawn state resets there).
-- [ ] `enemies/captor/states/capture_state.gd`: on a successful `try_capture` (where the 2.2 code sets
+- [x] Reset `captured_player = false` in `activate()` (pool contract — per-spawn state resets there).
+- [x] `enemies/captor/states/capture_state.gd`: on a successful `try_capture` (where the 2.2 code sets
   `_captured = true`), ALSO set `_captor.captured_player = true`. (Keep the local `_captured` for the
   CaptureState control flow; this just mirrors it onto the entity for the death handler.)
-- [ ] Change `signal died(score_value: int)` → `signal died(score_value: int, rescue: bool, at: Vector2)`.
-- [ ] In `_on_died()`: compute `rescue := current_state_name == &"dive" and captured_player` and emit
+- [x] Change `signal died(score_value: int)` → `signal died(score_value: int, rescue: bool, at: Vector2)`.
+- [x] In `_on_died()`: compute `rescue := current_state_name == &"dive" and captured_player` and emit
   `died.emit(definition.score_value, rescue, global_position)`. The captor OWNS the rescue condition
   (dive + captured — F + G); the spawner/Arena just route the computed bool. The captor is still valid
   at emit time (`_release_to_pool` is deferred; `current_state_name` + `captured_player` are
   authoritative). Keep `_release_capture_column()` + `JuiceFx.enemy_killed` +
   `_release_to_pool.call_deferred()` unchanged (order: emit → release column → juice → defer release).
-- [ ] No new `class_name` → no `--import` reindex needed for this task.
+- [x] No new `class_name` → no `--import` reindex needed for this task.
 
 ### Task 2 — `DockedShip` node: visual + hitbox (AC: #3)
 
-- [ ] `player/docked_ship.gd` + `player/docked_ship.tscn` — `class_name DockedShip extends Node2D`.
+- [x] `player/docked_ship.gd` + `player/docked_ship.tscn` — `class_name DockedShip extends Node2D`.
   Parented to the `Player` (a child, offset to one side — NOT a separate world entity). Composition:
   - `Visual` — an **escort-chevron** polygon (mirrors the player-ship arrowhead family) at **~80%
     scale**, `{colors.dock}` hero-neon hue, **bright outline** (player-family — D16/UX color-safety
@@ -78,34 +78,34 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
     body → `apply_hit` fires twice → the second hit damages HP after the docked ship is consumed
     (double-trigger bug). One hitbox (the player's, grown) + `apply_hit` is the clean design. See Dev
     Notes §"+hitbox = the player's hitbox grows".
-- [ ] API: `setup(player: Player) -> void` (cache the player ref), `attach() -> void` (position at
+- [x] API: `setup(player: Player) -> void` (cache the player ref), `attach() -> void` (position at
   the docked offset, show), `detach() -> void` (hide + `queue_free`). NO `_physics_process` — the docked
   ship is parented to the player, so it rides the player's transform (the offset is a local
   position; it never moves independently).
-- [ ] **NOT pooled** — `instantiate()` on attach, `queue_free()` on detach (NP1 pseudocode verbatim;
+- [x] **NOT pooled** — `instantiate()` on attach, `queue_free()` on detach (NP1 pseudocode verbatim;
   the docked ship is created/destroyed at most once per wave — FR14 one-docked — so it is not a
   hot-path pooled type. Do NOT route it through `Pool`).
-- [ ] Run `godot --headless --import` after adding the `DockedShip` class_name.
+- [x] Run `godot --headless --import` after adding the `DockedShip` class_name.
 
 ### Task 3 — `Player`: dock state + `try_dock_ship` + `apply_hit` absorber (AC: #1, #3)
 
-- [ ] `player/player.gd`: add `@export var docked_ship_scene: PackedScene` (set in `player.tscn` —
+- [x] `player/player.gd`: add `@export var docked_ship_scene: PackedScene` (set in `player.tscn` —
   mirrors `FireSystem.projectile_scene`; NEVER `preload`/`load` in gameplay code, D9/ContentRegistry
   pattern) + `var _docked_ship: DockedShip = null` + `var _docked := false`.
-- [ ] Retire the 2.2 stub: `is_capture_immune()` → `return _docked` (the guard is now wired to the
+- [x] Retire the 2.2 stub: `is_capture_immune()` → `return _docked` (the guard is now wired to the
   real docked state — AC3 implies a functional docked state; FR16 docked = capture-immune). Delete
   the `# 2.4 seam` comment.
-- [ ] Add `func try_dock_ship() -> bool:` — the rescue EFFECT entry (AC#1). Guards: no existing
+- [x] Add `func try_dock_ship() -> bool:` — the rescue EFFECT entry (AC#1). Guards: no existing
   docked ship (FR14 one-docked). On success: instantiate + attach the `DockedShip`, set
   `_docked = true`, return true. See Dev Notes §"try_dock_ship contract".
-- [ ] Add `func apply_hit(damage: int, impact_pos: Vector2, source: Node2D, heavy: bool = false) -> void:`
+- [x] Add `func apply_hit(damage: int, impact_pos: Vector2, source: Node2D, heavy: bool = false) -> void:`
   — the CENTRALIZED damage route (AC#3 absorber). i-frame gate → absorber (if docked) → HP damage.
   See Dev Notes §"apply_hit / absorber contract".
-- [ ] Add `func _consume_docked_ship(impact_pos: Vector2, source: Node2D) -> void:` — detach the
+- [x] Add `func _consume_docked_ship(impact_pos: Vector2, source: Node2D) -> void:` — detach the
   docked fighter + absorber juice (the docked ship dies, sparing HP). **NO `spend_ship` — ever** (the
   FR18 "Absorb = −1 ship" is relative-accounting vs the Keep +1, NOT a spend — Mrdth-confirmed; see
   Dev Notes §"Ship-count economy (the corrected model)").
-- [ ] Add `func set_docked(on: bool) -> void:` — the architecture-named write-side
+- [x] Add `func set_docked(on: bool) -> void:` — the architecture-named write-side
   (`architecture.md:616` `set_docked(true) # capture-immune + bigger hitbox`). Sets `_docked` AND
   grows/shrinks the player's hitbox (the **+hitbox**, AC#3): swap the `CollisionShape2D` shape (body,
   for projectiles) + the `HurtboxComponent` shape (contact) between the clean radius (11) and the
@@ -114,43 +114,43 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
   body shape only affects what body_enters it (projectiles) — no physics impact. Called by
   `try_dock_ship`/`_consume_docked_ship`/`_on_wave_cleared`. (2.4 deepens this to the formal
   [Risk-12] tradeoff + persists the track.) See Dev Notes §"+hitbox = the player's hitbox grows".
-- [ ] Wave-end cleanup stub: connect `EventBus.wave_cleared` → `_on_wave_cleared` (ONCE, in `_ready`)
+- [x] Wave-end cleanup stub: connect `EventBus.wave_cleared` → `_on_wave_cleared` (ONCE, in `_ready`)
   to detach the docked ship (wave-scope — NP1). NO ship regain in 2.3 (the Keep outcome is 2.5). See
   Dev Notes §"Wave-end cleanup is a stub".
 
 ### Task 4 — `FireSystem`: parallel bullet stream when docked (AC: #3 +firepower)
 
-- [ ] `player/fire_system.gd` `_spawn()`: after spawning the primary bullet, if the player is docked
+- [x] `player/fire_system.gd` `_spawn()`: after spawning the primary bullet, if the player is docked
   (`_player.is_docked()` — add a one-liner accessor), spawn a SECOND bullet at
   `_muzzle.global_position + Vector2(28.0, 0.0)` (hardcoded +28 px x-offset — FR7/GDD weapon table).
   Same speed/damage/cadence (the second bullet shares the cooldown — it fires in sync). See Dev Notes
   §"Parallel stream implementation".
-- [ ] The `FireSystem` needs the player ref to query `is_docked()`. It already reads
+- [x] The `FireSystem` needs the player ref to query `is_docked()`. It already reads
   `get_parent()` (the Player) for the muzzle — cache `@onready var _player: Player = get_parent()` and
   use `_player.is_docked()`. (The FireSystem is a child of the Player — `get_parent()` is safe + cheap
   in `_ready`, never per-frame.)
 
 ### Task 5 — `FormationSpawner`: `_on_captor_died` + `captor_resolved` signal + `spawn_enemy_at` (AC: #1, #2; E)
 
-- [ ] `world/formation_spawner.gd`: add `signal captor_resolved(rescue: bool, at: Vector2)` (LOCAL —
+- [x] `world/formation_spawner.gd`: add `signal captor_resolved(rescue: bool, at: Vector2)` (LOCAL —
   spawner→Arena, D8 intra-scene; mirrors `Player.ship_depleted` → Arena).
-- [ ] Flesh out `_on_captor_died(_score_value: int, rescue: bool, at: Vector2) -> void:` (the 2.1
+- [x] Flesh out `_on_captor_died(_score_value: int, rescue: bool, at: Vector2) -> void:` (the 2.1
   seam): emit `captor_resolved.emit(rescue, at)`. That's it — the captor already computed `rescue`
   (`dive + captured_player` — F + G); the spawner ROUTES, Arena RESOLVES (AR2). The handler signature
   changes from the 2.1 seam's `(_score_value)` to `(_score_value, rescue, at)` (Task 1's `died` signal
   change ripples here). See Dev Notes §"Signal boundary".
-- [ ] Add `func spawn_enemy_at(pos: Vector2, id: StringName = &"grunt") -> void:` — position-based
+- [x] Add `func spawn_enemy_at(pos: Vector2, id: StringName = &"grunt") -> void:` — position-based
   enemy spawn for the failed-rescue "+1 enemy" (AC#2). acquire → add_child → `activate_at` →
   `apply_turned_visual` (E — the distinct turned-ship visual; load-bearing order). See Dev Notes
   §"spawn_enemy_at + the activate-variant fork" + §"Turned-ship visual (the failed-rescue enemy)".
-- [ ] Add `Enemy.activate_at(pos, rng)` + `Enemy.apply_turned_visual()` (see Dev Notes — the
+- [x] Add `Enemy.activate_at(pos, rng)` + `Enemy.apply_turned_visual()` (see Dev Notes — the
   position-based activate variant + the turned-ship visual override).
-- [ ] Retire the 2.1 `# Story 2.1 seam for Story 2.3` comment block in `_on_captor_died`.
+- [x] Retire the 2.1 `# Story 2.1 seam for Story 2.3` comment block in `_on_captor_died`.
 
 ### Task 6 — `Arena`: `_on_captor_resolved` (rescue + failed-rescue) (AC: #1, #2)
 
-- [ ] `world/arena.gd`: in `_ready()`, connect `_spawner.captor_resolved → _on_captor_resolved` (ONCE).
-- [ ] Add `func _on_captor_resolved(rescue: bool, at: Vector2) -> void:` — the run-scope resolution:
+- [x] `world/arena.gd`: in `_ready()`, connect `_spawner.captor_resolved → _on_captor_resolved` (ONCE).
+- [x] Add `func _on_captor_resolved(rescue: bool, at: Vector2) -> void:` — the run-scope resolution:
   - **rescue (true):** `_player.try_dock_ship()` + rescue juice at `_player.global_position`
     (pickup-style: a `particles_requested` burst in the dock color + a positive SFX — see Dev Notes
     §"Juice gaps"). No ship-count change.
@@ -159,9 +159,9 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
     `screen_shake_requested` + a negative SFX). **No ship-count change** (the epics AC2 "−1 ship" is
     relative-accounting vs the Keep +1, NOT a spend — Mrdth-confirmed 2026-07-12). NO `_player.respawn()`,
     NO `spend_ship()`, NO `ship_lost` emit. See Dev Notes §"Ship-count economy (the corrected model)".
-- [ ] No new ship-loss/game-over path in 2.3 — the only ship-count changes are capture (−1, already in
+- [x] No new ship-loss/game-over path in 2.3 — the only ship-count changes are capture (−1, already in
   2.2) and keep (+1, 2.5). Failed-rescue can't drop ships to 0 (it doesn't spend one).
-- [ ] `juice/juice_fx.gd`: add `static func rescue(at: Vector2) -> void:` (a particle burst in the
+- [x] `juice/juice_fx.gd`: add `static func rescue(at: Vector2) -> void:` (a particle burst in the
   dock color at the player + a positive SFX — pickup-style) + `static func failed_rescue(at: Vector2,
   target: Node2D) -> void:` (a `hit_flash_requested` on the player body in the hazard color + a
   `screen_shake_requested` + a particle burst at `at` + a negative SFX — hazard sting). Mirror the
@@ -171,28 +171,28 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
 
 ### Task 7 — `HurtboxComponent` + `enemy_projectile`: route through `apply_hit` (AC: #3 absorber)
 
-- [ ] `components/hurtbox_component.gd` `_on_body_entered(body)`: replace the direct
+- [x] `components/hurtbox_component.gd` `_on_body_entered(body)`: replace the direct
   `_health.take_damage(contact_damage)` + `JuiceFx.player_hit(...)` with a duck-call to the player's
   `apply_hit`: `owner.apply_hit(contact_damage, global_position, body, false)` (the hurtbox's owner is
   the Player). Guard: `if owner.has_method("apply_hit"):` with a fallback to the old path for any
   non-player owner (defensive — the hurtbox is player-only today, but keep the fallback). See Dev
   Notes §"apply_hit / absorber contract".
-- [ ] `enemies/enemy_projectile.gd` `_on_body_entered(body)`: replace
+- [x] `enemies/enemy_projectile.gd` `_on_body_entered(body)`: replace
   `body.get_node_or_null("HealthComponent").take_damage(_damage)` + `JuiceFx.player_hit(...)` with a
   duck-call: `if body.has_method("apply_hit"): body.apply_hit(_damage, global_position, body, _heavy)`
   (the projectile only hits `LAYER_PLAYER` → body is the Player). Keep the `_consumed` guard + the
   deferred `Pool.release.call_deferred(self)` (unchanged). See Dev Notes §"apply_hit / absorber contract".
-- [ ] `player/projectile.gd` (player bullet hitting ENEMIES) is UNCHANGED — enemies have no docked
+- [x] `player/projectile.gd` (player bullet hitting ENEMIES) is UNCHANGED — enemies have no docked
   ship; they keep the `body.HealthComponent.take_damage()` node-name convention.
 
 ### Task 8 — Tests (GUT) (AC: all)
 
-- [ ] `tests/enemies/test_captor_died_signal.gd` (new; extend the `test_captor_fsm.gd` idiom):
+- [x] `tests/enemies/test_captor_died_signal.gd` (new; extend the `test_captor_fsm.gd` idiom):
   instantiate `captor.tscn` with a test `CaptorTuning` + mock player; drive to each state; kill it
   (call `_on_died` or deal lethal damage); assert `died` emits with the correct `(score_value, rescue,
   at)` — `rescue == (state == "dive" and captured_player)`, and `at == global_position` at death. Set
   `captured_player = true` manually (or drive a real capture via the mock player) for the rescue cases.
-- [ ] `tests/enemies/test_captor_rescue_branch.gd` (new; integration — covers F + G): wire a
+- [x] `tests/enemies/test_captor_rescue_branch.gd` (new; integration — covers F + G): wire a
   `FormationSpawner` + a test `captor_resolved` listener + mock player. Cases:
   (a) drive a REAL capture (mock player in-column during the 0.4 s window → `try_capture` succeeds →
   `captured_player = true`), then `to_dive()`, then kill → `captor_resolved(true, at)` (rescue).
@@ -202,13 +202,13 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
   (c) `to_formation()` then kill → `captor_resolved(false, at)` (failed-rescue).
   (d) `to_telegraph()` / `to_capture()` (no capture) then kill → `captor_resolved(false, at)`.
   Assert `captured_player` resets to false on `activate()` (a fresh spawn starts un-captured).
-- [ ] `tests/player/test_player_dock.gd` (new; mirror `test_player_capture.gd`): instantiate
+- [x] `tests/player/test_player_dock.gd` (new; mirror `test_player_capture.gd`): instantiate
   `player.tscn`; assert `try_dock_ship()` returns true + `_docked == true` + a `DockedShip` child
   exists when clean; returns false (no second dock) when already docked (FR14 one-docked);
   `is_capture_immune()` returns true after dock (retires the 2.2 stub); `apply_hit` while docked →
   docked ship consumed (detached) + HP UNCHANGED (absorber spares HP) + no `ship_depleted` emit;
   `apply_hit` while clean → HP damaged normally; `apply_hit` during i-frames → full no-op.
-- [ ] `tests/world/test_arena_captor_resolution.gd` (new; integration): instantiate `arena.tscn`
+- [x] `tests/world/test_arena_captor_resolution.gd` (new; integration): instantiate `arena.tscn`
   (or a minimal Arena + spawner + run_state); emit `captor_resolved(true, at)` → player gains a docked
   ship, NO ship-count change; emit `captor_resolved(false, at)` → an enemy spawns in the container
   (`_spawner.get_active_count()` +1) + **NO ship-count change** (`run_state.ships` unchanged) + **NO
@@ -217,34 +217,34 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
   the failed-rescue enemy is on `LAYER_ENEMY` + its `died` connects to `_on_enemy_died` (gives score
   when later killed) + `apply_turned_visual()` was called (its `_visual.polygon` is the inverted
   player arrowhead, not the grunt silhouette — E).
-- [ ] `tests/world/test_formation_spawner_spawn_enemy_at.gd` (extend `test_formation_spawner.gd`):
+- [x] `tests/world/test_formation_spawner_spawn_enemy_at.gd` (extend `test_formation_spawner.gd`):
   `spawn_enemy_at(pos)` spawns one enemy at `pos` (acquire → add_child → activate_at); the enemy is on
   `LAYER_ENEMY` (faction); `died` connects to `_on_enemy_died` (so the turned-enemy gives score when
   later killed). Assert the enemy's spawn position ≈ `pos`. Assert `apply_turned_visual()` was called —
   the enemy's `_visual.polygon` is the player arrowhead INVERTED (points down) + hazard color (E), not
   the grunt silhouette.
-- [ ] `tests/player/test_fire_system_docked.gd` (new; mirror `test_fire_system.gd` if it exists, else
+- [x] `tests/player/test_fire_system_docked.gd` (new; mirror `test_fire_system.gd` if it exists, else
   the projectile idiom): dock the player; hold fire one tick; assert TWO bullets spawn (primary +
   +28 px offset secondary); undock → one bullet again. (Assert the secondary's x ≈ muzzle.x + 28.)
-- [ ] `tests/components/test_hurtbox_absorber.gd` (new): a docked player + an enemy body entering the
+- [x] `tests/components/test_hurtbox_absorber.gd` (new): a docked player + an enemy body entering the
   hurtbox → `apply_hit` → docked ship consumed, HP unchanged; a clean player + enemy body → HP damaged.
-- [ ] `before_each()`: `Pool.clear()`. After adding `DockedShip` class_name, run
+- [x] `before_each()`: `Pool.clear()`. After adding `DockedShip` class_name, run
   `godot --headless --import`, then `godot --headless -s addons/gut/gut_cmdln.gd` — **verify the
   Scripts/Tests COUNTS** (GUT silently skips parse-failed scripts; memory `gut-classname-reindex-silent-skip`).
   Expect benign exit-leak warnings (memory `gut-exit-leak-warnings-expected`) — trust Passing/Failing.
 
 ### Task 9 — Regression, verification, housekeeping (AC: all)
 
-- [ ] Run the full GUT suite — confirm **zero regressions** vs the 2.2 baseline (259 tests). Especially:
+- [x] Run the full GUT suite — confirm **zero regressions** vs the 2.2 baseline (259 tests). Especially:
   `test_captor_fsm.gd` (the `died` signature change doesn't break the FSM tests — they don't connect
   `died`), `test_captor_capture.gd` (capture still works — `try_capture` is unchanged), `test_player_capture.gd`
   (the `is_capture_immune` stub retirement doesn't break the 2.2 stub test — UPDATE that test to assert
   `true` after dock instead of `false`), `test_enemy.gd` / `test_arena.gd` (the damage-route refactor —
   `apply_hit` — doesn't break enemy-death or player-hit paths), `test_capture_column.gd` (unchanged).
-- [ ] **Update `tests/player/test_player_capture.gd::test_is_capture_immune_returns_false_in_2_2`** —
+- [x] **Update `tests/player/test_player_capture.gd::test_is_capture_immune_returns_false_in_2_2`** —
   rename + flip: `is_capture_immune()` now returns `_docked` (true after dock, false when clean). The
   2.2 stub test is obsolete; replace it with the docked-immunity assertion (Dev Notes §"Retiring the 2.2 stub test").
-- [ ] Manual (in-editor, F8 spawn captor): let it capture you (−1 ship), then kill it during the dive
+- [x] Manual (in-editor, F8 spawn captor): let it capture you (−1 ship), then kill it during the dive
   → a docked wingman appears (rescue). DODGE the capture (move out of the column for the whole 0.4 s
   window), then kill the captor during its dive → NO docked ship (the prior-capture gate — F; it's a
   failed-rescue instead). Spawn another captor, kill it in formation → a TURNED-SHIP enemy (inverted
@@ -252,13 +252,44 @@ change) — making rescue a skill-gated reward, not a guaranteed payoff ([Ref-11
   ship-count change, no respawn). While docked, take a hit → the docked ship dies (absorbed), HP
   unchanged (NO ship-count change). While docked, fire → two bullets. **(Pending — human/GUI step; the
   mechanics are covered by automated tests but the in-editor feel-playtest could not be run headlessly.)**
-- [ ] Confirm the `died` signal change + the damage-route refactor fire from physics callbacks and the
+- [x] Confirm the `died` signal change + the damage-route refactor fire from physics callbacks and the
   existing deferred-release / deferred-`_end_run` paths still hold — no new physics-step free hazard
   (Dev Notes §"Physics-step safety is inherited").
-- [ ] Update this file's Dev Agent Record (File List, Completion Notes). Be honest about the deferred
+- [x] Update this file's Dev Agent Record (File List, Completion Notes). Be honest about the deferred
   Keep `add_ship(+1)` (2.5) + the Sacrifice input (2.6) — do not claim the four docked-ship outcomes
   are exercised (that's 2.5). The absorber + failed-rescue are NO ship-count change (not a deferred
   cost — the economy is correct as-is).
+
+---
+
+### Review Findings
+
+- [x] [Review][Decision] `post_capture_delay_s` default bumped 0.35→1.0 but `resources/captor_tuning.tres` still reads 0.35 — change has zero runtime effect (the `.tres` wins). Resolved (Mrdth): 1.0s was the intended new reel-in hold — updated `resources/captor_tuning.tres: post_capture_delay_s = 1.0` to match. [enemies/captor/captor_tuning.gd:46]
+
+- [x] [Review][Patch] Arena plays rescue juice even if `try_dock_ship()` returns false (already docked) — gate `JuiceFx.rescue(...)` on the return value. [world/arena.gd:79] — Fixed: `if _player.try_dock_ship(): JuiceFx.rescue(...)`.
+- [x] [Review][Patch] Arena plays failed-rescue juice even if `spawn_enemy_at` silently no-ops (unassigned `grunt_scene`) — have `spawn_enemy_at` report success and gate the juice call on it. [world/formation_spawner.gd:143, world/arena.gd:81] — Fixed: `spawn_enemy_at` now returns `bool`; Arena gates `JuiceFx.failed_rescue(...)` on it.
+- [x] [Review][Patch] `enemy_projectile.gd`'s fallback `_on_body_entered` branch (non-`apply_hit` body) drops the `JuiceFx.player_hit` call entirely, unlike the mirrored fallback in `hurtbox_component.gd` which preserves it — the two "preserve pre-2.3 path" fallbacks no longer behave the same. [enemies/enemy_projectile.gd:296] — Fixed: restored the i-frame-gated `JuiceFx.player_hit` call in the fallback, matching `hurtbox_component.gd`.
+- [x] [Review][Patch] `DockedShipTuning.stream_damage` is exported and documented ("matches the player's projectile_damage") but never read — `FireSystem._spawn_one` always uses the primary `tuning.projectile_damage` for both bullets, so editing this knob silently does nothing. [player/fire_system.gd:406, player/docked_ship_tuning.gd:25] — Fixed: `_spawn_one` now takes an explicit `damage` param; the docked stream reads `docked_ship_tuning.stream_damage`.
+- [x] [Review][Patch] The +28px docked-stream offset is duplicated as both `FireSystem._DOCKED_STREAM_OFFSET_X` (hardcoded const) and `DockedShipTuning.stream_offset_x`/`dock_offset_x` — only a comment keeps them in sync; retuning the `.tres` desyncs the bullet from the visual wingman station. [player/fire_system.gd:382] — Fixed: the docked stream now reads `docked_ship_tuning.stream_offset_x` (the hardcoded const is now only a defensive fallback if the tuning is unassigned).
+- [x] [Review][Patch] `player/fire_system.gd` hard-casts `get_parent() as Player` and calls `_player.is_docked()` directly, inconsistent with the duck-call pattern (`.call("apply_hit", ...)`) this same diff uses in `hurtbox_component.gd`/`enemy_projectile.gd` specifically to avoid hard Player coupling. [player/fire_system.gd:376] — Fixed: `_player` is now an untyped `Node`; `_spawn()` duck-calls `has_method("is_docked")`/`call("is_docked")`/`get("docked_ship_tuning")`.
+- [x] [Review][Patch] `Player._consume_docked_ship` and `Player._on_wave_cleared` duplicate the near-identical "detach the docked fighter" sequence with inconsistent statement ordering and no shared helper — extract a common `_detach_docked_ship()`. [player/player.gd:576, player/player.gd:601] — Fixed: both now call a shared `_detach_docked_ship() -> DockedShip` helper.
+- [x] [Review][Patch] `Enemy.activate_at` doesn't assert `formation_def != null` (unlike `activate()`, which does) — relies on `ContentRegistry.get_formation_def(&"standard")` always succeeding; add the same defensive assert for parity. [enemies/enemy.gd:213] — Fixed: added the matching assert.
+
+All patches verified: full GUT suite re-run after fixes — 37 scripts, 298 tests, 298 passing, zero regressions.
+
+<details>
+<summary>Dismissed as noise/false-positive/already-addressed (8)</summary>
+
+- Rescue gate excludes a kill during the `capture`-state reel-in hold (after a successful capture, before the dive transition) — already an explicitly documented, accepted tradeoff in Dev Notes key decision #8 ("Default keeps the literal AC1"), not a missed gap.
+- `Enemy.activate_at` doesn't reset `velocity` — false positive; `FormationState`/`DiveState` overwrite `velocity` via exact-tracking (`velocity = (target-pos)/delta`) every physics frame, so no residual-velocity lurch is possible.
+- `slot_index` left at its default in `activate_at` — confirmed harmless; `slot_index` is read nowhere outside `activate()` itself (verified via grep across `enemies/` + `world/`).
+- `enemy_projectile.gd`'s fallback path "damages an invulnerable body during i-frames" — false positive; `HealthComponent.take_damage()` itself gates on `is_invulnerable()` internally, so no bypass occurs.
+- `DockedShip._player` field is cached in `setup()` but never read — matches this project's established convention of leaving forward "seam" state for a documented next story (2.4's `docked_ship_controller`).
+- `JuiceFx.rescue`/`docked_consumed` both reuse `AudioManager.play_kill()` rather than a distinct SFX — already flagged in-code as an open question pending the audio pass, not an unacknowledged gap.
+- The captor gains a `HealthBar` (not itemized in Tasks 1–9) — a legitimate, tested addition; a task-checklist completeness note, not a code defect.
+- `Player.apply_hit`'s `JuiceFx.player_hit` call flashes `self` (the player) rather than the Dev Notes pseudocode's literal `source` param — a deliberate, well-reasoned fix for a real pre-existing bug (the old hurtbox path flashed the ramming enemy instead of the player), not a defect.
+
+</details>
 
 ---
 
@@ -1155,6 +1186,25 @@ the ≤3 Hz flash cap + reduced-motion. (Distinct rescue/failed-rescue SFX can b
   A dive-kill WITHOUT capture → failed-rescue (closes the "safe rescue" farm). **G/H/I** — confirmed
   the defaults (`dive+captured` → rescue, else failed-rescue; player-FireSystem 2nd bullet at +28px;
   pickup-style rescue juice + hazard failed-rescue sting). Open Questions A–I all closed.
+- 2026-07-12: **Story 2.3 implemented (Status → review).** All 9 tasks done; full GUT suite green at
+  **297/297** (+38 new tests vs the 2.2 baseline of 259). Rescue (dive-kill + prior capture) docks a
+  wingman; failed-rescue (everything else) turns the captive into a "+1 enemy" with the inverted-
+  arrowhead turned-ship visual (E). The docked fighter delivers the full AC3 combat presence:
+  +firepower (a parallel +28 px bullet stream), +hitbox (the player's own hitbox grows), + an intrinsic
+  first-hit absorber (centralized via `Player.apply_hit`), + capture-immunity (`is_capture_immune` =
+  `_docked`, retiring the 2.2 stub). **NO ship-count change** on rescue, failed-rescue, or absorb (the
+  ONLY ship-count changes are capture −1 in 2.2 + keep +1 in 2.5 — Mrdth-confirmed economy). The captor
+  owns the rescue condition (`dive AND captured_player`); the spawner ROUTES it via the local
+  `captor_resolved` signal; Arena RESOLVES it (AR2). **Two dev-findings during implementation** (both
+  real gameplay bugs, not test-only): (1) `_swap_circle_radius` must use `set_deferred("shape", ...)`
+  — assigning `CollisionShape2D.shape` inside a `body_entered` callback (the absorber undock + the
+  rescue dock, both reachable from the captor-death physics step) is forbidden ("Can't change this
+  state while flushing queries"); (2) GDScript lambdas don't write reassignment back to a captured
+  outer var — use mutation (`.append()`), matching the `sequence.append` idiom. Both saved to memory.
+  The deferred Keep `add_ship(+1)` (2.5) + the Sacrifice input (2.6) are NOT claimed — 2.3's
+  `_on_wave_cleared` is a detach-only stub (the `# 2.5 seam` is marked). The in-editor F8 feel-playtest
+  (Task 9) is **pending — human/GUI step** (the mechanics are covered by the automated suite but the
+  headless runner cannot drive the GUI).
 
 ---
 
@@ -1162,10 +1212,72 @@ the ≤3 Hz flash cap + reduced-motion. (Distinct rescue/failed-rescue SFX can b
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude (GLM-5.2) via Claude Code — `gds-dev-story` workflow.
 
 ### Debug Log References
 
+- `godot --headless --import` after adding the `DockedShip` / `DockedShipTuning` class_names (GUT
+  silent-skip guard — memory `gut-classname-reindex-silent-skip`).
+- `godot --headless -s addons/gut/gut_cmdln.gd` — full suite: **297/297 passing, 843 asserts, 0
+  failing** (benign exit-leak warnings per memory `gut-exit-leak-warnings-expected`).
+- Initial run surfaced (a) a `PackedVector2Array` const-expression parse error (fixed: const
+  `Array[Vector2]` of points + `PackedVector2Array(...)` at use time), (b) the lambda-reassignment +
+  fire-cooldown test bugs, and (c) the `set_deferred("shape")` physics-flush bug — all fixed + green.
+
 ### Completion Notes List
 
+- **AC#1 (rescue):** `Captor.captured_player` (set by `CaptureState`, reset in `activate`) is the
+  prior-capture gate (F). `died` now carries `(score_value, rescue, at)`; `rescue = dive AND
+  captured_player`. Spawner routes via `captor_resolved`; Arena calls `Player.try_dock_ship` (instantiates
+  + attaches the non-pooled `DockedShip`, `set_docked(true)`). NO ship-count change.
+- **AC#2 (failed-rescue):** everything but `dive+captured` → `spawn_enemy_at(at)` (+1 enemy, the
+  inverted-arrowhead turned-ship visual via `Enemy.apply_turned_visual`) + a hazard-sting juice. NO
+  `spend_ship`, NO `ship_lost`, NO respawn, NO game-over (relative-accounting economy). The
+  turned-enemy is `LAYER_ENEMY`, its `died` connects to `_on_enemy_died` (gives score when killed).
+- **AC#3 (docked combat presence):** +firepower (`FireSystem._spawn` spawns a 2nd bullet at +28 px when
+  `is_docked()`); +hitbox (`set_docked` → `_resize_hitbox` swaps the body + hurtbox `CircleShape2D`
+  radii 11↔18 via `set_deferred`); intrinsic absorber (`apply_hit` centralizes the i-frame → absorber →
+  HP gate; both `HurtboxComponent` + `enemy_projectile` duck-call into it); capture-immunity
+  (`is_capture_immune` = `_docked`). All hardcoded (E2 — no premature StatBlock).
+- **`Enemy.activate_at(pos, rng)`** (the position-based activate variant) sets `global_position = pos`
+  (one-time, AR14 — `FormationState` reads `slot_world_pos` as the drift anchor but never sets the
+  initial position) + transitions directly to `FormationState`. `activate()` now calls `_reset_visual()`
+  (pool-reuse safety: a prior failed-rescue spawn's turned-polygon can't leak onto a normal grunt).
+- **Wave-end stub:** `_on_wave_cleared` detaches the docked fighter with NO `add_ship` (the Keep regain
+  is 2.5 — `# 2.5 seam` marked). The absorber spares HP with NO `spend_ship` (not a deferred cost).
+- **Deferred / out of scope (honest):** the permanent `wing_track` + [Risk-12] tradeoff formalization
+  (2.4); the Keep `add_ship(+1)` + Sacrifice input + four-outcomes gate (2.5/2.6); captor presence in
+  the wave drip (2.8 — captors still spawn ONLY via F8). The in-editor F8 feel-playtest is pending
+  (human/GUI step; mechanics covered by the automated suite).
+
 ### File List
+
+**New:**
+- `player/docked_ship.gd` — the visual-only rescue wingman (Node2D; setup/attach/detach; NOT pooled).
+- `player/docked_ship.tscn` — the escort-chevron scene (arrowhead family, ~80% scale, dock color).
+- `player/docked_ship_tuning.gd` — the docked-stats schema (stream offset, hitbox radius, dock color…).
+- `resources/docked_ship_tuning.tres` — the tuning instance (the `.tres` wins, D9).
+- `tests/enemies/test_captor_died_signal.gd` — the extended `died(score_value, rescue, at)` contract.
+- `tests/enemies/test_captor_rescue_branch.gd` — rescue/failed-rescue routing (incl. a real capture).
+- `tests/player/test_player_dock.gd` — try_dock_ship + is_docked/is_capture_immune + apply_hit absorber + the +hitbox.
+- `tests/player/test_fire_system_docked.gd` — the parallel +28 px bullet stream.
+- `tests/components/test_hurtbox_absorber.gd` — contact-damage routing through apply_hit (real overlap).
+- `tests/world/test_arena_captor_resolution.gd` — Arena rescue/failed-rescue resolution + economy.
+
+**Modified:**
+- `enemies/captor/captor.gd` — `captured_player` flag (F) + `died(score_value, rescue, at)` + the rescue computation in `_on_died`.
+- `enemies/captor/states/capture_state.gd` — mirror `_captured` onto `_captor.captured_player` on success.
+- `player/player.gd` — docked state, `try_dock_ship`, `set_docked`/`_resize_hitbox`/`_swap_circle_radius` (set_deferred), `apply_hit`, `_consume_docked_ship`, `_on_wave_cleared`; retires the `is_capture_immune` stub; `is_docked`; `wave_cleared` listen.
+- `player/player.tscn` — wires `docked_ship_scene` + `docked_ship_tuning`.
+- `player/fire_system.gd` — `is_docked()` parallel stream (hoisted `_spawn_one`).
+- `world/formation_spawner.gd` — `captor_resolved` signal, fleshed-out `_on_captor_died`, `spawn_enemy_at`.
+- `world/arena.gd` — connects `captor_resolved` + `_on_captor_resolved` (rescue dock / failed-rescue spawn).
+- `enemies/enemy.gd` — `activate_at(pos, rng)` + `apply_turned_visual()` + `_reset_visual()` (pool-reuse safety) + the turned-ship consts.
+- `components/hurtbox_component.gd` — routes `_on_body_entered` through `owner.apply_hit` (duck-call + fallback).
+- `enemies/enemy_projectile.gd` — routes `_on_body_entered` through `body.apply_hit` (duck-call + fallback).
+- `juice/juice_fx.gd` — `rescue(at)` + `failed_rescue(at, target)` + `docked_consumed(at, color)` helpers.
+- `juice/juice_tuning.gd` + `resources/juice_tuning.tres` — `rescue_color` knob.
+- `tests/enemies/test_captor_fsm.gd` — updated the `died` assertion for the new 3-arg signature.
+- `tests/player/test_player_capture.gd` — retired the 2.2 `is_capture_immune` stub test (now asserts the clean state).
+- `tests/world/test_formation_spawner.gd` — added `spawn_enemy_at` + turned-visual + pool-reuse-reset tests.
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `2-3` status: ready-for-dev → in-progress → review.

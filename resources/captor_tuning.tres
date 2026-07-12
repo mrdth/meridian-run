@@ -16,4 +16,4 @@ side_drift_period_s = 3.0
 dive_aim_track_factor = 0.3
 dive_offscreen_margin_px = 48.0
 capture_column_width_px = 60.0
-post_capture_delay_s = 0.35
+post_capture_delay_s = 1.0

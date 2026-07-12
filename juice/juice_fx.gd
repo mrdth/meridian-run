@@ -49,3 +49,36 @@ static func player_fired(muzzle_pos: Vector2) -> void:
 	# muzzle puff (cheap, pooled). No shake on fire.
 	AudioManager.play_fire()
 	EventBus.particles_requested.emit(&"muzzle", muzzle_pos, _TUNING.muzzle_color, 0.6)
+
+
+static func rescue(at: Vector2) -> void:
+	# Story 2.3 — rescue (dive-kill → dock) juice, PICKUP-STYLE (no dedicated UX spec; Dev Notes §"Juice
+	# gaps"). A bright dock-color burst at the player + a positive SFX. Pickup register: bright but calm
+	# (NO shake — a rescue is a reward, not an impact). The dock color is {colors.dock} (provisional alias
+	# of HudPalette.PRIMARY / JuiceTuning.rescue_color — UX OQ3). Open Question I default; a distinct
+	# rescue SFX is the audio pass (reuses play_kill — the E1 set's closest "acquired" sting).
+	EventBus.particles_requested.emit(&"explosion", at, _TUNING.rescue_color, 0.9)
+	AudioManager.play_kill()
+
+
+static func failed_rescue(at: Vector2, target: Node2D) -> void:
+	# Story 2.3 — failed-rescue (formation-kill → ship turns enemy) juice, HAZARD STING (Dev Notes §"Juice
+	# gaps"). A hit_flash on the PLAYER body (target) in the hazard color + a player-hit shake + a hazard
+	# burst at the captor's death position (where the enemy appears) + a negative SFX. Mirrors player_hit's
+	# hazard treatment but keyed to the captor's death position, not the player's. The coordinator's ≤3 Hz
+	# flash gate applies. Open Question I default; a distinct failed-rescue SFX is the audio pass (reuses
+	# play_hit(true) — the heavy/low sting).
+	EventBus.hit_flash_requested.emit(target, _TUNING.flash_player_color)
+	EventBus.screen_shake_requested.emit(_TUNING.shake_player_hit_amount, _TUNING.shake_player_hit_dur)
+	EventBus.particles_requested.emit(&"explosion", at, _TUNING.flash_player_color, 1.0)
+	AudioManager.play_hit(true)
+
+
+static func docked_consumed(at: Vector2, color: Color) -> void:
+	# Story 2.3 — the absorber beat: the docked fighter died sparing the player's HP (AC#3 / FR17).
+	# Explosion in the dock color + a kill shake, NO score popup (a "+0" would be noise — this is distinct
+	# from enemy_killed, which always pops the value). Called by Player._consume_docked_ship. Reuses the
+	# kill SFX (the E1 set has no dedicated "wingman lost" sting — the audio pass adds one).
+	EventBus.particles_requested.emit(&"explosion", at, color, 0.8)
+	EventBus.screen_shake_requested.emit(_TUNING.shake_kill_amount, _TUNING.shake_kill_dur)
+	AudioManager.play_kill()

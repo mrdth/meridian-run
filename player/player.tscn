@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_tuning.tres" id="2_tuning"]
@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" path="res://components/health_bar.tscn" id="7_health_bar"]
 [ext_resource type="CanvasItemMaterial" path="res://assets/materials/neon_glow_add.tres" id="8_glow_mat"]
 [ext_resource type="Script" path="res://components/hurtbox_component.gd" id="9_hurtbox"]
+[ext_resource type="PackedScene" path="res://player/docked_ship.tscn" id="10_docked_scene"]
+[ext_resource type="Resource" path="res://resources/docked_ship_tuning.tres" id="11_docked_tuning"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.0
@@ -18,6 +20,8 @@ collision_layer = 1
 collision_mask = 0
 script = ExtResource("1_player")
 tuning = ExtResource("2_tuning")
+docked_ship_scene = ExtResource("10_docked_scene")
+docked_ship_tuning = ExtResource("11_docked_tuning")
 
 [node name="Visual" type="Node2D" parent="."]
 

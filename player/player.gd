@@ -10,6 +10,11 @@ extends CharacterBody2D
 # ship_depleted both stay LOCAL — the player emits nothing to EventBus directly.
 
 @export var tuning: PlayerTuning
+# Story 2.3 — the rescue dock. docked_ship_scene mirrors FireSystem.projectile_scene (D9: the scene
+# is wired in player.tscn, NEVER preload/load in gameplay code); docked_ship_tuning holds the +hitbox
+# radius + the dock color (the .tres wins at runtime, D9).
+@export var docked_ship_scene: PackedScene
+@export var docked_ship_tuning: DockedShipTuning
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _faction: FactionComponent = $FactionComponent
@@ -17,6 +22,15 @@ extends CharacterBody2D
 @onready var _muzzle: Marker2D = $Muzzle
 @onready var _visual: Node2D = $Visual
 @onready var _health_bar: HealthBar = $HealthBar
+# Story 2.3 — the player's two collision shapes (the body CollisionShape2D that projectiles body_enter
+# + the HurtboxComponent's shape that enemy-body contact enters). The +hitbox (AC#3) grows BOTH when
+# docked: swap the radius between the clean base (11) and the docked radius (DockedShipTuning).
+@onready var _collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var _hurtbox_shape: CollisionShape2D = $HurtboxComponent/CollisionShape2D
+
+# The player.tscn base hitbox radius (keep in sync with the scene's CircleShape2D). The +hitbox swaps
+# to DockedShipTuning.docked_hitbox_radius when docked, back to this when clean.
+const _CLEAN_HITBOX_RADIUS: float = 11.0
 
 # Player → Arena: "I lost a ship (HP hit 0 within the wave)." NO payload — the run host
 # owns the count and decides respawn vs game-over (D8: intra-entity→parent, direct).
@@ -26,6 +40,11 @@ var _min_x: float = 0.0
 var _max_x: float = 0.0
 var _flicker_t: float = 0.0  # i-frame pulse phase (sustained invuln cue; the impact flash is JuiceCoordinator-driven)
 var _captured_this_wave := false  # wave-scope capture gate (AC#3, Story 2.2); reset on wave_started.
+# Story 2.3 — the docked wingman state. _docked is the capture-immune flag (FR16); _docked_ship is the
+# transient visual node (NP1, NOT pooled). At most one docked ship per wave (FR14); capture is also
+# once-per-wave, so try_dock_ship's "already docked" guard is defensive.
+var _docked_ship: DockedShip = null
+var _docked := false
 
 
 func _ready() -> void:
@@ -58,6 +77,12 @@ func _ready() -> void:
 	# (WaveController), before any captor in that wave can capture. The player is NOT pooled → connect ONCE.
 	if not EventBus.wave_started.is_connected(_on_wave_started):
 		EventBus.wave_started.connect(_on_wave_started)
+	# Story 2.3 — wave-end cleanup of the docked fighter (wave-scope, NP1). Read-only LISTEN: the player
+	# still EMITS nothing to the bus (ship_depleted stays local, D8). The Keep outcome (regain a ship on
+	# surviving the wave docked) is Story 2.5 — 2.3 just detaches so the fighter doesn't persist across
+	# the wave boundary. The player is NOT pooled → connect ONCE.
+	if not EventBus.wave_cleared.is_connected(_on_wave_cleared):
+		EventBus.wave_cleared.connect(_on_wave_cleared)
 	# Story 1.7 — bind the on-ship segmented HP bar to this entity's own HealthComponent (intra-entity,
 	# D8 — HP is never on EventBus). hide_when_full=false here ⇒ the primary read is always visible.
 	if _health_bar != null:
@@ -92,10 +117,113 @@ func _on_ship_depleted() -> void:
 
 
 func is_capture_immune() -> bool:
-	# 2.2 STUB: the player is ALWAYS clean (no docked ship until Story 2.4). 2.4's docked_ship_controller
-	# calls set_docked(true) ("capture-immune + bigger hitbox", architecture.md:616) → return that here.
-	# The GUARD is real (try_capture checks it) and tested; the docked STATE lands in 2.4. AC2/AC4.
-	return false  # 2.4 seam: return _docked
+	# Story 2.3 — retired the 2.2 stub. Docked ⇒ capture-immune (FR16). The guard is real + now wired to
+	# the docked state (try_capture checks it). 2.4 deepens set_docked to the formal [Risk-12] tradeoff +
+	# persists the wing_track; 2.3 flips _docked + grows the hitbox (the +hitbox, AC#3).
+	return _docked
+
+
+func is_docked() -> bool:
+	# Story 2.3 — public read accessor. The FireSystem reads this to spawn the parallel bullet stream
+	# (AC#3 +firepower); Arena/JuiceFx may read it too. Mirrors is_capture_immune (both reflect _docked).
+	return _docked
+
+
+func set_docked(on: bool) -> void:
+	# The architecture-named write-side (architecture.md:616 `set_docked(true) # capture-immune + bigger
+	# hitbox`). 2.3: flips _docked (capture-immune via is_capture_immune) AND grows/shrinks the player's
+	# hitbox (the +hitbox, AC#3). 2.4 deepens this to the formal [Risk-12] tradeoff + persists the
+	# wing_track. Called by try_dock_ship / _consume_docked_ship / _on_wave_cleared.
+	_docked = on
+	_resize_hitbox(on)
+
+
+func _resize_hitbox(docked: bool) -> void:
+	# The +hitbox (AC#3 / [Risk-12]): the player's hitbox grows when docked (a bigger target — the
+	# docked ship makes you easier to hit). Swap the body CollisionShape2D (projectiles body_enter this)
+	# + the HurtboxComponent's CollisionShape2D (enemy-body contact) between the clean radius (11) and
+	# the docked radius (DockedShipTuning). collision_mask = 0 ⇒ growing the body shape only affects what
+	# body_enters it (projectiles) — NO move_and_slide / physics impact.
+	var radius: float = _CLEAN_HITBOX_RADIUS
+	if docked and docked_ship_tuning != null:
+		radius = docked_ship_tuning.docked_hitbox_radius
+	_swap_circle_radius(_collision_shape, radius)
+	_swap_circle_radius(_hurtbox_shape, radius)
+
+
+func _swap_circle_radius(shape_node: CollisionShape2D, radius: float) -> void:
+	# duplicate() the shared CircleShape2D before resizing (captor.gd:62-66 idiom — a per-instance radius
+	# must NEVER mutate the shared inherited shape resource in place, or every instance resizes at once).
+	# set_deferred on the shape: set_docked() (dock + undock) can run inside a physics callback — dock via
+	# Arena._on_captor_resolved (captor death originates in body_entered), undock via apply_hit's absorber
+	# (enemy contact body_entered). Assigning CollisionShape2D.shape mid-physics-step is forbidden
+	# ("Can't change this state while flushing queries"); set_deferred applies it safely at idle. The dock
+	# grow + the absorber shrink are both one-time per state change (NOT per frame).
+	if shape_node == null:
+		return
+	var shape := shape_node.shape as CircleShape2D
+	if shape == null:
+		return
+	var dup := shape.duplicate() as CircleShape2D
+	dup.radius = radius
+	shape_node.set_deferred("shape", dup)
+
+
+func try_dock_ship() -> bool:
+	# The rescue EFFECT entry (AC#1, mirrors 2.2 try_capture). Guards: no existing docked ship (FR14
+	# one-docked — a second rescue/dock cannot occur; capture is once-per-wave so this is defensive).
+	# On success: instantiate + attach the DockedShip, set_docked(true) (which grows the hitbox — the
+	# +hitbox). Returns true so Arena/juice can gate. The player NEVER touches RunState (AR2 — rescue is
+	# a combat attach, not a ship-count change; the captured ship was spent at capture in 2.2).
+	if _docked_ship != null:
+		return false  # FR14: at most one docked ship.
+	if docked_ship_scene == null:
+		push_error("Player: docked_ship_scene unassigned — rescue dock ignored")
+		return false
+	# NOT pooled (NP1) — once-per-wave. Child of the Player ⇒ rides the player's transform at the dock offset.
+	_docked_ship = docked_ship_scene.instantiate()
+	add_child(_docked_ship)  # add_child mid-physics is safe (mirrors the spawner drip); _ready fires now.
+	_docked_ship.setup(self)
+	_docked_ship.attach()
+	set_docked(true)
+	return true
+
+
+func apply_hit(damage: int, impact_pos: Vector2, source: Node2D, heavy: bool = false) -> void:
+	# The CENTRALIZED damage route (AC#3 absorber). Both the enemy_projectile + the HurtboxComponent call
+	# this instead of HealthComponent.take_damage directly. Gate order: i-frames (full no-op, no juice) →
+	# absorber (if docked, the docked ship dies first, sparing HP) → HP damage + player-hit juice.
+	#
+	# Runs inside the physics step (body_entered callback) — only node REMOVAL is forbidden mid-physics;
+	# _consume_docked_ship defers the docked fighter's detach (remove_child + queue_free). take_damage +
+	# signal emits are safe synchronous. `source` is the flash TARGET's sibling context — the player-hit
+	# juice flashes the PLAYER body (self), NOT the source (fixes the old hurtbox flashing the ramming
+	# enemy instead of the player — both paths now flash the player consistently).
+	if _health.is_invulnerable():
+		return  # i-frames: full no-op (no damage, no juice, no absorb — the docked ship is NOT consumed).
+	if _docked_ship != null:
+		_consume_docked_ship(impact_pos, source)  # absorber: docked ship dies, HP spared. NO spend_ship (ever).
+		return
+	_health.take_damage(damage)
+	JuiceFx.player_hit(impact_pos, self, heavy)
+
+
+func _consume_docked_ship(impact_pos: Vector2, _source: Node2D) -> void:
+	# The intrinsic first-hit absorber (AC#3 / FR17). The docked fighter dies, sparing the player's HP.
+	# NO spend_ship — EVER (not 2.3, not 2.5). The FR18 "Absorb = −1 ship" is relative-accounting vs the
+	# Keep +1 (you forfeit the regain), NOT a spend. The docked ship is a non-counted combat asset; the
+	# ONLY ship-count changes in the Gamble are capture (−1, 2.2) and keep (+1, 2.5). See Dev Notes
+	# §"Ship-count economy". detach is DEFERRED (remove_child + queue_free mid-physics is forbidden — the
+	# docked ship is a child of the Player, a CanvasItem; defer a no-arg method, mirroring Pool's idiom).
+	# _detach_docked_ship() flips set_docked(false) + _docked_ship = null SYNCHRONOUSLY so
+	# is_docked()/is_capture_immune() update immediately — a same-frame second hit lands on the player,
+	# not a consumed docked ship.
+	var fighter: DockedShip = _detach_docked_ship()
+	# Absorb juice — the wingman bought it (a distinct "the escort took the hit" beat). Explosion in the
+	# dock color + a kill shake, NO score popup (a "+0" would be noise). Emit AFTER detach but BEFORE the
+	# deferred queue_free lands (fighter.global_position is still valid this frame).
+	if fighter != null:
+		JuiceFx.docked_consumed(fighter.global_position, docked_ship_tuning.dock_color if docked_ship_tuning != null else Color(0.0, 0.898, 1.0))
 
 
 func try_capture() -> bool:
@@ -117,6 +245,32 @@ func _on_wave_started(_wave: int, _duration_s: float) -> void:
 	# Read-only LISTEN (Story 2.2): reset the per-wave capture gate when a new wave begins. The player
 	# still EMITS nothing to the bus (ship_depleted stays local, D8).
 	_captured_this_wave = false
+
+
+func _on_wave_cleared(_wave: int) -> void:
+	# Story 2.3 — wave-end cleanup stub (NP1 — the docked ship is wave-scope). Detach the docked fighter
+	# so it doesn't persist across the wave boundary. NO add_ship in 2.3 — the Keep outcome (survive the
+	# wave docked → add_ship(+1), net 0 over capture→rescue→keep) is Story 2.5 (the ONLY add_ship in the
+	# Gamble). Runs from WaveController's FSM transition (NOT a physics callback), but the detach is
+	# deferred anyway for consistency with _consume_docked_ship's mid-physics-safe idiom.
+	# 2.5 seam: add_ship(+1) — the Keep regain (only if the player survived the wave docked).
+	_detach_docked_ship()
+
+
+func _detach_docked_ship() -> DockedShip:
+	# review fix: shared detach sequence for _consume_docked_ship (absorb) + _on_wave_cleared (wave-end)
+	# — previously duplicated with inconsistent statement ordering between the two call sites. Flips
+	# set_docked(false) + _docked_ship = null SYNCHRONOUSLY (is_docked()/is_capture_immune() must update
+	# immediately); the node free is DEFERRED (remove_child + queue_free mid-physics is forbidden — the
+	# docked ship is a child of the Player, a CanvasItem). Returns the detached fighter (still valid this
+	# frame, e.g. for juice at its position) or null if nothing was docked.
+	if _docked_ship == null:
+		return null
+	var fighter: DockedShip = _docked_ship
+	_docked_ship = null
+	set_docked(false)
+	fighter.detach.call_deferred()  # no-arg deferred detach (mirrors the Pool deferred-release idiom).
+	return fighter
 
 
 func respawn() -> void:

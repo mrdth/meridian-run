@@ -22,6 +22,17 @@ var projectile_parent: Node2D
 # (never $/get_node per frame). Yields null if the Muzzle is absent (partial/test
 # setup) — _spawn guards against that instead of erroring on lookup.
 @onready var _muzzle: Marker2D = get_parent().get_node_or_null("Muzzle")
+# Story 2.3 — the Player (FireSystem's parent). Read once via @onready. review fix: untyped Node +
+# duck-call (has_method/call/get), not a hard `as Player` cast — mirrors the duck-call pattern used
+# by hurtbox_component.gd/enemy_projectile.gd elsewhere in this diff (avoids hard Player coupling;
+# the FireSystem's own 2.4 seam anticipates a non-Player parent — a DockedShip-owned FireSystem).
+@onready var _player: Node = get_parent()
+
+# FR7 / GDD weapon table — the parallel bullet stream's +28 px x-offset when docked (AC#3 +firepower).
+# review fix: read from DockedShipTuning.stream_offset_x (the .tres wins, D9) instead of a separate
+# hardcoded const — a single source of truth so retuning the .tres can't desync the bullet from the
+# wingman's visual station. This fallback only applies if docked_ship_tuning is somehow unassigned.
+const _FALLBACK_STREAM_OFFSET_X := 28.0
 
 var _cooldown: float = 0.0
 
@@ -49,13 +60,30 @@ func _spawn() -> void:
 	# surfaces as a failed count assertion rather than aborting the whole suite.
 	if _muzzle == null or projectile_parent == null:
 		return
-	# Pool.acquire() — NEVER projectile_scene.instantiate() on the hot path (AR6).
+	# Primary stream.
+	_spawn_one(_muzzle.global_position, tuning.projectile_damage)
+	# Story 2.3 — the parallel bullet stream when docked (AC#3 +firepower, FR7). A 2nd bullet at the
+	# docked tuning's offset, sharing the cooldown (synced cadence — FR7 "matches the player's fire
+	# cadence"). Open Question H default: the player's FireSystem spawns both (simpler + auto-synced);
+	# 2.4 may refactor to a DockedShip-owned FireSystem for the build track.
+	if _player != null and _player.has_method("is_docked") and _player.call("is_docked"):
+		var dt: DockedShipTuning = _player.get("docked_ship_tuning") as DockedShipTuning
+		var offset_x: float = dt.stream_offset_x if dt != null else _FALLBACK_STREAM_OFFSET_X
+		var damage: int = dt.stream_damage if dt != null else tuning.projectile_damage
+		_spawn_one(_muzzle.global_position + Vector2(offset_x, 0.0), damage)
+	# On-fire juice (Story 1.6 / AC4): fire SFX (mandated, ±5% pitch inside play_fire) + a light
+	# optional muzzle puff. ONE juice per fire press, not per bullet (the two bullets fire together).
+	# Juice request signals only — no game-flow. (Story 1.3's "emits nothing to EventBus" note referred
+	# to GAME-FLOW signals; juice requests are a separate, allowed channel.)
+	JuiceFx.player_fired(_muzzle.global_position)
+
+
+func _spawn_one(at: Vector2, damage: int) -> void:
+	# Hoist the bullet-spawn body (Pool.acquire → activate at `at` → add_child) so the primary + the
+	# docked parallel stream share it. Zero per-frame allocations (NFR3). Parent to the injected
+	# world-space container, NOT the Player (transform-independence, Decision #8). `damage` lets the
+	# docked stream use DockedShipTuning.stream_damage (review fix — the knob was previously unused).
 	var p: Projectile = Pool.acquire(projectile_scene) as Projectile
 	assert(p != null, "FireSystem: acquired node is not a Projectile — wrong scene?")
-	p.activate(_muzzle.global_position, tuning.bullet_speed, tuning.projectile_damage)
-	# Parent to the injected world-space container, NOT the Player (transform-independence).
+	p.activate(at, tuning.bullet_speed, damage)
 	projectile_parent.add_child(p)
-	# On-fire juice (Story 1.6 / AC4): fire SFX (mandated, ±5% pitch inside play_fire) + a light
-	# optional muzzle puff. Juice request signals only — no game-flow. (Story 1.3's "emits nothing
-	# to EventBus" note referred to GAME-FLOW signals; juice requests are a separate, allowed channel.)
-	JuiceFx.player_fired(_muzzle.global_position)

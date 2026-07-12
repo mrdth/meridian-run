@@ -69,7 +69,7 @@ development_status:
   epic-2: in-progress
   2-1-captor-enemy-and-5-state-fsm: done
   2-2-capture-mechanic-clean-only-once-wave: done
-  2-3-rescue-and-failed-rescue: ready-for-dev
+  2-3-rescue-and-failed-rescue: done
   2-4-docked-ship-dual-nature-and-clean-docked-tradeoff: backlog
   2-5-docked-ship-resolution-four-outcomes: backlog
   2-6-sacrifice-burst-threat-relative: backlog
