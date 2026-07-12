@@ -617,10 +617,10 @@ func attach(track: BuildTrack) -> void:
 
 func sacrifice(threat: float) -> void:              # active input
     EventBus.sacrifice_burst_started.emit(BuildRecompute.threat_ceiling(_track, threat))
-    _consume_fighter(); RunState.spend_ship()
+    _consume_fighter()                              # NO spend_ship — see economy note below
 
 func absorb() -> void:                              # intrinsic — on hit while docked
-    _consume_fighter(); RunState.spend_ship()
+    _consume_fighter()                              # NO spend_ship — spares HP, forfeits the keep regain
 
 func _consume_fighter() -> void:
     if _fighter: remove_child(_fighter); _fighter.queue_free()
@@ -628,7 +628,7 @@ func _consume_fighter() -> void:
     # NOTE: _track is NOT cleared — persists for future sacrifice scaling
 ```
 
-**Resolution outcomes:** *sacrifice* (input) → burst, −1 ship; *absorb* (on hit) → fighter dies first spares HP, −1 ship; *keep* (wave-end alive) → flies off, regain ship, net 0; *failed-rescue* (kill captor in formation) → ship turns enemy, −1 ship.
+**Resolution outcomes (ship-count economy, clarified 2026-07-12):** the docked fighter is a ship-in-escrow — the ONLY ship-count changes in the Gamble are **capture (−1)** and **keep (+1, net 0)**. *sacrifice* (input) → burst, no ship-count change; *absorb* (on hit) → fighter dies first spares HP, no ship-count change; *keep* (wave-end alive) → flies off, regain ship (+1, net 0); *failed-rescue* (kill captor in formation) → ship turns enemy, no ship-count change. Consuming/losing the docked fighter forfeits the keep regain; it is not an additional `spend_ship`. (Earlier drafts + the NP1 pseudocode above called `spend_ship()` in sacrifice/absorb — corrected; that double-counted against the capture −1.)
 
 #### NP2 — Cross-Pollination Injection
 

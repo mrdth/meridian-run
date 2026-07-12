@@ -63,10 +63,10 @@ canonicalFiles:
 - **FR3** — Damage model: standard fire = 1 dmg (flat across all tiers); heavy/elite = 2 dmg (rare, telegraphed).
 - **FR4** — Capture: costs 1 ship, bypasses HP, respawn at full HP; **once per wave, clean-only** (captor tractors only when no docked ship present; special/modifier waves excepted); **max one docked ship at a time**.
 
-**Docked-ship resolution (one active choice: Sacrifice now, or Hold)**
-- **FR5** — Sacrifice (active input): consume docked ship → threat-relative burst (see FR12); build track persists; net −1 ship.
-- **FR6** — Hold (passive default): resolves to **Keep** (reach wave-end alive → flies off → +1 ship, net 0) or **Absorb** (hit while holding → docked ship dies first, sparing HP, net −1).
-- **FR7** — Failed rescue (failure outcome, not a choice): kill captor in formation → captured ship turns enemy (net −1 ship, +1 enemy) `[Ref-11]`.
+**Docked-ship resolution (one active choice: Sacrifice now, or Hold)** — *ship-count economy (clarified 2026-07-12): the only ship-count changes in the Gamble are capture (−1) and keep (+1, net 0); all other outcomes are no ship-count change.*
+- **FR5** — Sacrifice (active input): consume docked ship → threat-relative burst (see FR12); build track persists; no ship-count change.
+- **FR6** — Hold (passive default): resolves to **Keep** (reach wave-end alive → flies off → +1 ship, net 0) or **Absorb** (hit while holding → docked ship dies first, sparing HP, no ship-count change).
+- **FR7** — Failed rescue (failure outcome, not a choice): kill captor in formation → captured ship turns enemy (+1 enemy, no ship-count change) `[Ref-11]`.
 
 **Capture / Rescue / Sacrifice / Safe-play**
 - **FR8** — Safe-play baseline: avoid capture → no ship change + safe-play bonus (~30%) > rescue bonus (~25%); the primary farm-mitigation.

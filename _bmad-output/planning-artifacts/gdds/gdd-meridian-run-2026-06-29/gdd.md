@@ -126,21 +126,23 @@ The rescued ship is **one entity with two roles** (reconciling the combat and bu
 #### Docked-ship resolution
 
 You make **one active choice — Sacrifice now, or Hold:**
-- **Sacrifice** (active, input): consume the docked ship → threat-relative burst (see below). The **build track persists.** Net −1 ship.
+- **Sacrifice** (active, input): consume the docked ship → threat-relative burst (see below). The **build track persists.** No ship-count change.
 - **Hold** (passive default): keep the docked ship through the wave. Holding resolves to one of:
   - **Keep** — reach wave-end with it alive → it flies off → regain 1 ship. Net 0.
-  - **Absorb** — *intrinsic, not chosen:* if you're hit while holding, the docked ship dies first, sparing your HP. Net −1 ship (it's gone, no regain). This is the **hold-vs-cash micro-tension**: hold too long and you may lose the sacrifice window to an absorb.
-- **Failed rescue** (failure outcome, not a choice): kill the captor in formation → the captured ship **turns against you** ([Ref-11]). Net −1 ship, +1 enemy.
+  - **Absorb** — *intrinsic, not chosen:* if you're hit while holding, the docked ship dies first, sparing your HP. No ship-count change (it's gone; no regain). This is the **hold-vs-cash micro-tension**: hold too long and you may lose the sacrifice window to an absorb.
+- **Failed rescue** (failure outcome, not a choice): kill the captor in formation → the captured ship **turns against you** ([Ref-11]). +1 enemy, no ship-count change.
+
+**Ship-count economy (clarified 2026-07-12):** the docked fighter is a **ship-in-escrow** — the ONLY ship-count changes in the Gamble are **capture (−1)** and **keep (+1, net 0)**. Rescue, failed-rescue, absorb, sacrifice, and no-rescue do NOT change the ship count: consuming or losing the docked fighter forfeits the keep regain, it is not an additional `spend_ship`. (Earlier drafts framed absorb/sacrifice/failed-rescue as "−1 ship" — that was relative-to-Keep accounting, not an actual spend; corrected here + in epics FR18.)
 
 **No-gamble baseline — Safe play** (avoid capture): no ship change, +safe-play bonus (~30%) vs rescue bonus (~25%).
 
-**Anti-spam:** sacrifice needs **no artificial cooldown** — every sacrifice forgoes the survival payout (keep→regain) AND spends a potential life, so the opportunity cost is the natural limiter ([Build-9]). Combined with one-docked-ship-per-wave, sacrifice is inherently bounded.
+**Anti-spam:** sacrifice needs **no artificial cooldown** — every sacrifice forgoes the survival payout (keep→regain), so the opportunity cost is the natural limiter ([Build-9]). Combined with one-docked-ship-per-wave, sacrifice is inherently bounded.
 
 #### Capture / Rescue / Sacrifice
 
 - **Captor** (Tractor-lineage) state machine: **enter (~1 s, descends to formation row)** → formation (3.5–5.5 s random, side-to-side + periodic fire) → telegraph (**0.7 s**, capture column locks to player x — the fair dodge window) → capture (**0.4 s** active) → dive (**1.6 s**, bezier toward player then off-screen). Caught during the 0.4 s window while clean → captured (−1 ship, stored on boss).
 - **Onboarding cadence:** a captor appears on an **early wave to teach** capture/rescue, then captor-chance **scales with wave number** so the gamble stays available without being spammy.
-- **Rescue:** kill the captor **during its dive** → freed ship docks. Kill in formation → ship turns enemy ([Ref-11]).
+- **Rescue:** kill the captor **during its dive — but only if it captured the player this spawn** (the prior-capture gate) → freed ship docks. Kill in formation, OR kill during dive without a prior capture (the player dodged) → the captured ship turns enemy ([Ref-11]). (The gate prevents farming a free docked ship via dodge-capture + dive-kill + keep.) The turned-enemy uses a distinct **turned-ship visual** (the player's arrowhead inverted to point down, hazard-colored) so it reads as a captured ship gone hostile, not a stock grunt.
 - **Sacrifice burst:** threat-relative temporary buff — **triple-shot (±0.18 rad) / ×1.5 damage / fast-fire (0.10 s cooldown) / ~10 s**. Scales with the rescued-ship build track, bounded against current-wave threat (see *Difficulty Curve*). **No screen-clear** (prototype guardrail).
 - **[Risk-13] reserve lever** (held, not committed): captured firepower could be added to the captor — your own build threatens you — as a high-end escalation dial if late-run balance needs it.
 
@@ -276,7 +278,7 @@ Target the **player-power : enemy-threat ratio** (absurdity is relative, not abs
 - **Peak ~waves 17–20** — godhood peaks **at the final boss** so the climax lands at maximum power, not after a coast.
 - **Endless: inverted** — frozen build vs escalating enemy threat (~+10%/wave); the Test (P3) begins.
 - **Tuning knobs (v1.0 playtest):** power-up acquisition rate/wave · synergy multiplicativity · enemy HP/density scaling per tier · tier-cap power spikes · **wave duration (the run-length / pacing dial, [Wave-1])**.
-- **Sacrifice-burst ceiling = threat-relative:** scales against current-wave enemy HP/threat, so always a useful tide-turner and never an insta-win regardless of track investment. Reinforced by: buff-not-nuke (no screen-clear), −1 ship cost, opportunity-cost anti-spam, one-sacrifice-per-wave.
+- **Sacrifice-burst ceiling = threat-relative:** scales against current-wave enemy HP/threat, so always a useful tide-turner and never an insta-win regardless of track investment. Reinforced by: buff-not-nuke (no screen-clear), opportunity-cost anti-spam (forgoes the keep→regain), one-sacrifice-per-wave.
 
 ### Economy and Resources
 

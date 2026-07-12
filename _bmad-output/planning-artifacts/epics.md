@@ -58,10 +58,10 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 
 - **FR13:** The **Captor (Tractor)** enemy runs a 5-state FSM with GDD timings *(data-tunable)*: enter (~1 s, descends to formation row) → formation (3.5–5.5 s, side-to-side + periodic fire) → telegraph (**0.7 s**, capture column locks to player x) → capture (**0.4 s** active) → dive (**1.6 s**, bezier toward player then off-screen).
 - **FR14:** A captor can tractor the player only while **clean** (no docked ship), **once per wave** (special/modifier waves excepted), during the 0.4 s capture window; at most **one docked ship** exists at a time.
-- **FR15:** **Rescue:** killing the captor **during its dive** frees a ship that docks to the player. **Failed rescue:** killing the captor **in formation** causes the captured ship to turn enemy ([Ref-11]).
+- **FR15:** **Rescue:** killing the captor **during its dive — but only if it captured the player this spawn** (the prior-capture gate) — frees a ship that docks to the player. **Failed rescue:** killing the captor **in formation**, or killing it during its dive without a prior capture (the player dodged), turns the captured ship into an enemy ([Ref-11]). (The gate prevents farming a free docked ship via dodge-capture + dive-kill + keep.)
 - **FR16:** While **docked**, the player is capture-immune, gains dual-fighter firepower, and has a bigger hitbox ([Risk-12]); while **clean**, the hitbox is small and the gamble is available.
 - **FR17:** The rescued ship is one entity with two roles: a **permanent build track** (never lost, even when the docked fighter is sacrificed or absorbed) and a **transient combat fighter** (+firepower, +hitbox, intrinsic first-hit absorber).
-- **FR18:** Docked-ship resolution offers one active choice — **Sacrifice** (input) or **Hold** (passive default) — resolving to one of: Sacrifice (−1 ship, burst, build track persists), Keep (reach wave-end alive → flies off, regain 1 ship, net 0), Absorb (hit while holding → docked ship dies first sparing HP, −1 ship), or Failed-rescue (−1 ship, +1 enemy).
+- **FR18:** Docked-ship resolution offers one active choice — **Sacrifice** (input) or **Hold** (passive default) — resolving to one of: Sacrifice (consume the docked ship → burst, build track persists; no ship-count change), Keep (reach wave-end alive → flies off, regain 1 ship, net 0), Absorb (hit while holding → docked ship dies first sparing HP; no ship-count change), or Failed-rescue (the captured ship turns enemy; +1 enemy, no ship-count change). **Ship-count economy (clarified 2026-07-12):** the docked fighter is a ship-in-escrow — the ONLY ship-count changes in the Gamble are **capture (−1)** and **keep (+1, net 0)**. Rescue, failed-rescue, absorb, sacrifice, and no-rescue do NOT change the ship count (consuming/losing the docked fighter forfeits the keep regain; it is not an additional `spend_ship`).
 - **FR19:** **Sacrifice** consumes the docked ship for a threat-relative temporary buff — triple-shot (±0.18 rad), ×1.5 damage, fast-fire (0.10 s cooldown), ~10 s — that scales with the rescued-ship build track and is bounded against current-wave threat; it **never screen-clears** and needs **no artificial cooldown** (opportunity cost is the limiter, [Build-9]).
 - **FR20:** **Safe play** (avoiding capture) yields a safe-play bonus (~30%); courting capture/rescue yields a rescue bonus (~25%); safe-play bonus > rescue bonus (the primary farm-mitigation).
 - **FR21:** A captor appears on an **early wave to teach** capture/rescue, then captor-chance **scales with wave number** (gamble stays available without spam).
@@ -466,8 +466,8 @@ So that a clean dive-kill rescues a ship but a lazy formation-kill turns it agai
 
 **Acceptance Criteria:**
 
-- **Given** the captor is in **dive** state, **When** killed, **Then** a freed ship docks to the player.
-- **Given** the captor is in **formation** state, **When** killed, **Then** the captured ship turns into an enemy (−1 ship, +1 enemy) — [Ref-11].
+- **Given** the captor is in **dive** state **AND it captured the player this spawn** (the prior-capture gate), **When** killed, **Then** a freed ship docks to the player. (A dive-kill WITHOUT a prior capture is a failed-rescue — prevents farming a free docked ship.)
+- **Given** the captor is in **formation** state (or any non-`dive` state, OR a `dive` state without a prior capture), **When** killed, **Then** the captured ship turns into an enemy — a grunt with the distinct **turned-ship visual** (player arrowhead inverted, hazard-colored) — (+1 enemy, no ship-count change) — [Ref-11].
 - **Given** rescue, **Then** the docked fighter attaches with its hardcoded combat presence (+firepower, +hitbox, intrinsic absorber).
 
 *(FR15)*
@@ -494,9 +494,9 @@ So that the hold-vs-cash micro-tension is real.
 
 **Acceptance Criteria:**
 
-- **Given** a docked ship + the player presses **Sacrifice**, **Then** the fighter is consumed → sacrifice burst fires, −1 ship, track persists.
+- **Given** a docked ship + the player presses **Sacrifice**, **Then** the fighter is consumed → sacrifice burst fires, track persists (no ship-count change).
 - **Given** a docked ship **held to wave-end alive**, **Then** it flies off → regain 1 ship (net 0).
-- **Given** a docked ship + the player is **hit while holding**, **Then** the fighter dies first (absorb), sparing HP, −1 ship.
+- **Given** a docked ship + the player is **hit while holding**, **Then** the fighter dies first (absorb), sparing HP (no ship-count change).
 - **Given** all four outcomes (sacrifice / keep / absorb / failed-rescue), **Then** each is reachable and resolves correctly.
 
 *(FR18)*
