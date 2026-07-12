@@ -25,6 +25,7 @@ signal ship_depleted()
 var _min_x: float = 0.0
 var _max_x: float = 0.0
 var _flicker_t: float = 0.0  # i-frame pulse phase (sustained invuln cue; the impact flash is JuiceCoordinator-driven)
+var _captured_this_wave := false  # wave-scope capture gate (AC#3, Story 2.2); reset on wave_started.
 
 
 func _ready() -> void:
@@ -52,6 +53,11 @@ func _ready() -> void:
 	# re-connect concern across the run). died is a LOCAL HealthComponent signal (D8).
 	if not _health.died.is_connected(_on_ship_depleted):
 		_health.died.connect(_on_ship_depleted)
+	# Story 2.2 — reset the per-wave capture gate when a new wave begins. Read-only LISTEN: the player
+	# still EMITS nothing to the bus (ship_depleted stays local, D8). wave_started fires at Intro→Active
+	# (WaveController), before any captor in that wave can capture. The player is NOT pooled → connect ONCE.
+	if not EventBus.wave_started.is_connected(_on_wave_started):
+		EventBus.wave_started.connect(_on_wave_started)
 	# Story 1.7 — bind the on-ship segmented HP bar to this entity's own HealthComponent (intra-entity,
 	# D8 — HP is never on EventBus). hide_when_full=false here ⇒ the primary read is always visible.
 	if _health_bar != null:
@@ -83,6 +89,34 @@ func _on_ship_depleted() -> void:
 	# HP reached 0 within the wave → tell the run host. The Arena decides respawn vs
 	# game-over (AR2: ships are run-scope). Player never calls RunState directly.
 	ship_depleted.emit()
+
+
+func is_capture_immune() -> bool:
+	# 2.2 STUB: the player is ALWAYS clean (no docked ship until Story 2.4). 2.4's docked_ship_controller
+	# calls set_docked(true) ("capture-immune + bigger hitbox", architecture.md:616) → return that here.
+	# The GUARD is real (try_capture checks it) and tested; the docked STATE lands in 2.4. AC2/AC4.
+	return false  # 2.4 seam: return _docked
+
+
+func try_capture() -> bool:
+	# The captor's capture EFFECT entry (AC#1). Guards: clean (no docked ship) + once-per-wave + not
+	# already dead this frame (an HP-death and a capture landing the same physics tick must not spend
+	# two ships for one hit — Story 2.2 review). On success: flag consumed + emit ship_depleted →
+	# Arena._on_player_ship_depleted → spend_ship → respawn (full HP via reset_to_full) | game_over.
+	# Capture BYPASSES HP — HealthComponent is NEVER
+	# touched (no take_damage); respawn's reset_to_full() restores full HP. Returns true so the captor
+	# can gate its success-conditional dive delay (AC#5). The player never touches RunState (AR2).
+	if is_capture_immune() or _captured_this_wave or _health._is_dead:
+		return false
+	_captured_this_wave = true
+	ship_depleted.emit()  # LOCAL (D8) — reuses Arena's entire ship-loss/respawn/game-over path (AR2)
+	return true
+
+
+func _on_wave_started(_wave: int, _duration_s: float) -> void:
+	# Read-only LISTEN (Story 2.2): reset the per-wave capture gate when a new wave begins. The player
+	# still EMITS nothing to the bus (ship_depleted stays local, D8).
+	_captured_this_wave = false
 
 
 func respawn() -> void:

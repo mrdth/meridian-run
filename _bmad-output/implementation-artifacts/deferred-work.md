@@ -18,6 +18,12 @@ Story 1.8 closed these five 1.8-owned items. (Original deferral notes preserved 
 
 ---
 
+## Deferred from: code review of 2-2-capture-mechanic-clean-only-once-wave (2026-07-10)
+
+- `CaptureState.physics_process`'s duck-call only null-checks `_captor.player_target`, never `is_instance_valid()`, before calling `try_capture()` [enemies/captor/states/capture_state.gd:48-50] — pre-existing convention shared by every captor state (telegraph/dive/formation/enter all null-check only); revisit if the player is ever freed/recreated mid-run instead of respawned in place.
+- `is_player_in_column()` may read stale (empty) Area2D overlap data on the physics tick right after `set_detection(true)` is called in `CaptureState.enter()` [world/capture_column.gd:398-405] — Godot's physics server needs one step to compute newly-enabled overlaps; could shave ~1 frame off the ~24-frame (0.4s @ 60Hz) capture window. Low severity; revisit only if playtesting surfaces "capture felt like it missed at the very start."
+- `tests/enemies/test_captor_capture.gd` has no direct "second capture in the wave → blocked" case through the captor's duck-call path [Task 5 of story 2.2] — the once-per-wave gate is verified at the `Player`-unit level (`tests/player/test_player_capture.gd`) but not end-to-end via the captor; add if a future capture-path regression needs the extra coverage.
+
 ## Deferred from: code review of 1-8-authored-wave-assembly-and-feel-gate (2026-07-07)
 
 - `_toggle_hitboxes()` only affects `CollisionShape2D` nodes present at toggle time [systems/debug.gd] — snapshot via `find_children`, not a live watch; enemies/projectiles spawned after the toggle won't reflect it. Revisit if a dedicated debug-tooling polish story lands.

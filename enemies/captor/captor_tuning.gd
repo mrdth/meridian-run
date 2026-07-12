@@ -37,3 +37,10 @@ extends Resource
 # The parallel-bars hazard span (world/capture_column.tscn). Hazard family → no bright outline (D16/ADR-6);
 # the column reads by SHAPE only — distinct silhouette, not a neon outline.
 @export var capture_column_width_px: float = 60.0   # parallel-bars span (±width/2 from the locked x).
+
+@export_group("Capture")
+# The "reel-in" hold AFTER a successful capture, before the captor dives (Mrdth playtest note 2026-07-09,
+# deferred from Story 2.1). On a MISS (player dodged out of the column for the whole active window) the
+# captor dives immediately — no hold. AC#5 (Story 2.2). capture_duration_s (the 0.4 s active window)
+# lives in the FSM Durations group above and is unchanged.
+@export var post_capture_delay_s: float = 0.35
