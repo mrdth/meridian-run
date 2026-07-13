@@ -55,7 +55,11 @@ func _ready() -> void:
 	_build_layout()
 	# Subscribe to run/wave/theming state (AC9). Each handler is a one-line route to a readout.
 	EventBus.score_changed.connect(_on_score_changed)
-	EventBus.ship_lost.connect(_on_ship_lost)
+	EventBus.ship_lost.connect(_on_ship_count_changed)
+	# Story 2.5 (AC2) — ship_gained mirrors ship_lost's shape (both carry the remaining count) → route it
+	# to the SAME handler. Without this, a Keep regain (add_ship(+1)) would be invisible: the lives-pip row
+	# only updated on ship_lost before 2.5, so the gamble's keep payoff wouldn't read on the HUD.
+	EventBus.ship_gained.connect(_on_ship_count_changed)
 	EventBus.wave_started.connect(_on_wave_started)
 	EventBus.wave_cleared.connect(_on_wave_cleared)
 	EventBus.arc_t_changed.connect(_on_arc_t_changed)  # dormant in E1 (no emitter until Story 3.9)
@@ -159,7 +163,11 @@ func _on_score_changed(value: int) -> void:
 	_score.set_score(value)
 
 
-func _on_ship_lost(ships_remaining: int) -> void:
+func _on_ship_count_changed(ships_remaining: int) -> void:
+	# Routes BOTH ship_lost (a ship spent) AND ship_gained (a ship regained, Story 2.5 Keep) to the pip
+	# row — both carry the remaining count, so one handler covers both. set_ships clamps the lit count to
+	# _pip_row_count (BASE_SHIPS, 3 in E2): a keep over the cap is a graceful no-op-clamp visually (RunState
+	# still clamps to MAX_SHIPS = 5; the HUD cap is display-only and out of scope for 2.5).
 	_lives.set_ships(ships_remaining, _pip_row_count)
 
 

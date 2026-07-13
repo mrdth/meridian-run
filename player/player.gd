@@ -35,6 +35,14 @@ const _CLEAN_HITBOX_RADIUS: float = 11.0
 # Player → Arena: "I lost a ship (HP hit 0 within the wave)." NO payload — the run host
 # owns the count and decides respawn vs game-over (D8: intra-entity→parent, direct).
 signal ship_depleted()
+# Story 2.5 — Player → Arena: "I sacrificed the docked fighter" (AC1). NO payload: the Arena (RunState
+# owner) enriches the global sacrifice_burst_started signal with the WING level (AR2 — the Player never
+# touches RunState). Local intra-entity→parent (D8 — mirrors ship_depleted); ship-neutral (FR18).
+signal sacrifice_committed()
+# Story 2.5 — Player → Arena: "I held the docked fighter to wave-end" (AC2 — the Keep outcome). NO
+# payload (the Arena owns the count + decides add_ship). Local intra-entity→parent (D8 — mirrors
+# ship_depleted/sacrifice_committed). Emitted by _on_wave_cleared BEFORE detaching the fighter.
+signal ship_kept()
 
 var _min_x: float = 0.0
 var _max_x: float = 0.0
@@ -231,6 +239,29 @@ func _consume_docked_ship(impact_pos: Vector2, _source: Node2D) -> void:
 		JuiceFx.docked_consumed(fighter.global_position, docked_ship_tuning.dock_color if docked_ship_tuning != null else Color(0.0, 0.898, 1.0))
 
 
+# NP1 seam: docked_ship_controller (deferred to 2.6) — Sacrifice's consume logic lives directly on the
+# Player for now (which owns _physics_process, the docked fighter, and _detach_docked_ship). Hold-to-
+# commit (NP5/UX) also lands here later and migrates with the controller. Do NOT refactor in 2.5.
+func _try_sacrifice() -> void:
+	# Story 2.5 (AC1) — the Sacrifice consume path. Guard: ONLY when docked (_docked_ship != null). Not
+	# docked → silent no-op (can't sacrifice nothing; do NOT emit). On success: reuse _detach_docked_ship
+	# to consume the fighter (shared detach — deferred queue_free + synchronous set_docked(false)), then
+	# emit sacrifice_committed (LOCAL, D8 — the Arena enriches the global burst signal with wing_level).
+	# NO spend_ship, NO HP change, NO take_damage — sacrifice is ship-neutral (FR18: only capture −1 +
+	# keep +1 change ships). The WING track is untouched (the Player has no RunState ref, AR2). The
+	# consume forfeits the keep regain (you'd have gotten +1 had you held to wave-end) — relative vs Keep.
+	if _docked_ship == null:
+		return  # silent no-op — do NOT emit.
+	var fighter: DockedShip = _detach_docked_ship()
+	# Sacrifice juice (DECISION Q2: reuse JuiceFx.docked_consumed — the SAME helper absorb uses; no new
+	# sacrifice_launched helper). A distinct "ignition" cue + the full burst visual (glow + enlarge +
+	# timer ring) land in 2.6. Emit AFTER detach but BEFORE the deferred queue_free lands
+	# (fighter.global_position is valid this frame — mirrors _consume_docked_ship's ordering).
+	if fighter != null:
+		JuiceFx.docked_consumed(fighter.global_position, docked_ship_tuning.dock_color if docked_ship_tuning != null else Color(0.0, 0.898, 1.0))
+	sacrifice_committed.emit()  # LOCAL (D8) — Arena enriches the global burst signal with wing_level.
+
+
 func try_capture() -> bool:
 	# The captor's capture EFFECT entry (AC#1). Guards: clean (no docked ship) + once-per-wave + not
 	# already dead this frame (an HP-death and a capture landing the same physics tick must not spend
@@ -253,12 +284,18 @@ func _on_wave_started(_wave: int, _duration_s: float) -> void:
 
 
 func _on_wave_cleared(_wave: int) -> void:
-	# Story 2.3 — wave-end cleanup stub (NP1 — the docked ship is wave-scope). Detach the docked fighter
-	# so it doesn't persist across the wave boundary. NO add_ship in 2.3 — the Keep outcome (survive the
-	# wave docked → add_ship(+1), net 0 over capture→rescue→keep) is Story 2.5 (the ONLY add_ship in the
-	# Gamble). Runs from WaveController's FSM transition (NOT a physics callback), but the detach is
-	# deferred anyway for consistency with _consume_docked_ship's mid-physics-safe idiom.
-	# 2.5 seam: add_ship(+1) — the Keep regain (only if the player survived the wave docked).
+	# Story 2.5 — the Keep outcome (AC2): a docked fighter held to wave-end alive → fly it off + tell the
+	# Arena the player KEPT it (ship_kept → add_ship(+1), the ONLY add_ship in the Gamble — net 0 over a
+	# capture→rescue→keep loop; capture was −1 in 2.2). Emit ship_kept BEFORE detaching so the Arena knows
+	# the fighter was kept (emit-then-detach); then _detach_docked_ship flies it off (deferred queue_free).
+	# If NOT docked (absorb/sacrifice already consumed the fighter this wave, or the player never docked),
+	# do NOT emit ship_kept — just the (no-op) detach guard. This is the FR18 "consuming/losing the docked
+	# fighter forfeits the keep regain" rule, structurally enforced by the `if _docked_ship != null` guard
+	# (the consume paths null _docked_ship synchronously, so this reads false after an absorb/sacrifice).
+	# Runs from WaveController's FSM transition (NOT a physics callback), but the detach is deferred
+	# anyway for consistency with _consume_docked_ship's mid-physics-safe idiom.
+	if _docked_ship != null:
+		ship_kept.emit()
 	_detach_docked_ship()
 
 
@@ -300,3 +337,8 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()  # no args; Godot applies delta internally.
 	# Corrective screen-clamp to the base-resolution play field (AC1, Decision #2).
 	global_position.x = clampf(global_position.x, _min_x, _max_x)
+	# Story 2.5 (AC1) — Sacrifice input (DECISION Q1: simple press — hold-to-commit deferred to the
+	# accessibility floor D14). One cheap is_action_just_pressed read per frame (F5: actions, never raw
+	# keys). _try_sacrifice guards the docked check (silent no-op when clean).
+	if Input.is_action_just_pressed("sacrifice"):
+		_try_sacrifice()

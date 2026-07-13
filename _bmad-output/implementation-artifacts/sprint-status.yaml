@@ -46,7 +46,7 @@
 #   Two honest gates: E3 (does the build engine compound?) → E4 (does 20-wave pacing peak?).
 
 generated: 2026-06-30
-last_updated: 2026-07-12
+last_updated: 2026-07-13
 project: meridian-run
 project_key: NOKEY
 tracking_system: file-system
@@ -71,7 +71,7 @@ development_status:
   2-2-capture-mechanic-clean-only-once-wave: done
   2-3-rescue-and-failed-rescue: done
   2-4-docked-ship-dual-nature-and-clean-docked-tradeoff: done
-  2-5-docked-ship-resolution-four-outcomes: backlog
+  2-5-docked-ship-resolution-four-outcomes: done
   2-6-sacrifice-burst-threat-relative: backlog
   2-7-safe-play-vs-rescue-bonus-economy: backlog
   2-8-captor-wave-integration-and-gamble-gate: backlog

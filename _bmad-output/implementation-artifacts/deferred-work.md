@@ -94,3 +94,8 @@ Story 1.8 closed these five 1.8-owned items. (Original deferral notes preserved 
 ## Deferred from: code review of 2-4-docked-ship-dual-nature-and-clean-docked-tradeoff (2026-07-12)
 
 - `BuildState.wing_level`/`main_level` have no upper bound [run/build_state.gd:48] — pre-existing E2 design (flat/hardcoded ladders, no cap mechanism yet). `record_rescue()` increments `wing_level` with no ceiling, unlike `RunState.add_ship()` which clamps to `Constants.MAX_SHIPS`. Not a spec violation for E2 (captors currently spawn only via the F8 debug cheat), but worth revisiting when Story 3.3 wires ladder investment through the recompute pipeline — that story should define whether/where a level cap belongs.
+
+## Deferred from: code review of 2-5-docked-ship-resolution-four-outcomes (2026-07-12)
+
+- Deferred-call ordering race between F12's `_reload_run_fresh.call_deferred()` and a same-frame docked-ship `fighter.detach.call_deferred()` [world/arena.gd:73] — no defined ordering guarantee if both are queued the same frame; narrow, low-probability window, not clearly broken today.
+- Sacrifice input is read every `_physics_process` frame with no gate against the window between `game_over` firing and the deferred reload landing [player/player.gd `_physics_process`] — a sacrifice could commit (and emit `sacrifice_burst_started`) against a `RunState` about to be torn down; same class of pre-existing deferred-reload race as elsewhere in this codebase, narrow edge case.

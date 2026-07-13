@@ -195,3 +195,119 @@ func test_wing_track_survives_absorb_then_wave_clear() -> void:
 	EventBus.wave_cleared.emit(1)  # wave-clear detaches the 2nd fighter
 	assert_eq(arena._run_state.build_state.wing_level, 2, "wave-clear must NOT clear the accumulated WING track")
 	await get_tree().physics_frame
+
+
+# --- Story 2.5 (Task 6.2) — the run-scope halves of the four outcomes (AC4) ---
+# The Player-side consume/signal assertions live in test_player_docked_resolution.gd (Task 6.1). Here we
+# assert the ARENA-owned run-scope side: Keep → add_ship(+1) + ship_gained; Sacrifice → no ship change +
+# the sacrifice_burst_started hook (the 2.6 seam); the WING track persists across sacrifice (NP1, four-
+# outcome context). The Arena owns RunState (AR2) — it is the single point that enriches global signals
+# with run-state data (wing_level, ships).
+
+# --- AC2 — Keep: the ONLY add_ship caller in the Gamble (+1, net 0 vs capture) ---
+
+func test_keep_regains_one_ship_on_wave_clear() -> void:
+	# AC2 (run-scope): rescue-dock (wing_level grows, NO ship change) → wave-clear while docked →
+	# ship_kept → Arena._on_player_ship_kept → add_ship(+1) (the ONLY add_ship in the Gamble) AND
+	# EventBus.ship_gained emitted carrying the new remaining count (so the HUD pip row reflects it).
+	var arena := _make()
+	watch_signals(EventBus)
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # rescue → dock + wing_level 1
+	assert_true(arena._player.is_docked(), "precondition: player docked")
+	var ships_before: int = arena._run_state.ships
+	EventBus.wave_cleared.emit(1)  # wave-clear while docked → ship_kept → add_ship(+1) + ship_gained.
+	assert_eq(arena._run_state.ships, ships_before + 1, "keep should regain exactly 1 ship (+1)")
+	assert_signal_emitted(EventBus, "ship_gained", "keep should emit ship_gained (HUD pip row reflects the regain)")
+	var gained_params: Array = get_signal_parameters(EventBus, "ship_gained")
+	assert_eq(gained_params[0], ships_before + 1, "ship_gained should carry the new remaining count")
+	await get_tree().physics_frame
+
+
+func test_keep_at_max_ships_clamps() -> void:
+	# FR8 cap: a keep at MAX_SHIPS is a graceful no-op-clamp (add_ship clamps to MAX_SHIPS = 5). No overflow.
+	var arena := _make()
+	watch_signals(EventBus)
+	arena._run_state.ships = Constants.MAX_SHIPS  # at the run cap.
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock (no ship change)
+	assert_true(arena._player.is_docked())
+	EventBus.wave_cleared.emit(1)  # keep → add_ship(+1) clamped at MAX_SHIPS.
+	assert_eq(arena._run_state.ships, Constants.MAX_SHIPS, "keep at MAX_SHIPS must clamp (no overflow)")
+	# review fix: a clamped no-op keep must NOT emit ship_gained — nothing was actually regained, so the
+	# HUD must not flash a phantom "ship regained" cue.
+	assert_signal_emit_count(EventBus, "ship_gained", 0, "a clamped keep at MAX_SHIPS must not emit ship_gained")
+	await get_tree().physics_frame
+
+
+func test_keep_does_not_change_hp() -> void:
+	# Keep is about SHIPS, not HP (WaveController heals HP on clear separately — not re-tested here). The
+	# add_ship path must not touch HealthComponent. Pinned against a future regression that wires HP into
+	# the keep path.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock
+	var hp_before: int = arena._player._health.current_hp
+	EventBus.wave_cleared.emit(1)  # keep
+	assert_eq(arena._player._health.current_hp, hp_before, "keep must NOT change the player's HP")
+	await get_tree().physics_frame
+
+
+# --- AC1 — Sacrifice: no ship change + the burst hook (the 2.6 seam) ---
+
+func test_sacrifice_does_not_change_ship_count() -> void:
+	# AC1 (run-scope): sacrifice → _run_state.ships UNCHANGED. Sacrifice is ship-neutral (FR18 — the ONLY
+	# ship-count changes in the Gamble are capture −1 and keep +1). The consume forfeits the keep regain
+	# (relative vs Keep), it does NOT spend a ship. Driven via the player's real consume path (_try_sacrifice
+	# — the same method the input read calls), which emits sacrifice_committed → Arena → the burst hook.
+	var arena := _make()
+	watch_signals(EventBus)
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock
+	var ships_before: int = arena._run_state.ships
+	arena._player._try_sacrifice()  # consume the fighter (mirrors input → _try_sacrifice).
+	assert_eq(arena._run_state.ships, ships_before, "sacrifice must NOT change the ship count (FR18)")
+	assert_false(arena._player.is_docked(), "the fighter should be consumed")
+	await get_tree().physics_frame  # let the deferred queue_free of the fighter land before teardown.
+
+
+func test_sacrifice_fires_burst_hook_with_wing_level() -> void:
+	# AC1 (run-scope — the 2.6 seam): sacrifice → EventBus.sacrifice_burst_started emitted with the current
+	# wing_level (the WING-track investment FR19 says the burst "scales with"; the stable primitive 2.6's
+	# threat_ceiling reads). 2.5 has NO subscriber — the emit firing IS "the burst fires".
+	var arena := _make()
+	watch_signals(EventBus)
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # dock → wing_level 1
+	assert_eq(arena._run_state.build_state.wing_level, 1)
+	arena._player._try_sacrifice()  # consume → sacrifice_committed → Arena → sacrifice_burst_started(1).
+	assert_signal_emitted(EventBus, "sacrifice_burst_started")
+	var burst_params: Array = get_signal_parameters(EventBus, "sacrifice_burst_started")
+	assert_eq(burst_params[0], 1, "sacrifice_burst_started should carry the current wing_level (1 after one rescue)")
+	await get_tree().physics_frame
+
+
+func test_sacrifice_at_zero_wing_emits_hook_with_zero() -> void:
+	# The burst hook fires (and carries 0) even with NO prior rescue — wing_level is 0 until a rescue grows
+	# it. Pins the payload's origin (build_state.wing_level, NOT a hardcoded value) at the floor.
+	var arena := _make()
+	watch_signals(EventBus)
+	# Dock directly on the player (bypass rescue so wing_level stays 0 — the Arena's record_rescue is the
+	# ONLY grower). try_dock_ship is the rescue EFFECT entry; it docks without growing the track.
+	assert_true(arena._player.try_dock_ship())
+	assert_eq(arena._run_state.build_state.wing_level, 0, "precondition: no rescue → wing_level still 0")
+	arena._player._try_sacrifice()
+	assert_signal_emitted(EventBus, "sacrifice_burst_started")
+	var burst_params: Array = get_signal_parameters(EventBus, "sacrifice_burst_started")
+	assert_eq(burst_params[0], 0, "sacrifice_burst_started should carry 0 when no rescue grew the track")
+	await get_tree().physics_frame
+
+
+# --- AC4 / NP1 — the WING track persists across the sacrifice consume (four-outcome context) ---
+
+func test_wing_track_persists_across_sacrifice() -> void:
+	# NP1 (re-asserted from the sacrifice consume path, four-outcomes context): a sacrifice consumes the
+	# fighter but does NOT clear the WING track. The consume path (Player._try_sacrifice) has no RunState
+	# ref (AR2) → it structurally cannot reach build_state. Mirrors the absorb/wave-clear permanence suite.
+	var arena := _make()
+	arena._spawner.captor_resolved.emit(true, arena._player.global_position)  # wing_level 1
+	assert_eq(arena._run_state.build_state.wing_level, 1)
+	arena._player._try_sacrifice()  # consume
+	assert_false(arena._player.is_docked(), "precondition: fighter consumed")
+	assert_eq(arena._run_state.build_state.wing_level, 1, "sacrifice must NOT clear the WING track (NP1)")
+	await get_tree().physics_frame

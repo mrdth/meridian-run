@@ -76,3 +76,19 @@ func test_wave_controller_heals_and_advances_on_timer_expiry() -> void:
 	wc._state_machine._physics_process(wc.wave_duration_s + 0.1)
 	assert_eq(arena._player._health.current_hp, arena._player._health.max_hp)  # AC2 full heal
 	assert_eq(wc.wave_num, wave_before + 1)  # advanced to the next wave
+
+
+# --- F12 manual run reset ---
+
+func test_reset_action_is_bound_to_f12() -> void:
+	# F12 resets the run to wave 1 / full lives (Arena._unhandled_input → _reload_run_fresh). Pin the
+	# InputMap binding so a future retune can't silently detach F12. The fresh-scene reload itself is the
+	# SAME path a run-loss auto-replay uses (_reload_run_fresh, covered by the run-loss tests above with
+	# auto_replay_on_loss=false) — not re-tested here, since reload_current_scene mid-test would reload the
+	# GUT runner scene.
+	assert_true(InputMap.has_action("reset"), "the 'reset' action must be defined (F12 reset)")
+	var has_f12: bool = false
+	for ev in InputMap.action_get_events("reset"):
+		if ev is InputEventKey and (ev as InputEventKey).physical_keycode == KEY_F12:
+			has_f12 = true
+	assert_true(has_f12, "'reset' must be bound to F12 (physical_keycode KEY_F12)")

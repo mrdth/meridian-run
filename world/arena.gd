@@ -20,6 +20,8 @@ extends Node2D
 @onready var _hud: Hud = $HUD
 @onready var _wave_controller: WaveController = $WaveController
 
+var _reload_in_flight: bool = false  # review fix: re-entrancy guard shared by _on_run_lost + F12 reset.
+
 
 func _ready() -> void:
 	_run_state.begin_run()  # ships = BASE_SHIPS (3), score = 0
@@ -30,6 +32,16 @@ func _ready() -> void:
 	# player.ship_depleted (LOCAL, D8) → run-scope decision. WaveController separately subscribes
 	# to EventBus.game_over to Fail the active wave (it owns the wave lifecycle now).
 	_player.ship_depleted.connect(_on_player_ship_depleted)
+	# Story 2.5 (AC1) — player.sacrifice_committed (LOCAL, D8) → run-scope burst hook. The Arena (RunState
+	# owner) enriches the global burst signal with wing_level (AR2 — the Player never touches RunState).
+	# The Player is NOT pooled → connect ONCE (the is_connected guard is belt-and-braces, mirroring
+	# captor_resolved's connect).
+	if not _player.sacrifice_committed.is_connected(_on_player_sacrifice_committed):
+		_player.sacrifice_committed.connect(_on_player_sacrifice_committed)
+	# Story 2.5 (AC2) — player.ship_kept (LOCAL, D8) → run-scope Keep regain (add_ship(+1)). The Player is
+	# NOT pooled → connect ONCE (belt-and-braces is_connected guard).
+	if not _player.ship_kept.is_connected(_on_player_ship_kept):
+		_player.ship_kept.connect(_on_player_ship_kept)
 	# Story 2.3 — the spawner routes captor deaths here for run-scope resolution (rescue dock vs
 	# failed-rescue enemy spawn). LOCAL signal (spawner→Arena, D8 intra-scene). Arena is NOT pooled →
 	# connect ONCE (the is_connected guard is belt-and-braces, mirroring the player's wave_cleared).
@@ -51,6 +63,22 @@ func _ready() -> void:
 	# Story 2.4 — also pass _run_state so the overlay's BUILD row can surface the WING track (read-only).
 	if OS.is_debug_build():
 		Debug.bind_arena(_player, _spawner, _wave_controller, _run_state)
+	# review fix: F12 reset is debug/dev tooling (Task 8), like Debug's own debug_cheat_* actions — it
+	# must not be reachable in exported/release builds. Strips _unhandled_input processing entirely
+	# (mirrors systems/debug.gd's _ready gate) rather than an inline is_debug_build() check per event.
+	if not OS.is_debug_build():
+		set_process_unhandled_input(false)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# F12 — manual run reset (back to wave 1, full lives, score 0). Read as an action (F5: actions, never
+	# raw keys), keyboard-only like the debug_* actions. Debug-build only (gated in _ready above). Reuses
+	# _reload_run_fresh — the SAME fresh-scene reload a run-loss auto-replay uses (a fresh Arena._ready
+	# runs begin_run: ships=BASE_SHIPS, score=0 + a fresh WaveController at wave 1). Deferred so it's safe
+	# from the input callback and consistent with _on_run_lost's deferred reload. The WING track resets
+	# too (BuildState.reset() in begin_run).
+	if event.is_action_pressed("reset"):
+		_try_reload_run_fresh()
 
 
 func _on_player_ship_depleted() -> void:
@@ -62,6 +90,30 @@ func _on_player_ship_depleted() -> void:
 		EventBus.ship_lost.emit(remaining)
 	else:
 		_on_run_lost()
+
+
+func _on_player_sacrifice_committed() -> void:
+	# Story 2.5 (AC1) — the sacrifice-burst HOOK (the 2.6 seam). The Arena (RunState owner) is the single
+	# point that enriches global signals with run-state data (consistent with 2.4's record_rescue pattern).
+	# Payload = wing_level (the WING-track investment FR19 says the burst "scales with"); the Player has
+	# no RunState ref (AR2). NO buff applies in 2.5 — the event firing IS "the burst fires" (AC1); the buff
+	# (BuildRecompute.threat_ceiling → triple-shot / ×1.5 dmg / fast-fire / ~10 s) is Story 2.6 (NP3).
+	# NP3 seam (2.6): subscribe → BuildRecompute.threat_ceiling → apply buff.
+	EventBus.sacrifice_burst_started.emit(_run_state.build_state.wing_level)
+
+
+func _on_player_ship_kept() -> void:
+	# Story 2.5 (AC2) — the Keep regain: the ONLY add_ship caller in the Gamble. add_ship clamps to
+	# MAX_SHIPS (5, FR8) — a keep at max ships is a graceful no-op-clamp. NO HP change (WaveController
+	# heals HP on clear separately — keep is about ships, not HP). This +1 makes capture→rescue→keep net 0
+	# (capture was −1 in 2.2). Then ship_gained so the HUD lives-pip row reflects the regained ship (Task
+	# 4 — without it the regain would be invisible; the HUD updated only on ship_lost before 2.5).
+	# review fix: only emit ship_gained if a ship was ACTUALLY regained — at MAX_SHIPS, add_ship(1) is a
+	# no-op clamp, and emitting ship_gained anyway would flash a phantom "ship regained" HUD cue.
+	var ships_before: int = _run_state.ships
+	_run_state.add_ship(1)
+	if _run_state.ships > ships_before:
+		EventBus.ship_gained.emit(_run_state.ships)
 
 
 func _on_captor_resolved(rescue: bool, at: Vector2) -> void:
@@ -106,16 +158,29 @@ func _on_run_lost() -> void:
 	# 1.4's deferred Pool.release). call_deferred lands it at idle, outside the physics callback.
 	EventBus.game_over.emit()
 	if auto_replay_on_loss:
-		_end_run.call_deferred()
+		_try_reload_run_fresh()
 
 
-func _end_run() -> void:
-	# E1 placeholder fresh-run: empty the Pool (so it stops referencing nodes the scene reload is
-	# about to free) then reload. The new Arena._ready constructs a fresh RunState (ships back to 3,
-	# score 0) + a fresh WaveController (wave 1). The real restart flow is Story 8.4.
-	# Debug-build only: clear cheat/toggle state (and restore any mutated PlayerTuning baseline)
-	# so a debug session's cheats don't leak into the next run (Debug is an autoload — it outlives
-	# the reload).
+func _try_reload_run_fresh() -> void:
+	# review fix: the shared entry point for BOTH reload triggers (_on_run_lost's auto-replay AND F12's
+	# manual reset). Without this guard, a same-frame game-over + F12 press (or a double F12 press before
+	# the first deferred call lands) would queue _reload_run_fresh.call_deferred() twice — double-running
+	# Pool.clear() + the scene reload. _reload_in_flight is never reset: the Arena instance is about to be
+	# freed by the reload it queues, so there is nothing to re-arm.
+	if _reload_in_flight:
+		return
+	_reload_in_flight = true
+	_reload_run_fresh.call_deferred()
+
+
+func _reload_run_fresh() -> void:
+	# The shared fresh-run reload — used by BOTH a run-loss auto-replay (_on_run_lost) AND the F12 manual
+	# reset (_unhandled_input). E1 placeholder: empty the Pool (so it stops referencing nodes the scene
+	# reload is about to free) then reload. The new Arena._ready constructs a fresh RunState (ships back
+	# to BASE_SHIPS=3, score 0, BuildState flat) + a fresh WaveController (wave 1). The real restart flow
+	# is Story 8.4. Debug-build only: clear cheat/toggle state (and restore any mutated PlayerTuning
+	# baseline) so a debug session's cheats don't leak into the next run (Debug is an autoload — it
+	# outlives the reload).
 	if OS.is_debug_build():
 		Debug.reset_debug_state()
 	Pool.clear()

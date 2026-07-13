@@ -23,6 +23,15 @@ signal run_started
 signal wave_started(wave: int, duration_s: float)  # Story 1.8 — WaveController emits on Intro enter
 signal wave_cleared(wave: int)
 signal ship_lost(ships_remaining: int)
+# Story 2.5 (AC1) — the sacrifice-burst HOOK (the 2.6 seam). Global game-flow (D8): the Arena (RunState
+# owner) emits it carrying the WING-track investment FR19 says the burst "scales with" — the stable
+# primitive 2.6's threat_ceiling(track, threat) reads. 2.5 has NO subscriber: the event firing IS "the
+# burst fires"; the buff (triple-shot / ×1.5 dmg / fast-fire / ~10 s) is Story 2.6 (NP3/FR19).
+signal sacrifice_burst_started(wing_level: int)
+# Story 2.5 (AC2) — a ship was regained (the Keep outcome). Global game-flow (D8): mirrors ship_lost's
+# shape (both carry the remaining count) so the HUD handler is identical. Emitted by the Arena after
+# add_ship(1) on a kept fighter.
+signal ship_gained(ships_remaining: int)
 signal build_changed
 signal score_changed(score: int)
 signal game_over
