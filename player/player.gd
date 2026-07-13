@@ -165,6 +165,17 @@ func is_docked() -> bool:
 	return _docked
 
 
+func was_captured_this_wave() -> bool:
+	# Story 2.7 — public read accessor for the per-wave capture gate (FR20 detection half). The flag is set
+	# in try_capture() (player.gd) the moment a capture lands and held until the next wave_started resets it
+	# (player.gd::_on_wave_started) — so it reads true for the rest of the wave REGARDLESS of later rescue /
+	# sacrifice / absorb / failed-rescue resolution (the exact COURTED semantic). The Arena reads this at
+	# wave-clear (synchronously, inside the wave_cleared window BEFORE wave_started resets it) to classify
+	# the gamble outcome and emit EventBus.gamble_outcome_recorded. Mirrors is_docked/is_capture_immune
+	# (public read accessors over private _underscore state); the Player still emits nothing to the bus (D8).
+	return _captured_this_wave
+
+
 func set_docked(on: bool) -> void:
 	# The architecture-named write-side (architecture.md:616 `set_docked(true) # capture-immune + bigger
 	# hitbox`). Flips _docked (capture-immune via is_capture_immune) AND grows/shrinks the player's hitbox

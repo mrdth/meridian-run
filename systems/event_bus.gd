@@ -28,6 +28,13 @@ signal ship_lost(ships_remaining: int)
 # primitive 2.6's threat_ceiling(track, threat) reads. 2.5 has NO subscriber: the event firing IS "the
 # burst fires"; the buff (triple-shot / ×1.5 dmg / fast-fire / ~10 s) is Story 2.6 (NP3/FR19).
 signal sacrifice_burst_started(wing_level: int)
+# Story 2.7 (FR20 detection half) — the per-wave gamble-outcome classification. Global game-flow (D8): the
+# Arena emits it at wave-clear carrying SAFE (no capture this wave) or COURTED (a capture occurred, regardless
+# of later rescue/sacrifice/absorb/failed-rescue resolution). E2 PRODUCES the classification only (AC4 — NO
+# currency logic); E3 (Story 3.4) CONSUMES it to gate the safe-play currency bonus (base + safe_play_bonus_pct
+# iff SAFE). Same emit-now/consume-later shape as sacrifice_burst_started (2.5 emit / 2.6 consume). 2.7 has NO
+# subscriber: the event firing IS "the outcome is recorded"; the currency grant is Story 3.4.
+signal gamble_outcome_recorded(outcome: GambleOutcome.Outcome)
 # Story 2.5 (AC2) — a ship was regained (the Keep outcome). Global game-flow (D8): mirrors ship_lost's
 # shape (both carry the remaining count) so the HUD handler is identical. Emitted by the Arena after
 # add_ship(1) on a kept fighter.

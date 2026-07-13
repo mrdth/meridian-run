@@ -49,6 +49,12 @@ func _ready() -> void:
 	# NOT pooled → connect ONCE (belt-and-braces is_connected guard).
 	if not _player.ship_kept.is_connected(_on_player_ship_kept):
 		_player.ship_kept.connect(_on_player_ship_kept)
+	# Story 2.7 — EventBus.wave_cleared (global, D8) → run-scope gamble-outcome classification. The Arena
+	# reads the player's per-wave capture flag at wave-clear, classifies it (SAFE/COURTED), and emits
+	# gamble_outcome_recorded for the E3 economy (Story 3.4) to consume. The Arena is NOT pooled → connect
+	# ONCE (belt-and-braces is_connected guard, mirroring the player-local connects above).
+	if not EventBus.wave_cleared.is_connected(_on_wave_cleared):
+		EventBus.wave_cleared.connect(_on_wave_cleared)
 	# Story 2.3 — the spawner routes captor deaths here for run-scope resolution (rescue dock vs
 	# failed-rescue enemy spawn). LOCAL signal (spawner→Arena, D8 intra-scene). Arena is NOT pooled →
 	# connect ONCE (the is_connected guard is belt-and-braces, mirroring the player's wave_cleared).
@@ -172,6 +178,27 @@ func _on_player_ship_kept() -> void:
 	_run_state.add_ship(1)
 	if _run_state.ships > ships_before:
 		EventBus.ship_gained.emit(_run_state.ships)
+
+
+func _on_wave_cleared(_wave: int) -> void:
+	# Story 2.7 (FR20 detection half) — classify the wave's gamble outcome and broadcast it for E3 to
+	# consume. The Arena (RunState owner) is the single point that enriches wave-clear with the per-wave
+	# capture classification (AR2 — the Player never touches RunState; the Arena reads the Player's capture
+	# flag via its public accessor was_captured_this_wave()). AC4: this carries NO currency logic — Story 3.4
+	# consumes the outcome to compute the safe-play bonus (base + safe_play_bonus_pct iff SAFE).
+	#
+	# ORDERING (load-bearing): wave_completed_state.gd emits wave_cleared, then advances the wave + re-enters
+	# Intro → wave_started → Player._on_wave_started RESETS _captured_this_wave. Godot signal emission is
+	# SYNCHRONOUS, so this handler runs (and reads the flag) during the wave_cleared emit, BEFORE the reset.
+	# Do NOT call_deferred the read — a deferred read would land after the reset and mis-classify as SAFE.
+	#
+	# Game-over race guard mirrors _on_player_sacrifice_committed: a failed wave (last ship spent mid-wave)
+	# routes to WaveFailedState, NOT WaveCompletedState, so wave_cleared structurally implies a successful
+	# wave — but guard anyway for robustness against teardown.
+	if _reload_in_flight or not is_instance_valid(_player):
+		return
+	var outcome: GambleOutcome.Outcome = GambleOutcome.classify(_player.was_captured_this_wave())
+	EventBus.gamble_outcome_recorded.emit(outcome)
 
 
 func _on_captor_resolved(rescue: bool, at: Vector2) -> void:

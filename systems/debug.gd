@@ -35,6 +35,7 @@ var _pooled_label: Label
 var _wave_label: Label
 var _seed_label: Label
 var _build_label: Label
+var _gamble_label: Label
 var _overlay_timer: float = 0.0
 var _cached_wave: int = 0
 
@@ -73,6 +74,7 @@ func _build_overlay() -> void:
 	_wave_label = _make_row(vbox, "WAVE")
 	_seed_label = _make_row(vbox, "SEED")
 	_build_label = _make_row(vbox, "BUILD")
+	_gamble_label = _make_row(vbox, "GAMBLE")
 	_overlay.visible = false
 	# Wave row tracks wave_started (carries the wave number; the controller emits it).
 	EventBus.wave_started.connect(_on_wave_started)
@@ -153,6 +155,14 @@ func _refresh_overlay() -> void:
 		_build_label.text = "BUILD: WING %d / MAIN %d" % [run_state.build_state.wing_level, run_state.build_state.main_level]
 	else:
 		_build_label.text = "BUILD: --"
+	# Story 2.7 — surface the per-wave gamble outcome (FR20 detection) so the SAFE/COURTED classification is
+	# watchable in a playtest (toggle the overlay, court capture → watch GAMBLE flip to COURTED live, before
+	# wave-clear even emits gamble_outcome_recorded). Reads player.was_captured_this_wave() live — the same
+	# source the Arena classifies at wave-clear. Debug only READS the flag (AR2 — Debug never mutates state).
+	if player != null:
+		_gamble_label.text = "GAMBLE: COURTED" if player.was_captured_this_wave() else "GAMBLE: SAFE"
+	else:
+		_gamble_label.text = "GAMBLE: --"
 
 
 func _cheat_move_speed() -> void:
