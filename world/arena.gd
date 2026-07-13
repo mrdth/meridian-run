@@ -13,6 +13,11 @@ extends Node2D
 # real game-over/menu/restart flow is Story 8.4 (which replaces this toggle). Default true
 # in gameplay; tests flip it false so a deferred reload can't reset the GUT runner scene.
 @export var auto_replay_on_loss: bool = true
+# Story 2.6 (NP3) — the sacrifice-burst tuning (AR10/D9). The Arena owns run-scope enrichment
+# (wing_level + threat) + computes the burst via BuildRecompute.threat_ceiling; this tuning carries
+# the NP3 clamp knobs + the fixed burst shape. Wired in arena.tscn to resources/sacrifice_tuning.tres
+# (the .tres wins at runtime). Fail-safe default if unassigned (AR11 — mirrors JuiceCoordinator).
+@export var sacrifice_tuning: SacrificeTuning
 
 @onready var _spawner: FormationSpawner = $FormationSpawner
 @onready var _player: Player = $Player
@@ -21,6 +26,8 @@ extends Node2D
 @onready var _wave_controller: WaveController = $WaveController
 
 var _reload_in_flight: bool = false  # review fix: re-entrancy guard shared by _on_run_lost + F12 reset.
+var _default_sacrifice_tuning: SacrificeTuning = null  # review fix: cached fallback, not reallocated per sacrifice.
+var _warned_sacrifice_tuning_unassigned: bool = false  # review fix: warn once, not on every sacrifice.
 
 
 func _ready() -> void:
@@ -93,13 +100,64 @@ func _on_player_ship_depleted() -> void:
 
 
 func _on_player_sacrifice_committed() -> void:
-	# Story 2.5 (AC1) — the sacrifice-burst HOOK (the 2.6 seam). The Arena (RunState owner) is the single
-	# point that enriches global signals with run-state data (consistent with 2.4's record_rescue pattern).
-	# Payload = wing_level (the WING-track investment FR19 says the burst "scales with"); the Player has
-	# no RunState ref (AR2). NO buff applies in 2.5 — the event firing IS "the burst fires" (AC1); the buff
-	# (BuildRecompute.threat_ceiling → triple-shot / ×1.5 dmg / fast-fire / ~10 s) is Story 2.6 (NP3).
-	# NP3 seam (2.6): subscribe → BuildRecompute.threat_ceiling → apply buff.
-	EventBus.sacrifice_burst_started.emit(_run_state.build_state.wing_level)
+	# Story 2.5 (AC1) — the sacrifice-burst HOOK. The Arena (RunState owner) is the single point that
+	# enriches global signals with run-state data (consistent with 2.4's record_rescue pattern). Payload =
+	# wing_level (the WING-track investment FR19 says the burst "scales with"); the Player has no RunState
+	# ref (AR2). The signal emit stays FIRST + unchanged — 2.5's tests assert sacrifice_burst_started carries
+	# wing_level; the global game-flow hook is the same.
+	# Story 2.6 (NP3) — now ALSO computes the threat-clamped burst and applies it to the player's FireSystem.
+	# AC4: there is NO artificial cooldown between sacrifices — the bound is structural (one docked ship per
+	# wave → at most one sacrifice per wave; forfeits keep-regain). Do NOT add a sacrifice cooldown (a last-
+	# press timestamp, a readiness flag, etc.) — those would violate AC4.
+	var wing_level: int = _run_state.build_state.wing_level
+	EventBus.sacrifice_burst_started.emit(wing_level)
+	# Story 2.6 — guard the game_over/reload race (Dev Notes §"⚠️ Edge cases"): sacrifice input is read every
+	# _physics_process with no gate against the game_over→reload window, so a sacrifice can commit against a
+	# RunState about to be torn down. 2.5 only emitted a signal (low risk); 2.6 MUTATES FireSystem state, so
+	# skip the apply when the run is ending. _reload_in_flight mirrors "game_over already emitted + reload
+	# queued" (_on_run_lost emits game_over THEN queues the reload); the signal emit above is harmless either
+	# way (no subscriber mutates run state). The is_instance_valid guard is belt-and-braces against teardown.
+	if _reload_in_flight or not is_instance_valid(_player):
+		return
+	# AR11 fail-safe: an unassigned sacrifice_tuning falls back to defaults (mirrors JuiceCoordinator's
+	# tuning fallback) so a misconfigured scene degrades instead of crashing on cfg dereference. Review
+	# fix: cache the fallback instance (was allocating a fresh SacrificeTuning every sacrifice) and warn
+	# only once per Arena instance (was logging on every sacrifice while misconfigured).
+	var cfg: SacrificeTuning = sacrifice_tuning
+	if cfg == null:
+		if _default_sacrifice_tuning == null:
+			_default_sacrifice_tuning = SacrificeTuning.new()
+		cfg = _default_sacrifice_tuning
+		if not _warned_sacrifice_tuning_unassigned:
+			_warned_sacrifice_tuning_unassigned = true
+			Log.warn("arena", "sacrifice_tuning unassigned — using SacrificeTuning defaults (wire resources/sacrifice_tuning.tres in arena.tscn)")
+	# NP3 — the threat-relative clamp. threat = Σ active enemies' max HP (captures Swarm/tier/Bomber
+	# composition); threat_ceiling caps raw power at threat * max_threat_fraction → "always useful (fixed
+	# triple/fast-fire shape), never an insta-win (damage mult clamped)". Injection, NOT a RunState ref on
+	# Player (AR2 — the Arena owns RunState + the burst computation; the Player just applies the result).
+	var threat: float = _compute_current_threat()
+	var burst: SacrificeBurst = BuildRecompute.threat_ceiling(wing_level, threat, cfg)
+	_player.apply_sacrifice_burst(burst)
+
+
+func _compute_current_threat() -> float:
+	# Story 2.6 (NP3 / AC2) — the "current-wave threat" the burst is clamped against. Sum of active
+	# enemies' max HP — captures Swarm (2× enemies), tier (+30/60% HP), and Bomber-heavy waves naturally
+	# (a plain enemy_count or wave_num×k would miss HP variance — confirmed with Mrdth 2026-07-13). Both
+	# Enemy + Captor expose `_health` (HealthComponent, max_hp set from definition.max_hp at activate —
+	# enemy.gd / captor.gd); a held CaptureColumn has no `_health`, so the `is HealthComponent` guard skips
+	# it. Computed once at sacrifice time (NOT a hot path — one loop over the enemy container). Returns 0.0
+	# if the spawner/container is unassigned (fail-safe — a threat of 0 clamps power to 0, still useful).
+	if _spawner == null or _spawner._container == null:
+		return 0.0
+	var total: float = 0.0
+	for child in _spawner._container.get_children():
+		if not is_instance_valid(child):
+			continue
+		var h = child.get("_health")
+		if h is HealthComponent:
+			total += float(h.max_hp)
+	return total
 
 
 func _on_player_ship_kept() -> void:

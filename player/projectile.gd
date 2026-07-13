@@ -9,6 +9,11 @@ extends Area2D
 var _speed: float = 0.0
 var _damage: int = 0
 var _consumed: bool = false
+# Story 2.6 — travel direction (unit vector). Default straight up (0,-1) so existing callers that omit
+# angle_rad (the primary + docked streams) are regression-free; the burst sets this via from_angle for the
+# triple-shot spread (±0.18 rad). Stored as a Vector2 (not a scalar) so a future non-vertical shot needs no
+# further change here.
+var _direction: Vector2 = Vector2(0.0, -1.0)
 
 
 func _ready() -> void:
@@ -23,13 +28,16 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 
 
-func activate(spawn_pos: Vector2, speed: float, damage: int) -> void:
+func activate(spawn_pos: Vector2, speed: float, damage: int, angle_rad: float = 0.0) -> void:
 	# Re-init entry point — the core pooled-re-init contract (AR6). Called by
 	# FireSystem._spawn() right after Pool.acquire(); flips the (deactivated,
-	# released) node back on and sets per-spawn state. _speed/_damage are cached
-	# here and never read from an autoload per frame (NFR3 hot path).
+	# released) node back on and sets per-spawn state. _speed/_damage/_direction are cached
+	# here and never read from an autoload per frame (NFR3 hot path). angle_rad defaults to 0.0
+	# (straight up) — the primary + docked streams pass nothing (regression-free); the burst's
+	# triple-shot passes ±spread. -PI/2 is "up" in screen space (Vector2.from_angle is CCW from +X).
 	_speed = speed
 	_damage = damage
+	_direction = Vector2.from_angle(-PI / 2.0 + angle_rad)
 	_consumed = false
 	global_position = spawn_pos
 	visible = true
@@ -38,13 +46,14 @@ func activate(spawn_pos: Vector2, speed: float, damage: int) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	# Straight up; zero allocation (single float-component update — no Vector2,
-	# no velocity). Manual delta integration is correct for an Area2D (no
-	# move_and_slide); the "never multiply by delta" rule is move_and_slide()-specific.
-	global_position.y -= _speed * delta
-	# Leave-screen (top of the 720-tall field) → release back to the pool. The
-	# bullet spawns at ~660 and travels up; clearing at centre y == 0 is fine.
-	# Never queue_free().
+	# Travel along _direction (default straight up; the burst sets an angled direction). Manual delta
+	# integration is correct for an Area2D (no move_and_slide); the "never multiply by delta" rule is
+	# move_and_slide()-specific. One Vector2 add per tick (the original was a single .y subtract; the
+	# Vector2 is unavoidable for angled travel and is not a per-frame allocation — _direction is cached).
+	global_position += _direction * _speed * delta
+	# Leave-screen (top of the 720-tall field) → release back to the pool. The bullet spawns at ~660 and
+	# travels up; for the ±0.18 rad spread the y-component stays negative (upward), so every shot still
+	# crosses y == 0 and releases — no projectile leaks. Never queue_free().
 	if global_position.y <= 0.0:
 		Pool.release(self)
 		return

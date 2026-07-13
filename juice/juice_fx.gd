@@ -82,3 +82,17 @@ static func docked_consumed(at: Vector2, color: Color) -> void:
 	EventBus.particles_requested.emit(&"explosion", at, color, 0.8)
 	EventBus.screen_shake_requested.emit(_TUNING.shake_kill_amount, _TUNING.shake_kill_dur)
 	AudioManager.play_kill()
+
+
+static func sacrifice_ignited(at: Vector2) -> void:
+	# Story 2.6 (FR47/FR48) — the sacrifice-burst IGNITION cue (2.5 deferred the distinct cue + reused
+	# docked_consumed; this is the dedicated ignition sting). A heavy kill-grade rumble (clamped to
+	# MAX_SHAKE_PX by the coordinator) + a warm-amber ignition particle burst + an SFX. The on-ship glow +
+	# timer ring (Player Task 7) carry the sustained readability; this is the ONE-SHOT ignition at burst
+	# start. Mirrors docked_consumed's shape (particles + shake + SFX). Reduced-motion: the coordinator's
+	# _motion_scale dampens the shake/particles (~70%); the glow + ring + SFX + the buff itself remain
+	# untouched (D14 — dampen motion amplitude, never the gameplay effect). NO hit_flash (the on-ship glow
+	# is continuous, not a ≤3 Hz flash, so the central HitFlash gate is not needed here).
+	EventBus.particles_requested.emit(&"sacrifice_ignition", at, _TUNING.sacrifice_ignition_color, 1.0)
+	EventBus.screen_shake_requested.emit(_TUNING.shake_kill_amount, _TUNING.shake_kill_dur)
+	AudioManager.play_kill()

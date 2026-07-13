@@ -50,6 +50,17 @@ extends Resource
 @export var muzzle_scale: float = 0.45
 @export var muzzle_color: Color = Color(0.7, 1.0, 1.0)
 
+@export_subgroup("Sacrifice Ignition")
+# Story 2.6 (FR47/FR48) — the one-shot ignition burst for the sacrifice power-surge. A warm-amber blast
+# (the "ignited" read) — distinct from explosion (enemy death) + muzzle (per-shot). The sustained on-ship
+# glow + timer ring (Task 7) carry the readability; this is the single ignition sting at burst start.
+@export var sacrifice_ignition_amount: int = 22
+@export var sacrifice_ignition_lifetime: float = 0.50
+@export var sacrifice_ignition_spread_rad: float = PI      # omnidirectional
+@export var sacrifice_ignition_speed: float = 240.0
+@export var sacrifice_ignition_scale: float = 1.2
+@export var sacrifice_ignition_color: Color = Color(1.0, 0.85, 0.45, 1.0)  # warm amber ignition
+
 @export_subgroup("Score Popup")
 # Kill-juice floating "+N". Duration is NOT here — the coordinator sources it from `explosion_lifetime`
 # so the popup literally matches the death blast's fade (the "same speed as the explosion" intent is
@@ -90,6 +101,8 @@ func get_effect_profile(effect: StringName) -> Dictionary:
 			profile = _build_explosion()
 		&"muzzle":
 			profile = _build_muzzle()
+		&"sacrifice_ignition":
+			profile = _build_sacrifice_ignition()
 		_:
 			profile = _build_hit_spark()  # &"hit_spark" and any unknown effect
 	_profiles[effect] = profile
@@ -135,5 +148,21 @@ func _build_muzzle() -> Dictionary:
 		&"scale": muzzle_scale,
 		&"color": muzzle_color,
 		&"direction": Vector3(0.0, -1.0, 0.0),  # upward (player fires up)
+		&"gravity": Vector3.ZERO,
+	}
+
+
+func _build_sacrifice_ignition() -> Dictionary:
+	# Story 2.6 — the sacrifice-burst ignition profile. Omnidirectional warm-amber blast (the "ignited"
+	# power-surge read). Same dict shape as the other profiles (the coordinator copies it into its reused
+	# _profile_out + applies the per-event scale + _motion_scale).
+	return {
+		&"amount": sacrifice_ignition_amount,
+		&"lifetime": sacrifice_ignition_lifetime,
+		&"spread_rad": sacrifice_ignition_spread_rad,
+		&"speed": sacrifice_ignition_speed,
+		&"scale": sacrifice_ignition_scale,
+		&"color": sacrifice_ignition_color,
+		&"direction": Vector3(0.0, -1.0, 0.0),
 		&"gravity": Vector3.ZERO,
 	}

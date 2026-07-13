@@ -31,6 +31,17 @@ extends CharacterBody2D
 # The player.tscn base hitbox radius (keep in sync with the scene's CircleShape2D). The +hitbox swaps
 # to DockedShipTuning.docked_hitbox_radius when docked, back to this when clean.
 const _CLEAN_HITBOX_RADIUS: float = 11.0
+# Story 2.6 (OQ9 / Task 7) — the on-ship burst visual: MODEST glow (warm tint) + MODEST scale enlarge +
+# a depleting-arc timer ring (NOT a full halo — DESIGN.md H6 reserves the halo for the future Shield PU).
+# The scale enlarge is COSMETIC only (the hitbox CollisionShape2D is untouched → the true hitbox stays
+# readable, N5). _process owns _visual.modulate.a (the i-frame flicker), so the tint's RGB persists. Kept
+# minimal — the OQ9 [ASSUMPTION] default, not a polish pass.
+const _BURST_VISUAL_TINT: Color = Color(1.0, 0.92, 0.75, 1.0)  # warm amber glow modulate (RGB; _process owns alpha).
+const _BURST_VISUAL_SCALE: float = 1.12                        # ≤ 1.15× so the silhouette stays near the true hitbox (N5).
+const _BURST_RING_RADIUS: float = 28.0                         # just outside the ~17px ship silhouette.
+const _BURST_RING_COLOR: Color = Color(1.0, 0.85, 0.45, 0.9)   # warm amber — the ignition/climax read.
+const _BURST_RING_WIDTH: float = 2.0
+const _BURST_RING_POINTS: int = 32
 
 # Player → Arena: "I lost a ship (HP hit 0 within the wave)." NO payload — the run host
 # owns the count and decides respawn vs game-over (D8: intra-entity→parent, direct).
@@ -53,6 +64,8 @@ var _captured_this_wave := false  # wave-scope capture gate (AC#3, Story 2.2); r
 # once-per-wave, so try_dock_ship's "already docked" guard is defensive.
 var _docked_ship: DockedShip = null
 var _docked := false
+# Story 2.6 — true while the sacrifice burst is active (drives the on-ship visual + the timer-ring redraw).
+var _burst_active := false
 
 
 func _ready() -> void:
@@ -91,6 +104,13 @@ func _ready() -> void:
 	# the wave boundary. The player is NOT pooled → connect ONCE.
 	if not EventBus.wave_cleared.is_connected(_on_wave_cleared):
 		EventBus.wave_cleared.connect(_on_wave_cleared)
+	# Story 2.6 — FireSystem.burst_ended (LOCAL, D8) → revert the on-ship burst visual. The Player is NOT
+	# pooled → connect ONCE (belt-and-braces is_connected guard, mirroring the other connects). The burst
+	# is entity-local (a FireSystem buff) → NO EventBus signal for it (Dev Notes §"🔗 Signal boundary");
+	# natural expiry, wave-clear, and death ALL route through this one revert (clear_burst emits when it
+	# cleared an active burst).
+	if _fire_system != null and not _fire_system.burst_ended.is_connected(_revert_burst_visual):
+		_fire_system.burst_ended.connect(_revert_burst_visual)
 	# Story 1.7 — bind the on-ship segmented HP bar to this entity's own HealthComponent (intra-entity,
 	# D8 — HP is never on EventBus). hide_when_full=false here ⇒ the primary read is always visible.
 	if _health_bar != null:
@@ -116,6 +136,12 @@ func _process(delta: float) -> void:
 		_visual.modulate.a = 0.55 + 0.35 * sin(_flicker_t * 12.0)
 	else:
 		_visual.modulate.a = 1.0
+	# Story 2.6 (OQ9) — keep the timer ring redrawing while a burst is active (the remaining ratio
+	# depletes every frame → a smooth arc animation). _draw early-returns when inactive, so this is the
+	# only place that requests redraws for the ring. Bounded to the ~10 s burst window (NOT a permanent
+	# per-frame redraw cost — when no burst is active, nothing redraws).
+	if _burst_active:
+		queue_redraw()
 
 
 func _on_ship_depleted() -> void:
@@ -262,6 +288,62 @@ func _try_sacrifice() -> void:
 	sacrifice_committed.emit()  # LOCAL (D8) — Arena enriches the global burst signal with wing_level.
 
 
+# === Story 2.6 — Sacrifice Burst (NP3) ===
+
+func apply_sacrifice_burst(burst: SacrificeBurst) -> void:
+	# The Arena calls this after BuildRecompute.threat_ceiling (injection — NOT a RunState ref: AR2, the
+	# Player has no RunState ref; the Arena owns RunState + the burst computation, and hands the result
+	# down). Wires the buff into the FireSystem (triple-shot ±0.18 + ×power damage + 0.10 s fast-fire for
+	# ~10 s) + fires the one-shot ignition juice (FR47/FR48) + sets the on-ship burst visual (Task 7).
+	# The Arena's _on_player_sacrifice_committed already guards the game_over/reload race, so this never
+	# runs against a tearing-down run. NO ship-count change + NO HP change (sacrifice is ship-neutral,
+	# FR18 — the Player never touches RunState; this method only mutates FireSystem buff state + visuals).
+	# Review fix: null-guard _fire_system for consistency with the other guarded call sites (_ready,
+	# _process) — unreachable in a well-formed scene (an @onready sibling), belt-and-braces only.
+	if _fire_system == null:
+		return
+	_fire_system.apply_burst(burst)
+	JuiceFx.sacrifice_ignited(global_position)
+	_apply_burst_visual()
+
+
+func _apply_burst_visual() -> void:
+	# Story 2.6 (Task 7 / OQ9) — the on-ship burst readability cue. MODEST warm glow (modulate tint) +
+	# MODEST scale enlarge (cosmetic — the hitbox CollisionShape2D is untouched → N5) + arm the depleting
+	# timer ring (_draw). _process owns _visual.modulate.a (the i-frame flicker), so the warm RGB persists
+	# across the flicker. queue_redraw so the ring draws THIS frame (then _process keeps it redrawing).
+	_visual.modulate = _BURST_VISUAL_TINT
+	_visual.scale = Vector2.ONE * _BURST_VISUAL_SCALE
+	_burst_active = true
+	queue_redraw()
+
+
+func _revert_burst_visual() -> void:
+	# Revert the burst visual — runs for ALL clears: natural expiry (burst_ended from _expire_burst) AND
+	# the wave-clear/death force-clear (clear_burst emits burst_ended when it cleared an active burst).
+	# Idempotent — values are already at baseline if no visual change was made, so a redundant call is a
+	# harmless no-op. One final queue_redraw so _draw runs + early-returns (clearing the ring from screen).
+	_visual.modulate = Color.WHITE
+	_visual.scale = Vector2.ONE
+	_burst_active = false
+	queue_redraw()
+
+
+func _draw() -> void:
+	# Story 2.6 (OQ9) — the depleting-arc timer ring. Drawn ONLY while a burst is active (_process
+	# queue_redraws while active; _revert_burst_visual redraws once to clear). NOT a full halo — DESIGN.md
+	# H6 reserves the halo for the future Shield PU; this is a thin arc that depletes from full (1.0) to
+	# empty (0.0) as the buff expires, sweeping clockwise from the top. Centered on the player's local
+	# origin (the ship art + hitbox share it). Kept minimal — the OQ9 [ASSUMPTION] default.
+	if not _burst_active or _fire_system == null:
+		return
+	var ratio: float = _fire_system.get_burst_remaining_ratio()
+	if ratio <= 0.0:
+		return
+	# At ratio = 1.0 → a full circle; depletes to nothing at 0.0. -PI/2 = screen-up; +ratio×TAU sweeps CW.
+	draw_arc(Vector2.ZERO, _BURST_RING_RADIUS, -PI / 2.0, -PI / 2.0 + ratio * TAU, _BURST_RING_POINTS, _BURST_RING_COLOR, _BURST_RING_WIDTH)
+
+
 func try_capture() -> bool:
 	# The captor's capture EFFECT entry (AC#1). Guards: clean (no docked ship) + once-per-wave + not
 	# already dead this frame (an HP-death and a capture landing the same physics tick must not spend
@@ -297,6 +379,12 @@ func _on_wave_cleared(_wave: int) -> void:
 	if _docked_ship != null:
 		ship_kept.emit()
 	_detach_docked_ship()
+	# Story 2.6 — a burst does NOT persist into the next wave: clear it. clear_burst emits burst_ended
+	# only if a burst was active → the connected _revert_burst_visual runs uniformly (no separate inline
+	# revert here). Idempotent — a no-op when no burst is active. Review fix: null-guard for consistency
+	# with the other guarded _fire_system call sites.
+	if _fire_system != null:
+		_fire_system.clear_burst()
 
 
 func _detach_docked_ship() -> DockedShip:
@@ -320,6 +408,13 @@ func respawn() -> void:
 	# on the lane (fair re-entry — a fire-column probably killed you where you stood),
 	# and a fresh i-frame window so re-entry isn't an instant re-death. No screen-clear,
 	# no loss-of-control, no fade — E1 respawn is immediate (full lifecycle is 1.8).
+	# Story 2.6 — a fresh ship does NOT carry the dead ship's burst. clear_burst covers BOTH ship-loss
+	# respawn paths (HP-death + capture — both route here via Arena._on_player_ship_depleted) and emits
+	# burst_ended (if a burst was active) so the visual reverts uniformly. Game-over (no respawn) is
+	# handled by the scene reload (the FireSystem node is freed with the scene). Review fix: null-guard
+	# for consistency with the other guarded _fire_system call sites.
+	if _fire_system != null:
+		_fire_system.clear_burst()
 	_health.reset_to_full()
 	global_position.x = Constants.BASE_RESOLUTION.x / 2.0
 	velocity = Vector2.ZERO  # defensive: _physics_process recomputes velocity from input

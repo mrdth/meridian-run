@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SacrificeTuning" format=3]
+
+[ext_resource type="Script" path="res://player/sacrifice_tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+base_power = 1.0
+power_per_wing = 0.3
+max_threat_fraction = 0.02
+duration = 10.0
+burst_damage_base = 1.5
+burst_fire_cooldown = 0.1
+burst_spread_rad = 0.18
+burst_shot_count = 3

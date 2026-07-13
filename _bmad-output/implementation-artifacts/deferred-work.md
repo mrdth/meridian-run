@@ -18,6 +18,12 @@ Story 1.8 closed these five 1.8-owned items. (Original deferral notes preserved 
 
 ---
 
+## Deferred from: code review of 2-6-sacrifice-burst-threat-relative (2026-07-13)
+
+- `Projectile._physics_process` leave-screen check only tests `global_position.y <= 0.0`; the guarantee that angled burst shots still cross that line depends on the current small `burst_spread_rad` (±0.18 rad) tuning value, not an explicit bound [player/projectile.gd:48-59] — pre-existing pattern extended safely for now; revisit with a general offscreen-bounds guard if the spread tuning range ever grows.
+- No lower-bound clamp on `BuildRecompute.sacrifice_power`/`burst_damage_mult` [build/build_recompute.gd] — a hypothetical negative `base_power`/`power_per_wing` tuning value would produce negative projectile damage; out of scope while tuning defaults stay positive.
+- `_spawn_burst()`'s fan formula only centers a shot at exactly 0 rad (straight up) for an odd `burst_shot_count` [player/fire_system.gd `_spawn_burst`] — nothing guards against an even value being configured, which would silently break the "one shot straight up" assumption AC1/tests rely on. Current tuning fixes `burst_shot_count = 3`.
+
 ## Deferred from: code review of 2-2-capture-mechanic-clean-only-once-wave (2026-07-10)
 
 - `CaptureState.physics_process`'s duck-call only null-checks `_captor.player_target`, never `is_instance_valid()`, before calling `try_capture()` [enemies/captor/states/capture_state.gd:48-50] — pre-existing convention shared by every captor state (telegraph/dive/formation/enter all null-check only); revisit if the player is ever freed/recreated mid-run instead of respawned in place.

@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_tuning.tres" id="2_tuning"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://components/hurtbox_component.gd" id="9_hurtbox"]
 [ext_resource type="PackedScene" path="res://player/docked_ship.tscn" id="10_docked_scene"]
 [ext_resource type="Resource" path="res://resources/docked_ship_tuning.tres" id="11_docked_tuning"]
+[ext_resource type="Resource" path="res://resources/sacrifice_tuning.tres" id="12_sacrifice"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 11.0
@@ -60,6 +61,7 @@ position = Vector2(0, -20)
 script = ExtResource("5_fire")
 tuning = ExtResource("2_tuning")
 projectile_scene = ExtResource("6_projectile_scene")
+sacrifice_tuning = ExtResource("12_sacrifice")
 
 [node name="HealthBar" parent="." instance=ExtResource("7_health_bar")]
 hide_when_full = false
