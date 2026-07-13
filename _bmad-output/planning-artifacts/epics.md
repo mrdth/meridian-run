@@ -63,7 +63,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 - **FR17:** The rescued ship is one entity with two roles: a **permanent build track** (never lost, even when the docked fighter is sacrificed or absorbed) and a **transient combat fighter** (+firepower, +hitbox, intrinsic first-hit absorber).
 - **FR18:** Docked-ship resolution offers one active choice — **Sacrifice** (input) or **Hold** (passive default) — resolving to one of: Sacrifice (consume the docked ship → burst, build track persists; no ship-count change), Keep (reach wave-end alive → flies off, regain 1 ship, net 0), Absorb (hit while holding → docked ship dies first sparing HP; no ship-count change), or Failed-rescue (the captured ship turns enemy; +1 enemy, no ship-count change). **Ship-count economy (clarified 2026-07-12):** the docked fighter is a ship-in-escrow — the ONLY ship-count changes in the Gamble are **capture (−1)** and **keep (+1, net 0)**. Rescue, failed-rescue, absorb, sacrifice, and no-rescue do NOT change the ship count (consuming/losing the docked fighter forfeits the keep regain; it is not an additional `spend_ship`).
 - **FR19:** **Sacrifice** consumes the docked ship for a threat-relative temporary buff — triple-shot (±0.18 rad), ×1.5 damage, fast-fire (0.10 s cooldown), ~10 s — that scales with the rescued-ship build track and is bounded against current-wave threat; it **never screen-clears** and needs **no artificial cooldown** (opportunity cost is the limiter, [Build-9]).
-- **FR20:** **Safe play** (avoiding capture) yields a safe-play bonus (~30%); courting capture/rescue yields a rescue bonus (~25%); safe-play bonus > rescue bonus (the primary farm-mitigation).
+- **FR20:** **Safe play** (avoiding capture) yields a wave-clear currency bonus; courting capture/rescue yields **no currency bonus (baseline)**. Currency is the safe-play incentive; rescue's payoff routes through the build track (FR27 — biased wing-track odds + wing-ladder growth), not currency. The primary farm-mitigation: capture-spam farms no currency premium. *(Split across epics: E2 owns per-wave detection — Story 2.7; E3 owns the currency grant — Story 3.4.)*
 - **FR21:** A captor appears on an **early wave to teach** capture/rescue, then captor-chance **scales with wave number** (gamble stays available without spam).
 
 **Build Engine & Power-ups**
@@ -73,7 +73,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 - **FR24:** Effective stats are computed by **recomputing** a `StatBlock` from base + all acquired `Modifier`s at run start and each wave — never by mutating stats in place.
 - **FR25:** Power-up synergy is **multiplicative-over-current** (not additive-over-base), targeting ~8–12× wave-1 DPS at the final boss.
 - **FR26:** The **standard pool** (fire-rate, shields, damage, move-speed, +HP-cap, +ship) is available to all ships from start; **specialty power-ups** (armor-piercing, tractor-pull, blast-columns…) are gated behind fleet unlocks via cross-pollination.
-- **FR27:** Rescued-ship survival grants a currency multiplier and biased odds toward rescue-oriented power-ups; target ~12–15 power-ups acquired by wave 20.
+- **FR27:** Rescued-ship survival grants biased odds toward wing-track (rescue-oriented) power-ups; target ~12–15 power-ups acquired by wave 20. *(Currency multiplier removed 2026-07-13 — rescue no longer grants a currency bonus per FR20; rescue pays through the build track, not currency. Biased odds preserved.)*
 - **FR28:** On **unlocking a ship** (fleet-unlock meta event), its signature mechanic is added as **one entry** to the shared power-up pool, droppable for all ships in subsequent runs (mechanism = v1.0; full depth = post-1.0).
 
 **Run Structure & Procedural Generation**
@@ -110,7 +110,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 - **FR46:** A **HUD** (on a `CanvasLayer`, subscribing to `EventBus`) displays HP, ships, wave, and score; **power-up select + shop** are data-driven scenes reading `PowerUpDefinition`s; menus (main / pause / game-over) are provided via scene changes; **pause** is supported.
 - **FR47:** **Juice/feedback** (hit-flash, screen-shake, pooled particle bursts, neon-vector glow) is arena-scoped (auto-disabled in menus), driven by `EventBus`.
 - **FR48:** **Audio** is engine-native (`AudioStreamPlayer` + pooled SFX + buses): synthwave/arcade-electronic music + punchy SFX on hits/pickups/sacrifice bursts; no middleware at v1.0.
-- **FR49:** Score is **cumulative and display-only**, separate from currency (score never spends); currency is earned per wave + rescue multiplier and fuels builds.
+- **FR49:** Score is **cumulative and display-only**, separate from currency (score never spends); currency is earned per wave (+ safe-play bonus when clean) and fuels builds.
 
 **Debug Tooling**
 
@@ -192,7 +192,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 | FR17 | E2 | Rescued-ship dual nature (permanent track + transient fighter) |
 | FR18 | E2 | Docked-ship resolution (4 outcomes) |
 | FR19 | E2 | Sacrifice burst (threat-relative, no screen-clear) |
-| FR20 | E2 | Safe-play vs rescue bonus |
+| FR20 | E2 + E3 | Safe-play currency bonus (E2: detection, Story 2.7 · E3: currency grant, Story 3.4) |
 | FR21 | E2 | Captor onboarding cadence |
 | FR22 | E3 | 3-choose-1 + shop |
 | FR23 | E3 | Dual build ladder |
@@ -244,7 +244,7 @@ This document provides the complete epic and story breakdown for **Meridian Run*
 
 ### Epic 3: Build Engine  *(v0.1 — GO/NO-GO hypothesis gate)*
 **Player outcome:** Run a start-to-finish (lean, ~5-wave/1-tier) roguelite — take/sell/shop power-ups across a dual build ladder, compound multiplicative synergies. **"Engine honest, feel approximate":** validates the real recompute engine + synergy math on a compressed, aggressively-scaled run. This is the v0.1 go/no-go gate.
-**FRs covered:** FR7 (generators exception), FR22–FR28 (mechanism), FR46 (select/shop UI), FR49 (currency), FR50 (cheats)
+**FRs covered:** FR7 (generators exception), FR20 (currency half — Story 3.4), FR22–FR28 (mechanism), FR46 (select/shop UI), FR49 (currency), FR50 (cheats)
 **Standalone:** ✅ Builds on E1+E2; delivers a complete compressed run.
 **Depends on:** Epics 1, 2.
 
@@ -516,20 +516,21 @@ So that it's always worth considering and never a win button.
 
 *(FR19)*
 
-### Story 2.7: Safe-Play vs Rescue Bonus Economy
+### Story 2.7: Per-Wave Gamble-Outcome Signal (Safe vs Courted)
 
-As a player,
-I want playing safe to pay slightly more currency while capture/rescue pays in ship benefits,
-So that the gamble is a genuine tradeoff, not a solved optimum.
+As a developer,
+I want each cleared wave to record whether the player played safe or courted capture/rescue,
+So that the Epic 3 economy can apply the correct currency reward without re-deriving gamble state.
 
 **Acceptance Criteria:**
 
-- **Given** the player avoids capture all wave (safe play), **Then** wave-clear grants a **safe-play bonus (~30%)**.
-- **Given** the player courts capture / rescues, **Then** wave-clear grants a **rescue bonus (~25%)**.
-- **Given** the two, **Then** safe-play bonus > rescue bonus (the primary farm-mitigation).
-- **Given** bonus values, **Then** they read from `economy_tuning.tres`.
+- **Given** the player avoids capture for the entire wave (no capture event), **Then** the wave records a **SAFE** gamble-outcome.
+- **Given** a capture event occurs this wave (regardless of later rescue / sacrifice / absorb / failed-rescue resolution), **Then** the wave records a **COURTED** gamble-outcome.
+- **Given** wave clear, **Then** the outcome is emitted via `EventBus` (e.g. `gamble_outcome_recorded(outcome: GambleOutcome)` — an `enum { SAFE, COURTED }`) for the E3 economy to consume.
+- **Given** the signal, **Then** it carries **no currency logic** — E2 produces the classification only; the currency bonus is computed in Epic 3 (Story 3.4) from `economy_tuning.tres`.
+- **Given** the classification, **Then** it is **pure logic**, GUT-tested (SAFE when no capture occurred; COURTED when a capture occurred).
 
-*(FR20)*
+*(FR20 detection half · FR20 currency half → Story 3.4)*
 
 ### Story 2.8: Captor Wave Integration & Gamble Gate
 
@@ -611,8 +612,9 @@ So that every clear is a legible build decision.
 - **Given** an offered card, **Then** the player can **TAKE** (`confirm`) — applies to its target ladder — or **SELL** (dedicated secondary key) for **~50% value → currency** (UX F7). **Sell is quick, single-press, no confirm** (low-stakes, reversible-ish — explicitly *not* hold-to-commit; UX OQ9 / arch NP5).
 - **Given** the microcopy, **Then** power-up names + labels read in the **punchy Llamasoft register** (UX M1 — e.g. `TRIPLE BROADSIDE`, not "Triple Fire").
 - **Given** the screen, **Then** it is non-diegetic overlay UI on a CanvasLayer (UX D1), gamepad-navigable with mouse-hover = focus (UX F5).
+- **Given** wave clear, **Then** `RunState` awards wave-clear currency = base + `safe_play_bonus_pct` (from `economy_tuning.tres`) **iff** the gamble-outcome was SAFE (read from the Story 2.7 signal); COURTED waves award base only. The bonus computation is **pure logic**, GUT-tested.
 
-*(FR22, FR46 select UI · UX D1/F5/F7/H4/I1/I2/M1/OQ9 · arch D15/NP5)*
+*(FR22, FR20 currency half, FR46 select UI, FR49 · UX D1/F5/F7/H4/I1/I2/M1/OQ9 · arch D15/NP5)*
 
 ### Story 3.5: Between-Wave Shop / Rearm (UX-enriched)
 

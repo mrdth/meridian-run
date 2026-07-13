@@ -68,8 +68,8 @@ Build a ship into absurd, compounding power across the run; the late game must r
 *Steers:* the multi-source build engine, the dual-ladder, the compounding power curve, the late-run godhood-peak target, and the cross-pollination depth that sustains it.
 
 **P2 · The Gamble — *"How far will I push my greed?"***
-Every system is a bet: court capture, choose rescue-or-sacrifice, weigh the safe-play bonus against the bigger capture payout.
-*Steers:* the courting-capture economy, the safe-vs-rescue bonus gap (~30% vs ~25%), the sacrifice burst, the dual-ladder invest-vs-spend, and the discrete survival unit the gamble trades.
+Every system is a bet: court capture, choose rescue-or-sacrifice, weigh the safe-play currency bonus against rescue's bigger build-track payout.
+*Steers:* the courting-capture economy, the two reward channels (safe-play currency bonus vs rescue's build-track payout), the sacrifice burst, the dual-ladder invest-vs-spend, and the discrete survival unit the gamble trades.
 
 **P3 · The Test — *"How far can skill carry it?"***
 A constrained 1-axis lane of readable fire-columns where a hitbox that grows with your power means skill must carry the greed you built.
@@ -79,11 +79,11 @@ A constrained 1-axis lane of readable fire-columns where a hitbox that grows wit
 - **Cross-pollination** — unlocking a ship seeds its signature mechanic into the shared power-up pool for every ship — the engine of the 50-hour build depth (P1 + meta).
 - **Rescue is the engine, not the identity** — the capture/rescue loop exists to *feed* the Godhood+Gamble fantasy, never to be the headline. (A standing design discipline from the brainstorming's pivotal reframe.)
 - **Underdog rescuer, never aggressor** — a *mechanic-evaluation guardrail*, not just an art choice: if a proposed mechanic doesn't serve the rescue fantasy or the recoverable-life tension, it's off-theme. (This is why the prototype's radial-burst / capture-enemies version was rejected.)
-- **Triple-lock self-balancing** — three independent farm-mitigations overlap by design (hitbox-compounds [Risk-12], safe-play bonus > rescue bonus, threat-relative sacrifice ceiling), so degenerate strategies are pre-empted without patched-on limiters.
+- **Triple-lock self-balancing** — three independent farm-mitigations overlap by design (hitbox-compounds [Risk-12], safe play earns the currency premium while rescue earns none, threat-relative sacrifice ceiling), so degenerate strategies are pre-empted without patched-on limiters.
 
 ### Core Gameplay Loop
 
-Survive procedurally-composed waves → earn power-ups and currency → court capture on captor waves (or play safe for a higher bonus) → rescue for a docked dual-fighter or sacrifice for a power burst → compound power across the 20-wave / 4-tier campaign → beat the wave-20 final boss → choose to end or push endless with a frozen build. Losing your last ship ends the run.
+Survive procedurally-composed waves → earn power-ups and currency → court capture on captor waves (or play safe for a currency bonus) → rescue for a docked dual-fighter or sacrifice for a power burst → compound power across the 20-wave / 4-tier campaign → beat the wave-20 final boss → choose to end or push endless with a frozen build. Losing your last ship ends the run.
 
 **Moment-to-moment:** weave a 1-axis lane of fire-columns, manage a hitbox that grows with each docked ship, and decide each captor wave whether to court capture (gamble) or play safe.
 
@@ -134,7 +134,7 @@ You make **one active choice — Sacrifice now, or Hold:**
 
 **Ship-count economy (clarified 2026-07-12):** the docked fighter is a **ship-in-escrow** — the ONLY ship-count changes in the Gamble are **capture (−1)** and **keep (+1, net 0)**. Rescue, failed-rescue, absorb, sacrifice, and no-rescue do NOT change the ship count: consuming or losing the docked fighter forfeits the keep regain, it is not an additional `spend_ship`. (Earlier drafts framed absorb/sacrifice/failed-rescue as "−1 ship" — that was relative-to-Keep accounting, not an actual spend; corrected here + in epics FR18.)
 
-**No-gamble baseline — Safe play** (avoid capture): no ship change, +safe-play bonus (~30%) vs rescue bonus (~25%).
+**No-gamble baseline — Safe play** (avoid capture): no ship change, +wave-clear currency bonus (rescue earns no currency bonus — it pays via the build track: wing-ladder growth + biased power-up odds, FR27).
 
 **Anti-spam:** sacrifice needs **no artificial cooldown** — every sacrifice forgoes the survival payout (keep→regain), so the opportunity cost is the natural limiter ([Build-9]). Combined with one-docked-ship-per-wave, sacrifice is inherently bounded.
 
@@ -190,11 +190,11 @@ Deterministic **seeded** generation — same seed → same wave layouts, spawns,
 
 - **Two-tier power-up pool:** **standard** (fire-rate, shields, damage, move-speed, +HP-cap, +ship — available to all ships from start) + **specialty** (armor-piercing, tractor-pull, blast-columns… gated behind fleet unlocks via cross-pollination).
 - **Dual build ladder:** **main ship** (persistent core identity, run-long) + **rescued ship** (permanent build track per *dual nature* above; the docked fighter is the consumable). Power-ups target either ladder.
-- **Acquisition (Brotato-style) — baselines** *(playtest-tuned)*: wave clear → **3 power-ups, choose-1** (take **or** sell at ~50% value); between-wave **shop offers 4 random** power-ups at currency cost. Rescued-ship survival → currency multiplier + biased odds toward rescue-oriented power-ups. **Target ~12–15 power-ups acquired by wave 20.**
+- **Acquisition (Brotato-style) — baselines** *(playtest-tuned)*: wave clear → **3 power-ups, choose-1** (take **or** sell at ~50% value); between-wave **shop offers 4 random** power-ups at currency cost. Rescued-ship survival → biased odds toward wing-track (rescue-oriented) power-ups — no currency bonus (rescue pays via the build track, not currency; see FR20). **Target ~12–15 power-ups acquired by wave 20.**
 - **Synergy model:** godhood-defining upgrades compound **multiplicatively over current** (not additive-over-base); **target ~8–12× wave-1 DPS at the final boss** *(baseline, playtest-tuned)* — the felt godhood peak.
 - ✅ **Sacrifice-compounding ceiling resolved (threat-relative)** — see *Difficulty Curve*.
 - ⏳ **Full standard/specialty pool lists** = content-breadth brainstorm.
-- **Score = display-only** (cumulative; leaderboards post-1.0), **separate from currency** — currency is earned per wave + rescue multiplier and fuels builds. Score never spends.
+- **Score = display-only** (cumulative; leaderboards post-1.0), **separate from currency** — currency is earned per wave (+ safe-play bonus when clean) and fuels builds. Score never spends.
 
 ### Character Selection (The Fleet)
 
@@ -283,8 +283,8 @@ Target the **player-power : enemy-threat ratio** (absurdity is relative, not abs
 ### Economy and Resources
 
 - **Shared currency pool** fuels both build ladders via take/sell/shop. *(Score is proposed separate/display-only — see Item & Upgrade System.)*
-- Survive wave → earn currency; rescue-and-survive → earn more (multiplier).
-- **Safe-play bonus (~30%) > rescue bonus (~25%)** — the primary farm-mitigation; safe play yields more currency but no rescued-ship benefits, courting capture yields slightly less currency but full ship benefits.
+- Survive wave → earn currency (+ safe-play bonus if clean); rescue-and-survive → no currency bonus, but biased wing-track power-up odds + wing-ladder growth.
+- **Safe play earns a wave-clear currency bonus; rescue earns none (baseline)** — currency is the safe-play incentive; the build track (wing ladder + biased power-up odds) is rescue's payoff. This is the primary farm-mitigation: capture-spam farms no currency premium. *(Revised 2026-07-13: collapsed the prior two-bonus model — ~30% safe / ~25% rescue — into baseline + safe-play-only; the single bonus value is re-baselined in Story 3.4.)*
 
 ---
 

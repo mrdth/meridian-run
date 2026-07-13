@@ -26,10 +26,10 @@ Record of every design decision, change, and version transition for this GDD.
 - [Econ-8] Shared currency pool (Option A confirmed).
 - [Build-9 RESOLVED] Sacrifice model: rescued-ship BUILD = permanent run-long track (never lost); docked SHIP = consumable; sacrifice = consume the docked ship → temporary burst scaling with track. **No ship-count change** (corrected 2026-07-12 — earlier "spend ship" framing was relative-to-Keep accounting; the only `spend_ship` is capture, the only `add_ship` is keep). (Losing progress = unfun, rejected.)
 - [Build-15] Hybrid docked ship: persistent dual-fighter (firepower + bigger hitbox) AND first-hit absorber.
-- [Risk-6] Courting capture inverts Galaga — capture is an opportunity you chase (safe play = smaller safer reward; courted capture + rescue = bigger reward).
+- [Risk-6] Courting capture inverts Galaga — capture is an opportunity you chase (safe play = smaller safer reward, paid in currency; courted capture + rescue = bigger reward, paid in build-track investment).
 - [Ref-11] Dive-timing rescue + formation-turn penalty (kill boss during dive to rescue; kill in formation = ship turns against you). **Prior-capture gate added 2026-07-12:** rescue requires the captor to have captured the player this spawn (a dive-kill without capture → failed-rescue) — prevents the dodge-capture + dive-kill + keep farm.
 - [Risk-12] Dual-fighter = larger hitbox → more power = bigger target = harder to dodge (self-balancing).
-- [Run-32] Safe-play bonus (~30%) > rescue bonus (~25%) — primary farm-mitigation.
+- [Run-32] Safe play earns the wave-clear currency bonus; rescue earns none (baseline) — primary farm-mitigation. *(Revised 2026-07-13: two-bonus model collapsed to baseline + safe-play-only; rescue pays via the build track, FR27. Single bonus value re-baselined in Story 3.4.)*
 
 **Meta layer**
 - [Meta-20] No meta-currency; pure feat-based unlocks (progression / skill / grind-fallback).
